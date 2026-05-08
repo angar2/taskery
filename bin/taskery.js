@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * bin/taskery.js
- * `npx taskery <subcommand>` — 진입점 dispatcher.
+ * `npx @angar2/taskery <subcommand>` — 진입점 dispatcher.
  *
  * 서브커맨드:
  *   init    — 현재 디렉토리에 taskery 자산 카피 + manifest 생성
@@ -26,12 +26,12 @@ function help() {
   console.log(`taskery v${require('./lib').getPackageVersion()}
 
 사용법:
-  npx taskery init      현재 디렉토리에 taskery 자산 설치
-  npx taskery update    최신 버전 fetch + 머지 갱신
-  npx taskery help      도움말
+  npx @angar2/taskery init      현재 디렉토리에 taskery 자산 설치
+  npx @angar2/taskery update    최신 버전 fetch + 머지 갱신
+  npx @angar2/taskery help      도움말
 
 새 프로젝트 시작:
-  npx create-taskery <project-name>
+  npx -p @angar2/taskery create-taskery <project-name>
 
 상세: https://github.com/angar2/taskery
 `);

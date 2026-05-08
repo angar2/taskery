@@ -9,10 +9,10 @@
 
 | 시나리오 | 동작 |
 |---------|------|
-| **새 프로젝트 시작** | `npx create-taskery <project-name>` — 새 폴더 생성 + 자산 카피 + manifest 작성 |
-| **기존 리포에 도입** | 리포 디렉토리에서 `npx taskery init` — 자산 카피 + manifest 작성 |
-| **버전 업데이트 (진화)** | `npx taskery update` — 최신 버전 fetch + manifest 비교 + 머지 갱신 |
-| **특정 버전 고정** | `npx taskery@0.1.5 init` — semver 명시 |
+| **새 프로젝트 시작** | `npx -p @angar2/taskery create-taskery <project-name>` — 새 폴더 생성 + 자산 카피 + manifest 작성 |
+| **기존 리포에 도입** | 리포 디렉토리에서 `npx @angar2/taskery init` — 자산 카피 + manifest 작성 |
+| **버전 업데이트 (진화)** | `npx @angar2/taskery update` — 최신 버전 fetch + manifest 비교 + 머지 갱신 |
+| **특정 버전 고정** | `npx @angar2/taskery@0.1.5 init` — semver 명시 |
 
 **대상 환경**:
 - 사용자 본인 (집/회사 PC)
@@ -27,11 +27,11 @@
 
 | 명령 | 동작 | bin |
 |------|------|-----|
-| `npx create-taskery <name>` | 새 폴더 + 자산 카피 + manifest | `bin/create.js` |
-| `npx taskery init` | 현재 디렉토리에 자산 카피 + manifest | `bin/init.js` (via `bin/taskery.js`) |
-| `npx taskery update` | 최신 버전 머지 갱신 | `bin/update.js` (via `bin/taskery.js`) |
-| `npx taskery help` | 사용법 출력 | `bin/taskery.js` |
-| `npx taskery@<version> <cmd>` | 특정 버전 고정 | npm semver 사용 |
+| `npx -p @angar2/taskery create-taskery <name>` | 새 폴더 + 자산 카피 + manifest | `bin/create.js` |
+| `npx @angar2/taskery init` | 현재 디렉토리에 자산 카피 + manifest | `bin/init.js` (via `bin/taskery.js`) |
+| `npx @angar2/taskery update` | 최신 버전 머지 갱신 | `bin/update.js` (via `bin/taskery.js`) |
+| `npx @angar2/taskery help` | 사용법 출력 | `bin/taskery.js` |
+| `npx @angar2/taskery@<version> <cmd>` | 특정 버전 고정 | npm semver 사용 |
 
 **대안 미채택**:
 - Claude Code plugin (`/plugin`) — 환경 미지원 (VSCode extension) + 이중 유지비. PLAYBOOK §6 미래로 보류
@@ -47,9 +47,9 @@
 |---------|------|------|
 | [bin/lib.js](../bin/lib.js) | 공통 유틸 — `walkTemplate()` (해시 맵), `sha256()`, `mkdirp()`, `copyFile()`, `writeManifest()`, `readManifest()`, `isLocalOverride()` | 3,089 B |
 | [bin/taskery.js](../bin/taskery.js) | 진입점 dispatcher — `init` / `update` / `help` 서브커맨드 분기 | 1,350 B |
-| [bin/init.js](../bin/init.js) | `npx taskery init` 본체 — template/ → cwd 카피 + manifest 동적 생성 | 3,765 B |
-| [bin/create.js](../bin/create.js) | `npx create-taskery <name>` — mkdir + cd + init 호출 | 1,592 B |
-| [bin/update.js](../bin/update.js) | `npx taskery update` — 4 분기 머지 로직 | 5,764 B |
+| [bin/init.js](../bin/init.js) | `npx @angar2/taskery init` 본체 — template/ → cwd 카피 + manifest 동적 생성 | 3,765 B |
+| [bin/create.js](../bin/create.js) | `npx -p @angar2/taskery create-taskery <name>` — mkdir + cd + init 호출 | 1,592 B |
+| [bin/update.js](../bin/update.js) | `npx @angar2/taskery update` — 4 분기 머지 로직 | 5,764 B |
 
 **의존성**: Node.js 표준 라이브러리만 (`fs` / `path` / `crypto` / `child_process` / `readline`). 외부 npm 의존 0.
 
@@ -131,7 +131,7 @@
 
 ## 6. update 머지 로직 — 4 분기
 
-`npx taskery update` 호출 시 각 파일 분기:
+`npx @angar2/taskery update` 호출 시 각 파일 분기:
 
 | 분기 | 조건 | 동작 |
 |------|------|------|
@@ -205,11 +205,11 @@ npm publish --tag beta       # beta tag로 publish
 **`package.json` 메타** ([package.json](../package.json)):
 ```json
 {
-  "name": "taskery",
+  "name": "@angar2/taskery",
   "version": "0.1.0",
   "bin": {
-    "taskery": "./bin/taskery.js",
-    "create-taskery": "./bin/create.js"
+    "taskery": "bin/taskery.js",
+    "create-taskery": "bin/create.js"
   },
   "files": ["bin/", "template/", "README.md", "LICENSE"],
   "author": "angar2 <angaridev@gmail.com>",
@@ -217,6 +217,7 @@ npm publish --tag beta       # beta tag로 publish
   "repository": { "type": "git", "url": "git+https://github.com/angar2/taskery.git" },
   "homepage": "https://github.com/angar2/taskery#readme",
   "bugs": { "url": "https://github.com/angar2/taskery/issues" },
+  "publishConfig": { "access": "public" },
   "engines": { "node": ">=18.0.0" }
 }
 ```
@@ -302,3 +303,4 @@ npm publish --tag beta       # beta tag로 publish
 | 2026-05-09 | 표현 정제 — 인명 / 경박 표현 / 스킬 용어 / 이전 버전 비교 단락 정리. `package.json` files 필드에서 외부 회고 문서 참조 제거 (현 리포에 부재). plan/ 파일명 SLASH-COMMANDS.md → SKILLS.md 반영. |
 | 2026-05-09 | §8 publish-prep 4 항목 완료 반영 — README.md 작성 + `bin/taskery.js` GitHub URL 채움 + `package.json` metadata 보강(author/repository/homepage/bugs) + LICENSE 작성. `files` 배열 슬림(plan/PLAYBOOK.md 제거 + LICENSE 추가). |
 | 2026-05-09 | publish 첫 버전이 0.1.0임을 반영 — `0.2.0` → `0.1.0` (manifest 예시 + §8 package.json 메타 예시), `npx taskery@0.2.5` → `0.1.5` (semver 예시). |
+| 2026-05-09 | npm 패키지명 `@angar2/taskery`로 변경 (이름 충돌 해소) — npx/npm 명령 표기 모두 갱신. §8 `package.json` 메타 예시도 동기화 (name + publishConfig 추가 + bin `./` prefix 제거 반영). 프로젝트 정체성 호칭은 *taskery* 그대로 유지. |
