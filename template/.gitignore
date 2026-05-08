@@ -1,0 +1,31 @@
+# taskery 시스템 추적 제외
+.project/.env
+
+# 백업/로그
+*.bak
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# 의존성/빌드 (사용자 프로젝트 타입에 따라 추가)
+node_modules/
+dist/
+build/
+.next/
+.nuxt/
+out/
+
+# 환경 변수
+.env
+.env.local
+.env.*.local
+
+# 커버리지
+coverage/
+.nyc_output/
+
+# IDE (선택 — 사용자 환경)
+.idea/
+.vscode/
