@@ -169,6 +169,11 @@ mkdir -p .project/shared/sent/completed .project/shared/received/completed
 작성된 파일 목록 + 다음 단계 안내:
 - *"PROJECT.md / AGENT-GUIDE.md / LINKED-REPOS.md / .env 생성. (FRICTION_LOG.md / 빈 골격 폴더는 npx init이 이미 박은 것 그대로). 다음은 `/plan-init <버전명>`으로 9 기획 문서 작성."*
 
+**결과 commit 흐름** (GIT_RULE 정합):
+- dev 직접 commit *금지* (git-guard.sh 차단). 두 가지 default 흐름:
+  1. **첫 task에 묶기 (권장)**: `/plan-init` 끝나고 첫 `/task-init` (보통 TASK-001 부트스트랩 chore)으로 만든 작업 브랜치에서 init 산출물(PROJECT/AGENT-GUIDE/LINKED-REPOS/.env)도 함께 commit. task-close 단계의 "태스크 문서 커밋"에 자연스럽게 묶임.
+  2. **임시 docs 브랜치**: `git checkout -b docs/{개발자}_init-bootstrap` 후 commit → dev에 `--no-ff` 머지. 첫 task 생성 *전*에 init 결과를 깔끔히 박고 싶을 때.
+
 ## 도구 가이드
 
 - **Read**: 기존 README / package.json 정독
