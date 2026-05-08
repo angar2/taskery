@@ -33,7 +33,7 @@ function help() {
 새 프로젝트 시작:
   npx create-taskery <project-name>
 
-상세: https://github.com/<...>/taskery
+상세: https://github.com/angar2/taskery
 `);
 }
 

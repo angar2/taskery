@@ -1,7 +1,7 @@
 {
   "name": "taskery",
-  "version": "0.2.0",
-  "description": "Lightweight task system for Claude Code — 1 메인 세션 + 슬래시 8종 + catastrophic hook 안전망 3종",
+  "version": "0.1.0",
+  "description": "Lightweight task system for Claude Code — 1 메인 세션 + 스킬 8종 + catastrophic hook 안전망 3종",
   "bin": {
     "taskery": "./bin/taskery.js",
     "create-taskery": "./bin/create.js"
@@ -9,9 +9,8 @@
   "files": [
     "bin/",
     "template/",
-    "plan/PLAYBOOK.md",
-    "RETROSPECTIVE.md",
-    "README.md"
+    "README.md",
+    "LICENSE"
   ],
   "scripts": {
     "smoke:init": "node bin/init.js",
@@ -21,10 +20,20 @@
     "claude-code",
     "task-management",
     "ai-coding-workflow",
+    "skills",
     "slash-commands",
     "agent-hooks"
   ],
+  "author": "angar2 <angaridev@gmail.com>",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/angar2/taskery.git"
+  },
+  "homepage": "https://github.com/angar2/taskery#readme",
+  "bugs": {
+    "url": "https://github.com/angar2/taskery/issues"
+  },
   "engines": {
     "node": ">=18.0.0"
   }
