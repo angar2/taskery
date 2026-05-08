@@ -10,7 +10,7 @@ taskery 도입 직후 **1회성**으로 호출. 사용자 또는 동료가 새 �
 
 ## 호출 시점
 
-- `npx taskery init` 또는 `npx create-taskery <name>` 직후 첫 메인 세션.
+- `npx @angar2/taskery init` 또는 `npx -p @angar2/taskery create-taskery <name>` 직후 첫 메인 세션.
 - 또는 기존 리포에 taskery 사후 도입 후 첫 세션.
 
 ## 입력 처리
@@ -145,7 +145,7 @@ taskery 도입 직후 **1회성**으로 호출. 사용자 또는 동료가 새 �
 
 ### Step 7 — `.project/` 빈 골격 점검
 
-`npx taskery init`이 이미 다음 빈 골격 폴더 생성:
+`npx @angar2/taskery init`이 이미 다음 빈 골격 폴더 생성:
 - `.project/changelog/` (`.gitkeep`)
 - `.project/flows/` (`.gitkeep`)
 - `.project/plans/` (`.gitkeep` — `/plan-init`이 `vX.X/` 하위 작성)

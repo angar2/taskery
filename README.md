@@ -19,15 +19,17 @@ practice 영역(SW 개발)을 process로 강제하지 않는다.
 
 ```bash
 # 새 프로젝트
-npx create-taskery <project-name>
+npx -p @angar2/taskery create-taskery <project-name>
 
 # 기존 프로젝트에 설치
 cd <your-project>
-npx taskery init
+npx @angar2/taskery init
 
 # 최신 버전 동기화
-npx taskery update
+npx @angar2/taskery update
 ```
+
+> 글로벌 install (`npm install -g @angar2/taskery`) 후엔 `taskery init` / `create-taskery <name>` 단축 명령 사용 가능.
 
 요구 사항: Node.js >=18, Claude Code (CLI / VS Code / JetBrains).
 
@@ -62,7 +64,7 @@ npx taskery update
 
 ---
 
-## 디렉토리 구조 (사용자 프로젝트 — `npx taskery init` 후)
+## 디렉토리 구조 (사용자 프로젝트 — `npx @angar2/taskery init` 후)
 
 ```
 my-app/

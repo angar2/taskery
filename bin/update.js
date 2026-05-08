@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * bin/update.js
- * `npx taskery update` — template/ 최신 자산과 사용자 측 비교 + 머지 갱신.
+ * `npx @angar2/taskery update` — template/ 최신 자산과 사용자 측 비교 + 머지 갱신.
  *
  * 머지 로직 (§9-1):
  *   1. .taskery-manifest.json (cwd) 읽기 — 없으면 에러 ('init' 먼저)
@@ -52,7 +52,7 @@ async function main() {
   const oldManifest = readManifest(manifestPath);
   if (!oldManifest) {
     console.error(
-      `taskery update: ${MANIFEST_NAME} 없음 — 'npx taskery init' 먼저 실행 필요.`,
+      `taskery update: ${MANIFEST_NAME} 없음 — 'npx @angar2/taskery init' 먼저 실행 필요.`,
     );
     process.exit(1);
   }

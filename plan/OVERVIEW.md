@@ -31,7 +31,7 @@ Claude Code 메인 세션을 위한 *가벼운 task 시스템*.
 | **세션 모델** | 1 메인 세션 = 사용자 = 오케스트레이터 + 실행자 | 메인 세션 직접 호출 (서브에이전트는 옵션) |
 | **흐름 표지** | 스킬 8종 — project > plan > task 위계 + 회고 메타 | `/project-init` ~ `/refine` |
 | **안전망** | catastrophic only hook 3종 — process / git / 완료 보호 | `pre-commit-verify.sh` / `git-guard.sh` / `closed-immutable.sh` |
-| **배포** | 단일 default = npx | `npx taskery init` / `update` / `create-taskery` |
+| **배포** | 단일 default = npx | `npx @angar2/taskery init` / `update` / `create-taskery` |
 
 ---
 
@@ -56,9 +56,9 @@ taskery/                                  ← 본 리포 (시스템 자체)
 ├─ bin/                                   ← npx 진입점 (5 스크립트)
 │   ├─ lib.js                            ← 공통 유틸
 │   ├─ taskery.js                        ← dispatcher
-│   ├─ init.js                           ← npx taskery init
-│   ├─ create.js                         ← npx create-taskery
-│   └─ update.js                         ← npx taskery update
+│   ├─ init.js                           ← npx @angar2/taskery init
+│   ├─ create.js                         ← npx -p @angar2/taskery create-taskery
+│   └─ update.js                         ← npx @angar2/taskery update
 │
 └─ template/                              ← 사용자 프로젝트로 카피되는 자산 (코어 23 파일)
     ├─ CLAUDE.md                         ← 사용자 프로젝트 메인 진입점
@@ -81,7 +81,7 @@ taskery/                                  ← 본 리포 (시스템 자체)
                 └─ completed/.gitkeep    ← 처리 완료 수신 메시지 보관
 ```
 
-### 4-2. 사용자 프로젝트 (`npx taskery init` 후)
+### 4-2. 사용자 프로젝트 (`npx @angar2/taskery init` 후)
 
 ```
 my-app/                                   ← 사용자 프로젝트
@@ -194,7 +194,7 @@ my-app/                                   ← 사용자 프로젝트
 3. *결정 사유* 의문 → [DECISIONS.md](DECISIONS.md)
 4. 본문 spec 변경 → 실 구현 파일 (template/ 또는 bin/)에서 직접 Edit. plan/ doc은 *상위 추상*만이므로 spec 본문 변경 시 *동시 갱신* 의무.
 
-**사용자 프로젝트에서 작업 시 정독 순서** (npx taskery init 후):
+**사용자 프로젝트에서 작업 시 정독 순서** (npx @angar2/taskery init 후):
 
 1. `<user-project>/CLAUDE.md` (메인 세션 자동 정독)
 2. `<user-project>/.project/AGENT-GUIDE.md` (활성 plan 버전 + 폴더 구조)
@@ -232,3 +232,4 @@ my-app/                                   ← 사용자 프로젝트
 | 2026-05-08 | 사용자 영역 빈 골격 4 .gitkeep 추가 반영 |
 | 2026-05-09 | 외부 비교 자료 / 배경 단락 정리 — 비교/배경은 [DECISIONS.md](DECISIONS.md)로 통합. shared/ 하위 폴더 구조 표시. §10 현재 상태 갱신 (smoke test + follow-up fix 반영) |
 | 2026-05-09 | 표현 정제 — 인명 / 경박 표현 / 스킬 용어 정정 (DECISIONS.md 외) |
+| 2026-05-09 | npm 패키지명 `@angar2/taskery`로 변경 (이름 충돌 해소) — npx/npm 명령 표기 갱신. 프로젝트 정체성 호칭은 *taskery* 그대로 유지. |

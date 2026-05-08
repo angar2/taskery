@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * bin/init.js
- * `npx taskery init` 본체 — 현재 디렉토리에 template/ 자산 카피 + manifest 생성.
+ * `npx @angar2/taskery init` 본체 — 현재 디렉토리에 template/ 자산 카피 + manifest 생성.
  *
  * 동작:
  *   1. cwd에 .taskery-manifest.json 이미 있으면 경고 + confirm
