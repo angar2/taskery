@@ -6,9 +6,9 @@ description: task 기획 채우기 — Requirements / Scope / Dev Plan / Test Pl
 
 ## 개요
 
-`draft` 상태 task의 본문 4 섹션(Requirements / Scope / Dev Plan / Test Plan)을 채우고 status를 `planned`로 박음. 사용자와 대화로 진행 — 인터뷰 + 증폭 + 코드 서치 + Phase 분할.
+`draft` 상태 task의 본문 4 섹션(Requirements / Scope / Dev Plan / Test Plan)을 채우고 status를 `planned`로 갱신. 사용자와 대화로 진행 — 인터뷰 + 증폭 + 코드 서치 + Phase 분할.
 
-5사이클 planner + plan-reviewer 2 에이전트 흡수. 리뷰는 *대화로 OK* 자동 전이로 단순화.
+리뷰는 *대화로 OK* 자동 전이로 단순화 — 별도 리뷰 단계 없음.
 
 ## 호출 시점
 
@@ -96,9 +96,9 @@ description: task 기획 채우기 — Requirements / Scope / Dev Plan / Test Pl
    - **진행**: `[ ]`
 4. **Phase 0 (선택) — plan 문서 변경 검토**:
    - 본 task가 `.project/plans/<vX.X>/` 9 기획 문서 중 어느 것을 *수정/추가/삭제*해야 하는지 검토.
-   - 변경 있음 → Phase 0에 박음 + `spec-diffs/<NNN>_<slug>_spec-diff.md` 파일 생성 (Step 6).
+   - 변경 있음 → Phase 0에 명시 + `spec-diffs/<NNN>_<slug>_spec-diff.md` 파일 생성 (Step 6).
    - 변경 없음 → Phase 0 생략.
-5. **Phase 점진 박기 OK** — 처음부터 모든 Phase 다 박지 X. 지금 명확한 Phase만 박고 진행 중 추가 가능.
+5. **Phase 점진 작성 OK** — 처음부터 모든 Phase 일괄 작성 금지. 지금 명확한 Phase만 작성하고 진행 중 추가 가능.
 
 ```markdown
 ## Dev Plan
@@ -194,11 +194,11 @@ description: task 기획 채우기 — Requirements / Scope / Dev Plan / Test Pl
 
 ## 주의사항
 
-- **본문 영역만 작성** — 헤더 5컬럼 중 *상태*만 갱신(`draft` → `planned`). 생성일/플랜/유형/규모는 `/task-init`에서 박힌 값 유지. 단 Step 4에서 *규모가 명백히 잘못 추정*된 게 드러나면 사용자 confirm 후 갱신 OK (예: medium 추정했는데 Phase 8개 나옴 → large 갱신 + 분리 검토).
-- **Phase 미리 다 박지 X** — small task에 medium 분량 Phase 박는 함정 회피. 명확한 것만 박고 진행 중 추가.
+- **본문 영역만 작성** — 헤더 5컬럼 중 *상태*만 갱신(`draft` → `planned`). 생성일/플랜/유형/규모는 `/task-init`에서 작성된 값 유지. 단 Step 4에서 *규모가 명백히 잘못 추정*된 게 드러나면 사용자 confirm 후 갱신 OK (예: medium 추정했는데 Phase 8개 나옴 → large 갱신 + 분리 검토).
+- **Phase 선제적 일괄 작성 금지** — small task에 medium 분량 Phase 작성하는 함정 회피. 명확한 것만 작성하고 진행 중 추가.
 - **Test Plan 자기완결적** — 격리 세션이 *task.md만 보고* 수행 가능해야. 메인의 plan/dev 컨텍스트 *"위 Phase에서 만든 X"* 같은 표현 금지. 코드/동작/명령만 명시.
-- ***"잘 될 거야"* 가정 금지** — Test Plan에 메인 가정 박지 X. 코드와 동작만 신뢰.
-- **합의 없이 status 전환 X** — 사용자 OK 받기 전 `planned` 박지 X. 합의가 *대화로 OK = 자동 전이* 룰의 핵심.
+- ***"잘 될 거야"* 가정 금지** — Test Plan에 메인 가정 작성 금지. 코드와 동작만 신뢰.
+- **합의 없이 status 전환 X** — 사용자 OK 받기 전 `planned` 작성 금지. 합의가 *대화로 OK = 자동 전이* 룰의 핵심.
 - **과규모(large) 시 분리 제안** — Phase 8개 초과 또는 성격 다른 기능 혼재 시 task 분리 권장. 사용자에게 *"A/B로 쪼갤까요?"* 제안.
 
 ## 상태 전이
@@ -208,19 +208,3 @@ description: task 기획 채우기 — Requirements / Scope / Dev Plan / Test Pl
 | `draft` | `planned` |
 
 (예외 — 합의 못 함: status 그대로 `draft` 유지. 다음 호출 시 다시 시도.)
-
-## 5사이클 참조
-
-`archive/agents/planner.md` *Step 1~9 업무 플로우* 참조:
-- 요구사항 수집 패턴 (Step 4)
-- 코드 서치 가이드 (Step 5)
-- Phase 0 spec-diff 형식 (Step 6 + Step 8)
-- Phase 구성 + `[로그]` 항목 강제 (Step 6)
-
-`archive/agents/plan-reviewer.md` *결과/의견/수정 요청 패턴* 참조 — 단 v0.2는 *대화로 OK 합의* 흡수라 별도 리뷰 단계 X. plan-reviewer가 잡던 *"기술적 타당성 / 요구사항 충족"* 검토는 메인이 Step 7 합의 단계에서 자체 자기검토.
-
-v0.2 변경점:
-- 11상태 → 7상태 (planning / revision-required 제거 — 합의로 자동 전이)
-- 3 규모(general/minor/micro) → 4 규모(micro/small/medium/large)
-- planner+plan-reviewer 분리 폐기 (1 슬래시 흡수)
-- spec-diff는 옵션화 (변경 없으면 Phase 0 자체 생략)

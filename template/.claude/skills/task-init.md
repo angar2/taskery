@@ -1,14 +1,14 @@
 ---
-description: task 시작 — 6 섹션 빈 골격 + 헤더 5컬럼 (status=draft) 박힌 task.md 생성
+description: task 시작 — 6 섹션 빈 골격 + 헤더 5컬럼 (status=draft) task.md 생성
 ---
 
 # /task-init
 
 ## 개요
 
-새 task 시작 시 호출. `.project/tasks/<vX.X>/` 안에 *빈 골격* task.md 생성. 헤더 5컬럼 채우고 6 섹션은 placeholder만. 상태는 `draft`로 박음.
+새 task 시작 시 호출. `.project/tasks/<vX.X>/` 안에 *빈 골격* task.md 생성. 헤더 5컬럼 채우고 6 섹션은 placeholder만. 상태는 `draft`로 작성.
 
-본 슬래시는 *생성만* 담당. Requirements / Scope / Dev Plan / Test Plan 본문은 다음 단계 `/task-plan`에서 채움.
+본 스킬은 *생성만* 담당. Requirements / Scope / Dev Plan / Test Plan 본문은 다음 단계 `/task-plan`에서 채움.
 
 ## 호출 시점
 
@@ -66,8 +66,8 @@ description: task 시작 — 6 섹션 빈 골격 + 헤더 5컬럼 (status=draft)
 1. 파일 vs 폴더 분기:
    - **파일 default**: 단일 `NNN_<slug>.md` (예: `008_login-feature.md`).
    - **폴더 승격 조건**: (a) 규모 `large`, 또는 (b) 사용자 명시 *"폴더로 만들어줘"*, 또는 (c) task에 *추가 자료*(서브 문서 / mockup / 디자인) 다수 예상.
-     → `TASK-NNN_<slug>/task.md` 생성. 추가 자료는 *task 폴더 안에 자유롭게* 박음.
-   - **`spec-diffs/` + `screenshots/`는 *vX.X 공통* 사용**: 단일 파일이든 폴더 승격이든 `.project/tasks/<vX.X>/{spec-diffs,screenshots}/`에 박음 (파일명에 NNN prefix로 task 식별 — `<NNN>_<slug>_spec-diff.md`). task 폴더 안에 spec-diffs/screenshots 만들지 X.
+     → `TASK-NNN_<slug>/task.md` 생성. 추가 자료는 *task 폴더 안에 자유롭게* 위치.
+   - **`spec-diffs/` + `screenshots/`는 *vX.X 공통* 사용**: 단일 파일이든 폴더 승격이든 `.project/tasks/<vX.X>/{spec-diffs,screenshots}/`에 위치 (파일명에 NNN prefix로 task 식별 — `<NNN>_<slug>_spec-diff.md`). task 폴더 안에 spec-diffs/screenshots 생성하지 않음.
    - 위 디렉토리는 `/plan-init` Step 5가 vX.X 만들 때 함께 mkdir됨. `/task-init`은 디렉토리 가정만, 직접 생성 X.
 2. slug 변환 — 한국어 → 영어 kebab-case:
    - 짧고 명확하게 (3 단어 이내 권장).
@@ -108,7 +108,7 @@ description: task 시작 — 6 섹션 빈 골격 + 헤더 5컬럼 (status=draft)
 ```
 
 - 6 섹션 placeholder는 *빈 헤딩 + 한 줄 안내*. 구체 내용 X.
-- 폴더 승격 시 `TASK-<NNN>_<slug>/task.md`로 동일 본문 박음. spec-diffs/screenshots는 vX.X 공통(`.project/tasks/<vX.X>/{spec-diffs,screenshots}/` — `/plan-init` Step 5가 mkdir)을 그대로 사용. task 폴더 안에 spec-diffs/screenshots 별도 생성 X.
+- 폴더 승격 시 `TASK-<NNN>_<slug>/task.md`로 동일 본문 작성. spec-diffs/screenshots는 vX.X 공통(`.project/tasks/<vX.X>/{spec-diffs,screenshots}/` — `/plan-init` Step 5가 mkdir)을 그대로 사용. task 폴더 안에 spec-diffs/screenshots 별도 생성 X.
 
 ### Step 6 — 결과 보고
 
@@ -128,28 +128,15 @@ description: task 시작 — 6 섹션 빈 골격 + 헤더 5컬럼 (status=draft)
 
 ## 주의사항
 
-- **본문 채우기 금지** — 본 슬래시는 *빈 골격 생성만*. Requirements / Scope / Dev Plan / Test Plan 본문은 *반드시* `/task-plan`에서. 미리 채우면 task 의도가 흐트러져 다음 단계 인터뷰 흐름이 깨짐.
-- **자동 추정 진행 X** — 직전 맥락 명확해도 *제안 + 사용자 OK* 거친 후 파일 생성. 맥락 부족 시 인터뷰. 빠뜨린 메타(유형/규모) 채로 박지 X.
-- **상태는 `draft` 고정** — `/task-init` 끝의 상태는 `draft` 외 박지 X. 다음 상태(`planned`)는 `/task-plan` 끝에 박힘.
-- **NNN 충돌 회피** — `ls` 결과 정확히 파싱. 파일/폴더 둘 다 봄 (폴더 승격 task의 NNN도 같은 시퀀스).
+- **본문 채우기 금지** — 본 스킬은 *빈 골격 생성만*. Requirements / Scope / Dev Plan / Test Plan 본문은 *반드시* `/task-plan`에서. 미리 채우면 task 의도가 흐트러져 다음 단계 인터뷰 흐름이 깨짐.
+- **자동 추정 진행 X** — 직전 맥락 명확해도 *제안 + 사용자 OK* 거친 후 파일 생성. 맥락 부족 시 인터뷰. 빠뜨린 메타(유형/규모) 채로 작성 금지.
+- **상태는 `draft` 고정** — `/task-init` 끝의 상태는 `draft` 외 작성 금지. 다음 상태(`planned`)는 `/task-plan` 끝에 갱신.
+- **NNN 충돌 회피** — `ls` 결과 정확히 파싱. 파일/폴더 둘 다 검사 (폴더 승격 task의 NNN도 같은 시퀀스).
 - **slug 한국어 잔존 X** — 영어 kebab-case로 변환. *"로그인-기능"* 같은 한글 슬러그 금지.
-- **헤더 5컬럼 모두 채움** — *"미정"* placeholder 박지 X. 메타 부족하면 사용자에게 묻기.
+- **헤더 5컬럼 모두 채움** — *"미정"* placeholder 작성 금지. 메타 부족하면 사용자에게 묻기.
 
 ## 상태 전이
 
 | 진입 시 | 종료 시 |
 |--------|--------|
 | (없음 — 신규 생성) | `draft` |
-
-## 5사이클 참조
-
-`archive/agents/tasker.md` *create 모드 절차* 참조:
-- 사전 답변 추출 패턴 (사용자 인터뷰 사전 답변 섹션)
-- NNN 결정 절차 (단 v0.2는 sub-agent 환경 제약 없음 — 메인이 직접 `ls`)
-- 빈 골격 강제 (핵심 규칙 #6 정합)
-
-v0.2 변경점:
-- 헤더 6컬럼 → 5컬럼 (우선순위 제거)
-- 11상태 → 7상태 (revision/approved 제거 — 대화로 자동 전이)
-- 작업 메모 / 에이전트 실행 로그 / 문서 수정 이력 표 폐기 (5사이클 hook 강제용 메타 — practice 영역 강제는 함정)
-- plan/roadmap/docs/chore 타입 특이사항 폐기 (모두 동일 6 섹션)

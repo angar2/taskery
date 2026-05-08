@@ -1,7 +1,7 @@
-# TASK-DOC — taskery v0.2 태스크 문서 양식
+# TASK-DOC — 태스크 문서 양식
 
 > 본 리포 *태스크 흐름의 단일 진실 소스* — 위계 + 양식 + 7 상태 + 4단 layer 가이드.
-> 본문 spec(섹션별 작성 방법 + 완성 예시 3개)은 `template/.project/rules/TASK_DOC_RULE.md`에 박힘 — 본 문서는 *왜 이 양식인지* + *상위 흐름*.
+> 본문 spec(섹션별 작성 방법 + 완성 예시 3개)은 `template/.project/rules/TASK_DOC_RULE.md`에 위치 — 본 문서는 *왜 이 양식인지* + *상위 흐름*.
 
 ---
 
@@ -9,23 +9,23 @@
 
 | 레벨 | 단위 | 위치 |
 |------|------|------|
-| **project** | 전체 프로젝트 | `.project/` 폴더 자체 (1회성 — `/project-init`이 골격 박음) |
-| **plan** | 묶음 기획 단위 (예: 인증 시스템 전체) | `.project/plans/<vX.X>/` 9 기획 문서 (PLAN/SERVICE-POLICY/FEATURES/UX-UI/TECH-STACK/ARCHITECTURE/DATA-MODEL/API-SPEC/ROADMAP) |
+| **project** | 전체 프로젝트 | `.project/` 폴더 자체 (1회성 — `/project-init`이 골격 작성) |
+| **plan** | 묶음 기획 단위 (예: 인증 시스템 전체) | `.project/plans/<vX.X>/` 안 기획 문서 (PLAN/SERVICE-POLICY/FEATURES/UX-UI/TECH-STACK/ARCHITECTURE/DATA-MODEL/API-SPEC/ROADMAP) |
 | **task** | 기능/이슈 단위 (예: 로그인 로직 / 단일 버그) | `.project/tasks/<vX.X>/<NNN>_<slug>.md` (단일 파일) 또는 `TASK-<NNN>_<slug>/task.md` (폴더 승격) |
 | **phase** | task.md Dev Plan 안 sub-섹션 | task.md `## Dev Plan` 안 `### Phase 1`, `### Phase 2`, ... |
 
 **원칙**:
-- task가 너무 크면 → 폴더 승격 (`TASK-<NNN>_<slug>/task.md` — *추가 자료 박는 자리*용, 서브 문서/mockup/디자인 등)
+- task가 너무 크면 → 폴더 승격 (`TASK-<NNN>_<slug>/task.md` — *추가 자료 보관* 용도, 서브 문서/mockup/디자인 등)
 - 더 크면 → plan으로 승격 (별도 plan 버전 또는 plan 안 묶음)
-- waterfall phase 미리 박기 X — *진행하면서 점진적 추가*
+- waterfall phase 선제적 작성 금지 — *진행하면서 점진적 추가*
 
-**spec-diffs / screenshots 위치 — vX.X 공통 단일화** (audit 발견 fix):
+**spec-diffs / screenshots 위치 — vX.X 공통 단일화**:
 - `.project/tasks/<vX.X>/spec-diffs/<NNN>_<slug>_spec-diff.md` — 단일 파일 task든 폴더 승격이든
 - `.project/tasks/<vX.X>/screenshots/<NNN>_*.png`
-- 폴더 승격 task도 *vX.X 공통* 사용 (task 폴더 안에 spec-diffs/screenshots 만들지 X)
+- 폴더 승격 task도 *vX.X 공통* 사용 (task 폴더 안에 spec-diffs/screenshots 생성하지 않음)
 - 단일 진실 소스: [TASK_DOC_RULE.md §1.5](../template/.project/rules/TASK_DOC_RULE.md)
 
-→ [DECISIONS.md §6](DECISIONS.md#6-결정-단일-거대-spec--분산-template--plan)
+→ [DECISIONS.md §6](DECISIONS.md)
 
 ---
 
@@ -38,16 +38,10 @@
 | 컬럼 | 의미 |
 |------|------|
 | **생성일** | ISO 형식 (YYYY-MM-DD) |
-| **플랜** | 어느 plan 버전 하위인지 (예: v1.0, v0.1.0, alpha) — `tasks/<vX.X>/` 디렉토리 명과 일치 |
+| **플랜** | 어느 plan 버전 하위인지 (예: v1.0, alpha) — `tasks/<vX.X>/` 디렉토리 명과 일치 |
 | **유형** | `feature` / `bug` / `improvement` / `refactor` / `docs` / `chore` (git 브랜치 타입과 직결) |
 | **규모** | `micro` (1 phase) / `small` (2-3) / `medium` (4-7) / `large` (8+ 또는 분리 검토) |
 | **상태** | 7 상태 머신 (§3) |
-
-**폐기된 컬럼** (5사이클에서 6컬럼이었음):
-| 폐기 컬럼 | 사유 |
-|---------|------|
-| 프로젝트 | `.project/` 폴더 자체가 프로젝트라 중복 |
-| 우선순위 | 단독 task 흐름에서 의미 약함 — 필요해지면 PLAYBOOK §8 부활 |
 
 ---
 
@@ -57,9 +51,9 @@
 draft → planned → developing → developed → testing → tested → closed
 ```
 
-| 상태 | 시점 | 박는 주체 |
+| 상태 | 시점 | 작성 주체 |
 |------|------|---------|
-| `draft` | task.md 빈 골격 생성 직후 | `/task-init`이 헤더에 박음 |
+| `draft` | task.md 빈 골격 생성 직후 | `/task-init`이 헤더에 작성 |
 | `planned` | plan 완료 (사용자 *"이렇게 가자"* OK) | `/task-plan` 끝에 메인 |
 | `developing` | dev 시작 | `/task-dev` 호출 시 메인 |
 | `developed` | dev 끝 + self-check OK (린트/타입/빌드 PASS) | `/task-dev` 끝에 메인 |
@@ -67,9 +61,9 @@ draft → planned → developing → developed → testing → tested → closed
 | `tested` | 격리 세션 PASS 결과 받은 후 | `/task-test` 끝에 메인 |
 | `closed` | git 마무리 완료 | `/task-close` 끝에 메인 |
 
-**5사이클 11 상태와의 차이** — revision/approved 단계 폐기. *대화로 OK = 다음 상태로 자동 전이*. revision은 *상태가 아니라 흐름의 자연스러운 이전*.
+**핵심 정신** — revision 단계 자체를 상태로 두지 않음. *대화로 OK = 다음 상태로 자동 전이*. revision은 *상태가 아니라 흐름의 자연스러운 이전*.
 
-→ [DECISIONS.md §4](DECISIONS.md#4-결정-11-상태--7-상태)
+→ [DECISIONS.md §4](DECISIONS.md)
 
 ---
 
@@ -79,13 +73,13 @@ draft → planned → developing → developed → testing → tested → closed
 
 | 결과 | 처리 | 종료 상태 |
 |------|------|---------|
-| **PASS** | `tested` 박음 → 사용자에게 close 신호 → 사용자 OK 시 `/task-close` | `tested` |
+| **PASS** | `tested` 기록 → 사용자에게 close 신호 → 사용자 OK 시 `/task-close` | `tested` |
 | **FAIL** | 메인이 격리 결과(로그/근거) 보고 → 사용자에게 *"고쳐? OK 마무리?"* 질문 | 사용자 답에 따라 분기 |
 | FAIL + *"고쳐"* | 메인이 status를 `developing`으로 되돌림 → `/task-dev` 재진입 또는 직접 수정 | `developing` |
-| FAIL + *"OK 마무리"* | `tested` 박음 (단 Result 섹션에 *"알려진 결함 — 사유: ..."* 명시) → `/task-close` | `tested` |
+| FAIL + *"OK 마무리"* | `tested` 기록 (단 Result 섹션에 *"알려진 결함 — 사유: ..."* 명시) → `/task-close` | `tested` |
 | **UNCERTAIN** | 메인이 결과 보고 → 사용자 검수 → PASS / FAIL 분기 흐름 | 사용자 판단에 따라 |
 
-**self-check FAIL** (`/task-dev` 진행 중) → `developing` 그대로 유지, 메인 자체 수정 시도 → PASS 시 `developed` 박음. 3회 반복 fail 시 사용자에게 보고 + 판단 요청.
+**self-check FAIL** (`/task-dev` 진행 중) → `developing` 그대로 유지, 메인 자체 수정 시도 → PASS 시 `developed` 기록. 3회 반복 fail 시 사용자에게 보고 + 판단 요청.
 
 **핵심 정신**: *대화로 OK = 자동 전이*. 상태 머신이 모든 분기를 담지 X — 사용자 판단이 분기점.
 
@@ -127,7 +121,7 @@ draft → planned → developing → developed → testing → tested → closed
 
 | 섹션 | 작성 주체 | 시점 |
 |------|---------|------|
-| **Header** (5컬럼 표) | `/task-init`이 박음 (status는 슬래시별 갱신) | task 생성 시 + 상태 전이마다 |
+| **Header** (5컬럼 표) | `/task-init`이 작성 (status는 스킬별 갱신) | task 생성 시 + 상태 전이마다 |
 | **Requirements** | `/task-plan` Step 2 (사용자 인터뷰 + 메인 증폭) | `draft` → `planned` |
 | **Scope** | `/task-plan` Step 3 (코드 서치) | `draft` → `planned` |
 | **Dev Plan** | `/task-plan` Step 4 (Phase 분할 — 점진 추가 OK) | `draft` → `planned` (Phase 점진) |
@@ -137,20 +131,20 @@ draft → planned → developing → developed → testing → tested → closed
 
 **Header 섹션은 *별도 헤딩 없이* 표 자체**. 그 위 `# TASK-NNN — 이름`은 파일 제목.
 
-**Phase는 Dev Plan 안 sub-섹션** — 별도 파일 X. 진행하면서 점진 추가. *waterfall 미리 박기 함정 회피*.
+**Phase는 Dev Plan 안 sub-섹션** — 별도 파일 X. 진행하면서 점진 추가. *waterfall 선제적 작성 함정 회피*.
 
 **Test Plan 자유 형식** — 양식 강제 X. 가이드라인만:
 - **자기완결적**: `/task-test` 격리 세션이 *task.md만 보고도* 수행 가능
 - **명령/기대값 포함**: 무엇을 실행하고 무엇이 기대되는지 명확
 - **메인 가정 X**: *"잘 될 거야"* / *"문제 없을 듯"* 같은 가정 금지
 
-→ 양식 강제 = practice를 process로 강제 (5사이클 함정). 강제 X.
+→ 양식 강제 = practice를 process로 강제. 강제 X.
 
 ---
 
 ## 6. 4단 layer 가이드 — 암묵지 이식
 
-지크 통찰: *양식 spec만으론 메인이 task마다 스타일 들쭉날쭉*. **작성 방법 + 예시 + 섹션별 설명 → 일관성 ↑**.
+핵심 통찰: *양식 spec만으론 메인이 task마다 스타일 들쭉날쭉*. **작성 방법 + 예시 + 섹션별 설명 → 일관성 ↑**.
 
 `TASK_DOC_RULE.md`는 4단 layer 구조 (시니어 영상 강조 패턴):
 
@@ -166,7 +160,7 @@ draft → planned → developing → developed → testing → tested → closed
 - 예시 2: feature/medium (로그인 기능)
 - 예시 3: bug/small (특정 버그 픽스)
 
-**구성 원칙**: 양식 + 작성 방법 + 가이드 + 섹션 설명 + 완성 예시 = *암묵지 이식 4단 layer*. 형식 spec만 박으면 메인이 들쭉날쭉, 4 layer로 일관성 확보.
+**구성 원칙**: 양식 + 작성 방법 + 가이드 + 섹션 설명 + 완성 예시 = *암묵지 이식 4단 layer*. 형식 spec만 작성하면 메인이 들쭉날쭉, 4 layer로 일관성 확보.
 
 ---
 
@@ -174,31 +168,15 @@ draft → planned → developing → developed → testing → tested → closed
 
 | 정보 | 단일 진실 소스 |
 |------|--------------|
-| 양식 spec + 작성 방법 + 가이드 + 예시 (4단 layer) | [template/.project/rules/TASK_DOC_RULE.md](../template/.project/rules/TASK_DOC_RULE.md) (20,524 B) |
-| 슬래시별 task.md 갱신 흐름 | [template/.claude/skills/task-{init,plan,dev,test,close}.md](../template/.claude/skills/) |
+| 양식 spec + 작성 방법 + 가이드 + 예시 (4단 layer) | [template/.project/rules/TASK_DOC_RULE.md](../template/.project/rules/TASK_DOC_RULE.md) |
+| 스킬별 task.md 갱신 흐름 | [template/.claude/skills/task-{init,plan,dev,test,close}.md](../template/.claude/skills/) |
 | 형식 위반 차단 | (현재 없음) — instruction + 대화. PLAYBOOK §4 minimal form hook 부활 트리거 |
 
 본 문서는 *상위 추상 + link*만. 본문 spec은 TASK_DOC_RULE.md.
 
 ---
 
-## 8. 폐기된 항목
-
-| 항목 | 5사이클에서 | 폐기 사유 | 부활 옵션 |
-|------|-----------|---------|---------|
-| 11 상태 | planning / plan-approved / revision-required / dev-revision-required / dev-approved / test-passed / test-failed | revision은 *흐름*, *상태* X. 대화로 OK = 자동 전이 자연 | (없음) |
-| 프로젝트 컬럼 | 헤더 표에 포함 | `.project/` 폴더 자체가 프로젝트라 중복 | (없음) |
-| 우선순위 컬럼 | 헤더 표에 포함 | 단독 task 흐름에서 의미 약함 | PLAYBOOK §8 |
-| Phase 별 파일 분리 | `phases/<N>.md` 별도 파일 | waterfall 미리 박기 함정. 단일 task.md 안 sub-섹션이 자연 | (없음 — 함정 명시) |
-| `## 작업 메모` 표 | 에이전트 메모 누적 표 | 9 에이전트 강제 핸드오프 폐기로 무의미 | (없음) |
-| `## 에이전트 실행 로그` 표 | hook 강제용 메타 | hook 화이트리스트 폐기로 무의미 | (없음) |
-| `## 문서 수정 이력` 표 | hook 강제용 메타 | 동일 (글로벌 룰 *.md 수정 이력*은 본 task.md 외 적용) | (없음) |
-
-→ [DECISIONS.md §4](DECISIONS.md#4-결정-11-상태--7-상태) (11 → 7 상태) + [DECISIONS.md §5](DECISIONS.md#5-결정-3-hook-화이트리스트practice--3-hook-catastrophic-onlyprocess--git--완료-보호) (hook 폐기)
-
----
-
-## 9. PLAYBOOK 부활 트리거
+## 8. PLAYBOOK 부활 트리거
 
 태스크 양식 영역에서 부활 가능한 미래 옵션:
 
@@ -213,9 +191,10 @@ draft → planned → developing → developed → testing → tested → closed
 
 ---
 
-## 10. 수정 이력
+## 9. 수정 이력
 
 | 날짜 | 변경 사항 |
 |------|----------|
-| 2026-05-08 | 신규 작성 — 위계(project/plan/task/phase) + 헤더 5컬럼 + 7 상태 + 6 섹션 + FAIL/UNCERTAIN 분기 + 4단 layer 가이드 + 폐기 항목 + PLAYBOOK 부활 트리거 |
-| 2026-05-08 | §1 위계에 spec-diffs/screenshots vX.X 공통 단일화 명시 (audit 발견 — 슬래시 본문 간 위치 모순). 폴더 승격은 *추가 자료* 자리용으로 명확화. 단일 진실 소스 = TASK_DOC_RULE.md §1.5 |
+| 2026-05-08 | 신규 작성 — 위계(project/plan/task/phase) + 헤더 5컬럼 + 7 상태 + 6 섹션 + FAIL/UNCERTAIN 분기 + 4단 layer 가이드 + PLAYBOOK 부활 트리거 |
+| 2026-05-08 | §1 위계에 spec-diffs/screenshots vX.X 공통 단일화 명시. 폴더 승격은 *추가 자료* 자리용으로 명확화. 단일 진실 소스 = TASK_DOC_RULE.md §1.5 |
+| 2026-05-09 | 표현 정제 — 인명 / 경박 표현 / 스킬 용어 / 이전 버전 비교 단락 정리. 폐기 항목 비교는 [DECISIONS.md](DECISIONS.md)로 위임. |

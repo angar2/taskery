@@ -8,7 +8,7 @@ description: task 격리 세션 검증 — Task tool 격리 호출 + Test Plan �
 
 `developed` 상태 task를 *격리 세션*으로 검증. 메인이 *Task tool*로 sub-agent 호출 + task.md를 prompt로 넘김. 격리 세션은 *task.md만 보고 자기완결적*으로 Test Plan 수행 + PASS/FAIL/UNCERTAIN + 근거 리턴.
 
-**왜 격리?** 메인 세션은 plan/dev 컨텍스트가 박혀 있어 *"잘 됐을 거야"* confirmation bias 작동. 격리 세션이 *코드와 동작만 신뢰*해서 가정 없이 검증.
+**왜 격리?** 메인 세션은 plan/dev 컨텍스트가 누적되어 *"잘 됐을 거야"* confirmation bias 작동. 격리 세션이 *코드와 동작만 신뢰*해서 가정 없이 검증.
 
 ## 호출 시점
 
@@ -40,12 +40,12 @@ description: task 격리 세션 검증 — Task tool 격리 호출 + Test Plan �
 
 ### Step 3 — 격리 세션 호출 (Task tool)
 
-Task tool로 sub-agent spawn. prompt는 *자기완결적* — task.md 경로 + 격리 룰만 박음. 메인 컨텍스트 일체 안 들어감.
+Task tool로 sub-agent spawn. prompt는 *자기완결적* — task.md 경로 + 격리 룰만 명시. 메인 컨텍스트 일체 안 들어감.
 
 **Task tool prompt 본문 (정확히 이 형식)**:
 
 ```
-당신은 격리 세션의 tester입니다. 이 prompt에 박힌 룰만 따르고, 메인 세션의 plan/dev 가정은 일체 없습니다.
+당신은 격리 세션의 tester입니다. 이 prompt에 명시된 룰만 따르고, 메인 세션의 plan/dev 가정은 일체 없습니다.
 
 ## 대상 task
 
@@ -92,19 +92,19 @@ Task tool로 sub-agent spawn. prompt는 *자기완결적* — task.md 경로 + �
 ```
 
 **구현 디테일**:
-- `<ABSOLUTE_PATH_TO_TASK_MD>` 자리에 `.project/tasks/<vX.X>/<NNN>_<slug>.md` (또는 폴더 승격 시 `<...>/task.md`)의 절대 경로 박음.
+- `<ABSOLUTE_PATH_TO_TASK_MD>` 자리에 `.project/tasks/<vX.X>/<NNN>_<slug>.md` (또는 폴더 승격 시 `<...>/task.md`)의 절대 경로 삽입.
 - Task tool의 `subagent_type`: `general-purpose` (도구 풀 다 필요).
 - Task tool의 `description`: `Isolated test for TASK-<NNN>`.
 
 ### Step 4 — 결과 리턴 + Result 섹션 기록
 
-격리 세션 리턴 결과를 `## Result` 섹션의 *테스트* 부분에 박음:
+격리 세션 리턴 결과를 `## Result` 섹션의 *테스트* 부분에 기록:
 
 ```markdown
 ## Result
 
 ### 진행
-(`/task-dev`에서 박힌 그대로)
+(`/task-dev`에서 작성된 그대로)
 
 ### 테스트 (격리 세션 결과)
 - **<PASS / FAIL / UNCERTAIN>**.
@@ -163,18 +163,18 @@ Task tool로 sub-agent spawn. prompt는 *자기완결적* — task.md 경로 + �
 
 - **Read**: task 파일 / `## Test Plan` + `## Dev Plan` 정독
 - **Edit**: status 전환 + Result 섹션 기록
-- **Task tool**: 격리 세션 호출 (Step 3 prompt 박아서)
+- **Task tool**: 격리 세션 호출 (Step 3 prompt 사용)
 - **AskUserQuestion**: FAIL/UNCERTAIN 시 사용자 판단 받기
 
 ## 주의사항
 
-- **격리 세션이 코드 수정하면 안 됨** — prompt에 *"코드 파일 직접 수정 절대 금지"* 박혔지만 한 번 더 결과 검토 시 코드 변경 흔적 있으면 사용자에게 보고.
-- **메인이 시나리오 임의 추가 X** — `## Test Plan`에 박힌 것만 격리 세션이 수행. 진행 중 *"이것도 같이 검증하자"* 떠오르면 task.md `## Test Plan` Edit 후 재호출.
+- **격리 세션이 코드 수정하면 안 됨** — prompt에 *"코드 파일 직접 수정 절대 금지"* 명시되어 있지만 한 번 더 결과 검토 시 코드 변경 흔적 있으면 사용자에게 보고.
+- **메인이 시나리오 임의 추가 X** — `## Test Plan`에 명시된 것만 격리 세션이 수행. 진행 중 *"이것도 같이 검증하자"* 떠오르면 task.md `## Test Plan` Edit 후 재호출.
 - **자기완결성 검증 먼저** — Step 1에서 Test Plan이 *"위에서 만든 X"* 같은 메인 컨텍스트 의존 표현 있으면 격리 세션이 헤맴. 보강 후 재시도.
 - **PASS 자체 판정 X** — 메인이 *"잘 됐을 듯"* 판정하지 X. 격리 세션 결과만 신뢰.
 - **임시 파일 정리** — 격리 세션이 만든 Playwright 스크립트 / 임시 데이터 종료 시 삭제. 코드베이스 오염 X.
 - **사용자검수 시나리오는 자동화 못 잡음** — UI 미세 조정 / 시각 디자인 / 외부 결제 등은 UNCERTAIN으로 가야 정상. PASS 강제 X.
-- **FAIL → developing 자동 되돌림 X** — 사용자 *"고쳐"* 답 받기 전 status 박지 X. *대화로 OK = 자동 전이* 룰의 핵심.
+- **FAIL → developing 자동 되돌림 X** — 사용자 *"고쳐"* 답 받기 전 status 갱신 금지. *대화로 OK = 자동 전이* 룰의 핵심.
 - **테스트 후 plumbing fix 발견 시** — 격리 PASS 후에도 plumbing(빌드 산출물 정리, 설정 수정 등) fix 필요할 수 있음. 분기:
   - 검증 명령 *동작 자체에 영향 X* (예: 산출물 위치 정리, 주석 수정) → 메인 자체 재검증 OK (lint/typecheck/build/test 재실행)
   - 검증 명령 *동작 변경* (예: build 명령 자체 변경, 새 검증 명령 추가, 환경 변수 추가) → **격리 세션 재호출 필수** (환경 변경으로 격리 가정 무효화 — 재검증 가치 사라짐)
@@ -187,18 +187,3 @@ Task tool로 sub-agent spawn. prompt는 *자기완결적* — task.md 경로 + �
 | `developed` | `developing` (FAIL + 사용자 *"고쳐"*) |
 | `developed` | `tested` (FAIL + 사용자 *"OK 마무리"* — 알려진 결함 명시) |
 | `testing` (이어가기) | 동일 분기 |
-
-## 5사이클 참조
-
-`archive/agents/tester.md` *업무 플로우 + 사용자검수 분기* 참조:
-- 사전 탐색 (테스트 환경 파악) — Step 3 격리 prompt에 흡수
-- 테스트 방법별 실행 방식 표 (브라우저/API/로그/DB/파일시스템/사용자검수)
-- 증거 기반 PASS/FAIL 기록 (실행 없이 pass 절대 X)
-- Round 2 사용자검수 흐름 — v0.2는 UNCERTAIN 분기 + 대화로 흡수
-
-v0.2 변경점:
-- *"대기중 / 검수 일시"* 필드 폐기 (격리 세션 단일 호출 + 사용자 대화)
-- Round 1/Round 2 분기 폐기 (UNCERTAIN으로 단순화)
-- 사용자검수 (user) 표 폐기 (Result 섹션 자유 형식)
-- 자동/수동 시나리오 분리 메타 폐기 — Test Plan 자유 형식이 알아서 표현
-- 격리 메커니즘은 Task tool 단일 default (5사이클은 별도 spawn 메커니즘)

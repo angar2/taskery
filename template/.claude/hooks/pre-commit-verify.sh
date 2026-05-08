@@ -73,7 +73,7 @@ PYEOF
 # 섹션 누락 / 추출 실패 케이스
 if [ -z "$COMMANDS" ]; then
   echo "pre-commit-verify: CLAUDE.md '## 검증 명령' 섹션 없거나 명령 없음. commit 차단." >&2
-  echo "  CLAUDE.md에 '## 검증 명령' 섹션 추가 + 백틱 안에 명령 박음 (예: \`npm run lint\`)." >&2
+  echo "  CLAUDE.md에 '## 검증 명령' 섹션 추가 + 백틱 안에 명령 작성 (예: \`npm run lint\`)." >&2
   exit 2
 fi
 

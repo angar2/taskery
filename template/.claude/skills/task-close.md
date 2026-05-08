@@ -6,7 +6,7 @@ description: task git 마무리 — 검증 명령 재실행 게이트 + 커밋 �
 
 ## 개요
 
-`tested` 상태 task의 git 마무리. 5사이클 gitter 흡수. 작업 브랜치(없으면 생성)에서 커밋 순서(GIT_RULE 준수) 따라 진행 + dev 병합 + status `closed`.
+`tested` 상태 task의 git 마무리. 작업 브랜치(없으면 생성)에서 커밋 순서(GIT_RULE 준수) 따라 진행 + dev 병합 + status `closed`.
 
 **최종 게이트**: 모든 검증 명령 재실행 — 린트/타입체크/빌드/단위테스트 PASS여야 진행.
 
@@ -31,7 +31,7 @@ description: task git 마무리 — 검증 명령 재실행 게이트 + 커밋 �
 2. task 파일 Read:
    - 인자 있음 → 해당 파일.
    - 인자 없음 → `tested` 상태 가장 최근 task. confirm. 없으면 *"마무리할 task 없음."* + 종료.
-3. 상태 = `tested` 검증. 그 외면 종료 (단 알려진 결함 *"OK 마무리"*는 status=tested로 박혀 있어야 함).
+3. 상태 = `tested` 검증. 그 외면 종료 (단 알려진 결함 *"OK 마무리"*는 status=tested로 명시되어 있어야 함).
 4. GIT_RULE Read 우선순위:
    - `.project/rules/GIT_RULE.md` (프로젝트별 — 우선)
    - `~/.claude/rules/GIT_RULE.md` (글로벌)
@@ -120,13 +120,13 @@ PASS 시 Step 3으로.
 
 1. `git checkout dev` 실행.
 2. 일반 타입(feature/bug/improvement/refactor/docs/chore) → **`git merge --no-ff <작업 브랜치>` 강제** (fast-forward 절대 금지).
-   - `-m` 옵션 박지 X — 머지 커밋 메시지는 git 기본값 사용.
-3. plan/roadmap 임시 docs 브랜치 예외 — 단일 커밋이라 `--ff-only` 가능 (v0.2 일반 흐름에서는 거의 발생 X).
+   - `-m` 옵션 사용 금지 — 머지 커밋 메시지는 git 기본값 사용.
+3. plan/roadmap 임시 docs 브랜치 예외 — 단일 커밋이라 `--ff-only` 가능 (일반 흐름에서는 거의 발생 X).
 4. **작업 브랜치 자동 삭제 금지** — 사용자 명시 승인(*"브랜치 삭제해"*)이 있을 때만 `git branch -d`. 미승인 시 보존.
 
 ### Step 6 — task 파일 status 전환
 
-헤더 status → `closed` Edit. 단 이 Edit은 closed-immutable.sh hook에 잡힐 수 있음 — task 파일 *마지막* 수정으로 박은 후 별도 커밋 불필요(이미 Step 4-3에서 커밋함).
+헤더 status → `closed` Edit. 단 이 Edit은 closed-immutable.sh hook에 잡힐 수 있음 — task 파일 *마지막* 수정으로 적용한 후 별도 커밋 불필요(이미 Step 4-3에서 커밋함).
 
 → Edit이 Step 4-3 커밋 *전*에 일어나야 하므로 실제 흐름은:
 
@@ -134,7 +134,7 @@ PASS 시 Step 3으로.
 1. Step 4-1: Phase 기능 커밋
 2. Step 4-2: flows/ 커밋 (해당 시)
 3. **task 파일 status를 `closed`로 Edit** (closed-immutable.sh hook 차단되지 X — 이 Edit은 *허용*. status가 closed가 *된 후 재수정*이 차단)
-4. Step 4-3: 태스크 문서 커밋 (status=closed 박힌 채로)
+4. Step 4-3: 태스크 문서 커밋 (status=closed 적용된 채로)
 5. Step 4-4: CHANGELOG 커밋
 6. Step 5: dev 병합
 
@@ -153,7 +153,7 @@ PASS 시 Step 3으로.
 ## 도구 가이드
 
 - **Read**: GIT_RULE / task 파일 / CLAUDE.md 검증 명령 정독
-- **Bash**: git 명령 (`branch`, `checkout`, `add`, `commit`, `merge`) + 검증 명령 재실행. **유일하게 git 사용 허가된 슬래시**
+- **Bash**: git 명령 (`branch`, `checkout`, `add`, `commit`, `merge`) + 검증 명령 재실행. **유일하게 git 사용 허가된 스킬**
 - **Edit**: task 파일 status → `closed`, CHANGELOG 갱신
 - **Write**: CHANGELOG 신규 (없으면)
 
@@ -163,11 +163,11 @@ PASS 시 Step 3으로.
 - **dev 직접 커밋 절대 X** — 작업 브랜치에서만. dev 브랜치에서 `git commit` 시도하면 git-guard.sh hook이 차단. hook이 0회 작동하도록 정상 흐름 준수.
 - **`--no-ff` 강제** — 머지 커밋 없으면 작업 브랜치 분기 정보 영구 손실. fast-forward 시도 절대 X.
 - **destructive 명령 사용자 승인 필수** — `git reset --hard` / `git push --force` / `git branch -D` / `git clean -fd` 사용자 명시 승인 없이 절대 실행 X. 충돌/오류 시 사용자에게 보고 + 승인 요청 의무.
-- **민감 정보 staging X** — `.env` / `credentials.json` / API key 등 staging 절대 X. `.gitignore` 박혀 있어도 한 번 더 점검.
-- **빈 commit 금지** — CHANGELOG 변경 없으면 4-4 단계 스킵. `--allow-empty` 박지 X.
+- **민감 정보 staging X** — `.env` / `credentials.json` / API key 등 staging 절대 X. `.gitignore`에 포함되어 있어도 한 번 더 점검.
+- **빈 commit 금지** — CHANGELOG 변경 없으면 4-4 단계 스킵. `--allow-empty` 사용 금지.
 - **작업 브랜치 자동 삭제 X** — 사용자 명시 승인 있을 때만. 머지 후 자동 삭제 룰 X (분기 정보 보존).
 - **branch -D 사용자 승인 필수** — `-d` (안전 삭제)는 머지 확인된 브랜치만 가능. `-D` (강제 삭제)는 사용자 명시 승인 필수.
-- **`-m` 옵션 머지 커밋에 박지 X** — git 기본 메시지 사용 (GIT_RULE §병합 커밋).
+- **`-m` 옵션 머지 커밋에 사용 금지** — git 기본 메시지 사용 (GIT_RULE §병합 커밋).
 
 ## 상태 전이
 
@@ -175,20 +175,4 @@ PASS 시 Step 3으로.
 |--------|--------|
 | `tested` | `closed` |
 
-(검증 명령 FAIL + 사용자 *"고쳐"* → `developing`으로 되돌림. 본 슬래시 자체는 거기서 중단.)
-
-## 5사이클 참조
-
-`archive/agents/gitter.md` *Mode 1 / Mode 2 절차* 참조:
-- 브랜치 생성 (Mode 1) — v0.2는 Step 3에서 흡수
-- 커밋 순서 (Mode 2) — v0.2 Step 4 그대로
-- 일반 타입 vs plan/roadmap 분기 — v0.2는 일반 타입만 (plan/roadmap은 `/project-init` / `/plan-init` 흐름)
-- destructive 명령 사용자 승인 (절대 규칙 #9)
-
-`archive/agents/develop-reviewer.md` *hard-fail 조건* 참조 — Step 2 최종 게이트로 흡수.
-
-v0.2 변경점:
-- gitter 분리 폐기 (`/task-close`로 흡수)
-- task file ## 작업 메모 / ## 에이전트 실행 로그 / ## 문서 수정 이력 표 폐기 (5사이클 hook 강제용 메타)
-- Phase별 커밋 + flows/ 분리 + 태스크 문서 커밋 + CHANGELOG 순서는 그대로
-- `--no-ff` + 작업 브랜치 보존 + destructive 사용자 승인은 GIT_RULE.md 단일 진실 소스
+(검증 명령 FAIL + 사용자 *"고쳐"* → `developing`으로 되돌림. 본 스킬 자체는 거기서 중단.)
