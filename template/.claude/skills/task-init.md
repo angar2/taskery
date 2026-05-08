@@ -65,8 +65,10 @@ description: task 시작 — 6 섹션 빈 골격 + 헤더 5컬럼 (status=draft)
 
 1. 파일 vs 폴더 분기:
    - **파일 default**: 단일 `NNN_<slug>.md` (예: `008_login-feature.md`).
-   - **폴더 승격 조건**: (a) 규모 `large`, 또는 (b) 사용자 명시 *"폴더로 만들어줘"*, 또는 (c) `spec-diffs/` / `screenshots/` 다수 예상.
-     → `TASK-NNN_<slug>/task.md` + `TASK-NNN_<slug>/spec-diffs/` + `TASK-NNN_<slug>/screenshots/` 생성.
+   - **폴더 승격 조건**: (a) 규모 `large`, 또는 (b) 사용자 명시 *"폴더로 만들어줘"*, 또는 (c) task에 *추가 자료*(서브 문서 / mockup / 디자인) 다수 예상.
+     → `TASK-NNN_<slug>/task.md` 생성. 추가 자료는 *task 폴더 안에 자유롭게* 박음.
+   - **`spec-diffs/` + `screenshots/`는 *vX.X 공통* 사용**: 단일 파일이든 폴더 승격이든 `.project/tasks/<vX.X>/{spec-diffs,screenshots}/`에 박음 (파일명에 NNN prefix로 task 식별 — `<NNN>_<slug>_spec-diff.md`). task 폴더 안에 spec-diffs/screenshots 만들지 X.
+   - 위 디렉토리는 `/plan-init` Step 5가 vX.X 만들 때 함께 mkdir됨. `/task-init`은 디렉토리 가정만, 직접 생성 X.
 2. slug 변환 — 한국어 → 영어 kebab-case:
    - 짧고 명확하게 (3 단어 이내 권장).
    - 소문자 + 하이픈만. 예: *"로그인 기능 추가"* → `login-feature`, *"모바일 사파리 폼 새로고침 버그"* → `mobile-safari-form-refresh`.
@@ -106,7 +108,7 @@ description: task 시작 — 6 섹션 빈 골격 + 헤더 5컬럼 (status=draft)
 ```
 
 - 6 섹션 placeholder는 *빈 헤딩 + 한 줄 안내*. 구체 내용 X.
-- 폴더 승격 시 `TASK-<NNN>_<slug>/task.md`로 동일 본문 박음. `spec-diffs/.gitkeep`, `screenshots/.gitkeep` 빈 파일도 생성.
+- 폴더 승격 시 `TASK-<NNN>_<slug>/task.md`로 동일 본문 박음. spec-diffs/screenshots는 vX.X 공통(`.project/tasks/<vX.X>/{spec-diffs,screenshots}/` — `/plan-init` Step 5가 mkdir)을 그대로 사용. task 폴더 안에 spec-diffs/screenshots 별도 생성 X.
 
 ### Step 6 — 결과 보고
 
@@ -120,7 +122,7 @@ description: task 시작 — 6 섹션 빈 골격 + 헤더 5컬럼 (status=draft)
 ## 도구 가이드
 
 - **Read**: `.project/AGENT-GUIDE.md` (활성 버전 확인)
-- **Bash**: `ls .project/tasks/<vX.X>/` (NNN 결정), `mkdir -p .project/tasks/<vX.X>/TASK-<NNN>_<slug>/{spec-diffs,screenshots}` (폴더 승격 시)
+- **Bash**: `ls .project/tasks/<vX.X>/` (NNN 결정), `mkdir -p .project/tasks/<vX.X>/TASK-<NNN>_<slug>` (폴더 승격 시 — task 폴더 자체만, spec-diffs/screenshots는 vX.X 공통 사용)
 - **Write**: 새 task.md 생성
 - **AskUserQuestion**: 분기 2 인터뷰 (한 번에 한 질문)
 

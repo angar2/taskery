@@ -167,7 +167,7 @@ mkdir -p .project/shared/sent/completed .project/shared/received/completed
 ### Step 8 — 결과 보고
 
 작성된 파일 목록 + 다음 단계 안내:
-- *"PROJECT.md / AGENT-GUIDE.md / LINKED-REPOS.md / .env / FRICTION_LOG.md 생성. 다음은 `/plan-init <버전명>`으로 9 기획 문서 작성."*
+- *"PROJECT.md / AGENT-GUIDE.md / LINKED-REPOS.md / .env 생성. (FRICTION_LOG.md / 빈 골격 폴더는 npx init이 이미 박은 것 그대로). 다음은 `/plan-init <버전명>`으로 9 기획 문서 작성."*
 
 ## 도구 가이드
 

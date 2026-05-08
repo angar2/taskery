@@ -68,6 +68,7 @@ plan 버전(vX.X)마다 호출. `.project/plans/<vX.X>/` 안에 9 기획 문서 
    - **ROADMAP.md**: 마일스톤 + 시기 + 우선순위
 4. 받은 답 기반으로 각 문서 작성.
 5. 마지막에 **PLAN.md** 작성 — 9 문서 인덱스 + 체크리스트.
+6. **`.project/AGENT-GUIDE.md`의 활성 plan 버전 vX.X로 갱신** (신규도 동일 — 분기 2와 일관).
 
 ### Step 4 — 분기 2 처리 (이어가기)
 

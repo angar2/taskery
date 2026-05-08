@@ -15,9 +15,15 @@
 | **phase** | task.md Dev Plan 안 sub-섹션 | task.md `## Dev Plan` 안 `### Phase 1`, `### Phase 2`, ... |
 
 **원칙**:
-- task가 너무 크면 → 폴더 승격 (`TASK-<NNN>_<slug>/task.md` + `spec-diffs/` + `screenshots/`)
+- task가 너무 크면 → 폴더 승격 (`TASK-<NNN>_<slug>/task.md` — *추가 자료 박는 자리*용, 서브 문서/mockup/디자인 등)
 - 더 크면 → plan으로 승격 (별도 plan 버전 또는 plan 안 묶음)
 - waterfall phase 미리 박기 X — *진행하면서 점진적 추가*
+
+**spec-diffs / screenshots 위치 — vX.X 공통 단일화** (audit 발견 fix):
+- `.project/tasks/<vX.X>/spec-diffs/<NNN>_<slug>_spec-diff.md` — 단일 파일 task든 폴더 승격이든
+- `.project/tasks/<vX.X>/screenshots/<NNN>_*.png`
+- 폴더 승격 task도 *vX.X 공통* 사용 (task 폴더 안에 spec-diffs/screenshots 만들지 X)
+- 단일 진실 소스: [TASK_DOC_RULE.md §1.5](../template/.project/rules/TASK_DOC_RULE.md)
 
 → [DECISIONS.md §6](DECISIONS.md#6-결정-단일-거대-spec--분산-template--plan)
 
@@ -212,3 +218,4 @@ draft → planned → developing → developed → testing → tested → closed
 | 날짜 | 변경 사항 |
 |------|----------|
 | 2026-05-08 | 신규 작성 — 위계(project/plan/task/phase) + 헤더 5컬럼 + 7 상태 + 6 섹션 + FAIL/UNCERTAIN 분기 + 4단 layer 가이드 + 폐기 항목 + PLAYBOOK 부활 트리거 |
+| 2026-05-08 | §1 위계에 spec-diffs/screenshots vX.X 공통 단일화 명시 (audit 발견 — 슬래시 본문 간 위치 모순). 폴더 승격은 *추가 자료* 자리용으로 명확화. 단일 진실 소스 = TASK_DOC_RULE.md §1.5 |

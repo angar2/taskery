@@ -97,7 +97,8 @@ PASS 시 Step 3으로.
    ```
    docs: [TASK-<NNN>] 태스크 문서 완료
    ```
-   - 대상: `.project/tasks/<vX.X>/<NNN>_<slug>.md` (또는 폴더 승격 시 `task.md` + `spec-diffs/` + `screenshots/`).
+   - 대상: `.project/tasks/<vX.X>/<NNN>_<slug>.md` (단일 파일) 또는 `.project/tasks/<vX.X>/TASK-<NNN>_<slug>/task.md` (폴더 승격) — *task 본 파일 + 해당 NNN의 vX.X 공통 spec-diffs/<NNN>_<slug>_spec-diff.md / screenshots/<NNN>_*.png* 묶음.
+   - spec-diffs/screenshots는 *vX.X 공통* 위치 — 폴더 승격 시에도 task 폴더 안에 만들지 X (TASK_DOC_RULE §1.5 참조).
 4. **CHANGELOG 커밋 (해당 시)**:
    - `.project/changelog/<YYYY-MM>.md` Edit (없으면 신규 Write):
      ```markdown

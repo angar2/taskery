@@ -108,7 +108,7 @@ draft → planned → developing → developed → testing → tested → closed
 |------|------|--------|
 | `git-guard.sh` | git catastrophic | main/dev 직접 커밋, force, no-verify, branch -D, reset --hard, clean -fd |
 | `pre-commit-verify.sh` | process catastrophic | git commit 시 CLAUDE.md `## 검증 명령` 모두 PASS 게이트 |
-| `closed-immutable.sh` | 완료 보호 catastrophic | closed task 문서 / spec-diffs/ 재수정 차단 |
+| `closed-immutable.sh` | 완료 보호 catastrophic | closed task.md 본 파일 재수정 차단 (spec-diffs/screenshots는 자유) |
 
 **채택 기준**: *잘 지키면 hook 작동 0회 (무해). 안 지키면 차단 (catastrophic 막음)*. hook이 *작동하면* = 사고 직전.
 

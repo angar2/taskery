@@ -64,7 +64,7 @@
 |------|------|--------|
 | `git-guard.sh` | PreToolUse(Bash) | main/dev 직접 커밋 / `--force` / `--no-verify` / `branch -D` / `reset --hard` / `clean -fd` |
 | `pre-commit-verify.sh` | PreToolUse(Bash) | `git commit` 시 위 *검증 명령* 모두 PASS 게이트. 하나라도 fail → 차단 |
-| `closed-immutable.sh` | PreToolUse(Write\|Edit) | `closed` 상태 task.md / spec-diffs/* 재수정 차단 (정상 흐름은 새 task로) |
+| `closed-immutable.sh` | PreToolUse(Write\|Edit) | `closed` 상태 task.md 본 파일 재수정 차단 (정상 흐름은 새 task로). spec-diffs/screenshots는 자유 수정 (역사적 자료) |
 
 **잘 지키면 hook 작동 0회 (무해). catastrophic만 차단.**
 

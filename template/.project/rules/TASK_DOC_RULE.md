@@ -89,6 +89,23 @@ draft → planned → developing → developed → testing → tested → closed
 - **우선순위 컬럼**: 단독 task 흐름에서 의미 약함. 필요해지면 PLAYBOOK §8 부활.
 - **Phase 별 파일 분리**: 5사이클 함정 (waterfall 미리 박기). Dev Plan 안 sub-섹션으로 점진 추가.
 
+### 1.5 task 파일 / 폴더 / 부속 자료 위치 (단일 진실 소스)
+
+| 항목 | 위치 | 박는 주체 |
+|------|------|---------|
+| 단일 파일 task | `.project/tasks/<vX.X>/<NNN>_<slug>.md` (예: `001_login-feature.md`) | `/task-init` |
+| 폴더 승격 task | `.project/tasks/<vX.X>/TASK-<NNN>_<slug>/task.md` | `/task-init` (규모 large 또는 사용자 명시 또는 추가 자료 다수) |
+| spec-diffs (변경된 plan 문서 추적) | `.project/tasks/<vX.X>/spec-diffs/<NNN>_<slug>_spec-diff.md` (**vX.X 공통** — 단일/폴더 모두) | `/task-plan` Step 6 (Phase 0 변경 시) |
+| screenshots (UI 작업 자료) | `.project/tasks/<vX.X>/screenshots/<NNN>_*.png` (**vX.X 공통**) | `/task-test` 격리 세션 또는 메인 |
+| 폴더 승격 task의 추가 자료 (서브 문서, mockup 등) | `TASK-<NNN>_<slug>/` 안 자유 | 메인 / `/task-dev` |
+
+**원칙**:
+- spec-diffs / screenshots는 *vX.X 공통* — 파일명 NNN prefix로 task 식별. 폴더 승격 task도 동일 (별도 spec-diffs/screenshots 만들지 X).
+- vX.X 공통 디렉토리는 `/plan-init` Step 5가 mkdir.
+- 폴더 승격은 *task의 추가 자료*용 (서브 문서, mockup, 디자인 자료 등) — *spec-diffs/screenshots 박는 자리 X*.
+
+**closed-immutable hook 보호 범위** — task.md 본 파일만 (단일 파일 또는 폴더 승격 task.md). spec-diffs / screenshots / 폴더 승격 추가 자료는 *역사적 자료*로 자유 수정.
+
 ---
 
 ## 2. 작성 방법 — 단계별 절차
@@ -593,3 +610,4 @@ draft → planned → developing → developed → testing → tested → closed
 | 날짜 | 변경 사항 |
 |------|----------|
 | 2026-05-08 | v0.2 초안 — 5컬럼 헤더 / 7상태 / 6섹션 / 4단 layer 가이드 / 완성 예시 3개 |
+| 2026-05-08 | §1.5 추가 — task 파일/폴더/부속 자료 위치 단일 진실 소스. spec-diffs/screenshots는 vX.X 공통 통일. closed-immutable hook 보호 범위는 task.md 본 파일만 (audit 발견 — 슬래시 본문 간 위치 모순 통일) |

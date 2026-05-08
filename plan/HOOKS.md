@@ -24,7 +24,7 @@
 | **practice** | 합리적 변형 있는 영역 | 검토 본문 형식 / 상태 전이 흐름 / 자기 행 박기 | **X** (5사이클 함정) |
 | **process** | 결정적 영역 — exit code 0 또는 != 0 | 린트 / 타입체크 / 빌드 / 단위 테스트 | **OK** (정당) |
 | **git catastrophic** | 복구 불가능한 git 명령 | main/dev 직접 커밋 / force push / branch -D | **OK** (사고 차단) |
-| **완료 보호** | closed task 재수정 차단 | task.md / spec-diffs/ 수정 | **OK** (이력 보호) |
+| **완료 보호** | closed task.md 재수정 차단 | task.md 본 파일 수정 (spec-diffs/screenshots는 자유 — §6 단순화 결정) | **OK** (이력 보호) |
 
 **5사이클 hook 3종은 모두 practice 영역**:
 - `pre-state-save.sh` — 상태 캡처 (화이트리스트 검증용)
@@ -43,7 +43,7 @@
 |------|------|--------|---------------|
 | `git-guard.sh` | git catastrophic | main/dev 직접 커밋 / `--force` / `--no-verify` / `branch -D` / `reset --hard` / `clean -fd` | Bash |
 | `pre-commit-verify.sh` | process catastrophic | git commit 시 CLAUDE.md `## 검증 명령` 모두 PASS 게이트 | Bash |
-| `closed-immutable.sh` | 완료 보호 catastrophic | closed task 문서 / spec-diffs/ 재수정 | Write \| Edit |
+| `closed-immutable.sh` | 완료 보호 catastrophic | closed task.md 본 파일 재수정 차단 (spec-diffs/screenshots는 자유 — §6 참조) | Write \| Edit |
 
 **hook 위치** (사용자 프로젝트):
 - `.claude/hooks/git-guard.sh`
@@ -127,14 +127,23 @@
 
 ## 6. `closed-immutable.sh` — 완료 보호
 
-**차단 범위**:
+**차단 범위 (단순화 — task.md 본 파일만)**:
 | # | 패턴 | 잡음 |
 |---|------|------|
 | 1 | `.project/tasks/v*/<NNN>_<slug>.md` (단일 파일) — 헤더 status=`closed` | task 문서 자체 재수정 |
-| 2 | `.project/tasks/v*/TASK-<NNN>_<slug>/(task.md\|spec-diffs/*.md)` (폴더 승격) — 부모 task.md status=`closed` | spec-diffs/ 하위 파일도 차단 |
+| 2 | `.project/tasks/v*/TASK-<NNN>_<slug>/task.md` (폴더 승격) — 헤더 status=`closed` | task 문서 자체 재수정 |
 
 **차단 안 함** (의도적):
-- closed task의 *관련 코드* 영역 — 1차에서 차단 X. 메인이 closed task 코드 영역 재수정하는 흐름은 *다른 task로 처리*가 정상 → 별도 hook 차단 불필요. 진짜 짜증 모이면 PLAYBOOK §4 minimal form hook 보강
+- `.project/tasks/v*/spec-diffs/*.md` — 역사적 자료, 자유 수정
+- `.project/tasks/v*/screenshots/*` — 자유 수정
+- 폴더 승격 task의 *추가 자료* (서브 문서, mockup 등) — 자유
+- closed task의 *관련 코드* 영역 — 새 task로 처리가 정상 흐름
+
+**왜 단순화** (audit 발견 fix):
+- 이전 spec은 *폴더 승격 task의 spec-diffs/만* 보호하고 *vX.X 공통 spec-diffs는 미커버* — 비대칭
+- spec-diffs/screenshots 위치는 vX.X 공통으로 통일 (TASK_DOC_RULE §1.5 단일 진실 소스)
+- vX.X 공통 spec-diffs를 보호하려면 *NNN prefix로 부모 task.md 추적 로직* 필요 → 정규식 복잡 + 에러 위험
+- 단순화: spec-diffs는 *역사적 자료*로 자유 수정. closed task의 spec-diff *재해석*은 자연스럽고 차단 없는 게 정상
 
 **우회 절차** (의도적으로 closed task를 풀어 다시 진행해야 하는 경우):
 ```bash
@@ -221,9 +230,12 @@ hook 영역에서 부활 가능한 미래 옵션:
 | | `git commit --no-verify` (dev 브랜치에서) | dev 직접 커밋 차단 우선 (exit 2) ✅ |
 | | `git reset --hard HEAD~1` | 차단 ✅ |
 | | `git branch -D foo` | 차단 ✅ |
-| `closed-immutable.sh` | closed 상태 task.md Edit | 차단 ✅ |
+| `closed-immutable.sh` | closed 상태 단일 파일 task.md Edit | 차단 ✅ |
+| | closed 상태 폴더 승격 TASK-NNN_<slug>/task.md Edit | 차단 ✅ |
 | | developing 상태 task.md Edit | 통과 ✅ |
 | | 코드 파일 (영역 외) Edit | 통과 ✅ |
+| | spec-diffs/*.md Edit (closed task) | 통과 ✅ (단순화 — 자유 수정) |
+| | screenshots/*.png Write (closed task) | 통과 ✅ |
 | `pre-commit-verify.sh` | `bash -n` 문법 검사 | 통과 ✅ (실행 검증은 사이드 프로젝트에서) |
 
 ---
@@ -234,3 +246,4 @@ hook 영역에서 부활 가능한 미래 옵션:
 |------|----------|
 | 2026-05-08 | 신규 작성 — v0.2 hook 정신 + 영역 차이(practice/process/git/완료 보호) + 3 hook 정책 + 우회 절차 + 폐기 5사이클 hook + 동작 검증 결과 |
 | 2026-05-08 | §3에 settings.json 단일 진실 소스 + JSON 본문 + 미등록 시 hook fire 안 함 안내 추가 (audit 발견 #누락) |
+| 2026-05-08 | §6 closed-immutable 차단 범위 단순화 (task.md 본 파일만) — vX.X 공통 spec-diffs 미커버 비대칭 fix. spec-diffs/screenshots는 자유 수정. §11 동작 검증 표 갱신 (audit 발견 — spec-diffs 위치 모순) |
