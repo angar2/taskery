@@ -146,6 +146,7 @@ PASS 시 Step 3으로.
 - dev 병합: --no-ff 완료
 - 상태: tested → closed
 - 작업 브랜치 보존 (삭제하려면 "브랜치 삭제해" 명시)
+- 다음: 새 task 시작은 /task-init, 5 task 누적 시 /refine으로 회고
 ```
 
 ## 도구 가이드
