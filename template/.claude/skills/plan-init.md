@@ -115,6 +115,11 @@ plan 버전(vX.X)마다 호출. `.project/plans/<vX.X>/` 안에 9 기획 문서 
 작성/갱신된 문서 목록 + 다음 단계 안내:
 - *"<vX.X>/ 9 기획 문서 작성 완료. AGENT-GUIDE.md 활성 버전 <vX.X>로 갱신. 다음은 `/task-init`으로 첫 task 생성."*
 
+**결과 commit 흐름** (GIT_RULE 정합):
+- dev 직접 commit *금지* (git-guard.sh 차단). 두 가지 default 흐름:
+  1. **첫 task에 묶기 (권장)**: 분기 1(신규)에서 `/project-init` 직후 본 슬래시 호출이면 `/project-init` 산출물과 같은 작업 브랜치(보통 TASK-001 부트스트랩 chore)에 함께 commit. 분기 2(이어가기)면 새 task 브랜치 또는 임시 docs 브랜치에서.
+  2. **임시 docs 브랜치**: `git checkout -b docs/{개발자}_plan-{vX.X}` 후 commit → dev에 `--no-ff` 머지. 다음 task 생성 *전*에 plan 산출물을 깔끔히 박고 싶을 때.
+
 ## 도구 가이드
 
 - **Read**: PROJECT.md / 기존 plans/vY.Y/ 정독
