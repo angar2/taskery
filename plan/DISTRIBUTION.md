@@ -12,7 +12,7 @@
 | **새 프로젝트 시작** | `npx create-taskery <project-name>` — 새 폴더 생성 + 자산 카피 + manifest 작성 |
 | **기존 리포에 도입** | 리포 디렉토리에서 `npx taskery init` — 자산 카피 + manifest 작성 |
 | **버전 업데이트 (진화)** | `npx taskery update` — 최신 버전 fetch + manifest 비교 + 머지 갱신 |
-| **특정 버전 고정** | `npx taskery@0.2.5 init` — semver 명시 |
+| **특정 버전 고정** | `npx taskery@0.1.5 init` — semver 명시 |
 
 **대상 환경**:
 - 사용자 본인 (집/회사 PC)
@@ -98,7 +98,7 @@
 **구조**:
 ```json
 {
-  "version": "0.2.0",
+  "version": "0.1.0",
   "installed_at": "2026-05-08T07:55:07.652Z",
   "files": {
     "CLAUDE.md": {
@@ -186,15 +186,12 @@ function isLocalOverride(relPath) {
 
 ## 8. npm publish 운영
 
-**현재 상태**: `package.json` 작성 완료, *publish 전*. 사용자 명시 요청 시까지 publish X.
-
-**publish 전 보완 항목**:
-1. **README.md 작성** — 설치 / 스킬 흐름 / hook 안전망 한 페이지 가이드. publish 시 npm 첫 화면.
-2. **`bin/taskery.js` GitHub URL placeholder 교체** — 현재 `https://github.com/<...>/taskery` 그대로. 사용자가 link 클릭 시 깨짐.
+**현재 상태**: publish-prep 4 항목(README.md / `bin/taskery.js` GitHub URL / `package.json` metadata / LICENSE) 완료. 사용자 명시 요청 시까지 publish X.
 
 **publish 흐름** (사용자 직접):
 ```bash
 npm login                    # npm 계정 인증
+npm publish --dry-run        # 패키지 내용 검증 (선택)
 npm publish                  # publish
 # 또는
 npm publish --tag beta       # beta tag로 publish
@@ -209,12 +206,17 @@ npm publish --tag beta       # beta tag로 publish
 ```json
 {
   "name": "taskery",
-  "version": "0.2.0",
+  "version": "0.1.0",
   "bin": {
     "taskery": "./bin/taskery.js",
     "create-taskery": "./bin/create.js"
   },
-  "files": ["bin/", "template/", "plan/PLAYBOOK.md", "README.md"],
+  "files": ["bin/", "template/", "README.md", "LICENSE"],
+  "author": "angar2 <angaridev@gmail.com>",
+  "license": "MIT",
+  "repository": { "type": "git", "url": "git+https://github.com/angar2/taskery.git" },
+  "homepage": "https://github.com/angar2/taskery#readme",
+  "bugs": { "url": "https://github.com/angar2/taskery/issues" },
   "engines": { "node": ">=18.0.0" }
 }
 ```
@@ -222,12 +224,12 @@ npm publish --tag beta       # beta tag로 publish
 **`files` 배열 — npm publish 포함 대상**:
 - `bin/` — 5 스크립트 모두
 - `template/` — 사용자 카피 대상 23 파일
-- `plan/PLAYBOOK.md` — 미래 옵션 카탈로그 (사용자가 정독 가능하게)
 - `README.md` — npm 첫 화면
+- `LICENSE` — MIT 라이선스
 
 **`files` 미포함**:
 - `.git/`, `.gitignore`, `.temp/` — 개발 환경 자산
-- `plan/{OVERVIEW,SKILLS,TASK-DOC,HOOKS,DISTRIBUTION,DECISIONS}.md` — 본 plan/ 6 문서는 *taskery 시스템 자체 spec*. 사용자 프로젝트는 *template/CLAUDE.md*만 보면 됨. 단 *동료 학습용*으로 publish 대상에 추가할지는 검토 필요 (현재 미포함)
+- `plan/` 7 문서 — *taskery 시스템 자체 spec*. 사용자 프로젝트는 *template/CLAUDE.md*만 정독하면 됨. README의 `plan/` 링크는 GitHub 절대 URL로 처리되어 npm 페이지에서도 클릭 시 GitHub로 이동.
 
 ---
 
@@ -298,3 +300,5 @@ npm publish --tag beta       # beta tag로 publish
 | 2026-05-08 | §4 카피 대상 18 → 19 갱신 (settings.json hook 등록 행 추가) |
 | 2026-05-08 | §4 카피 대상 19 → 23 갱신 (사용자 영역 빈 골격 4 .gitkeep 추가 — changelog/flows/plans/tasks). init 직후 .project/ 비대칭 fix — /project-init 스킬이 채우기 전에 빈 폴더는 미리 작성되어야 사용자 입장에서 *세팅된 느낌* |
 | 2026-05-09 | 표현 정제 — 인명 / 경박 표현 / 스킬 용어 / 이전 버전 비교 단락 정리. `package.json` files 필드에서 외부 회고 문서 참조 제거 (현 리포에 부재). plan/ 파일명 SLASH-COMMANDS.md → SKILLS.md 반영. |
+| 2026-05-09 | §8 publish-prep 4 항목 완료 반영 — README.md 작성 + `bin/taskery.js` GitHub URL 채움 + `package.json` metadata 보강(author/repository/homepage/bugs) + LICENSE 작성. `files` 배열 슬림(plan/PLAYBOOK.md 제거 + LICENSE 추가). |
+| 2026-05-09 | publish 첫 버전이 0.1.0임을 반영 — `0.2.0` → `0.1.0` (manifest 예시 + §8 package.json 메타 예시), `npx taskery@0.2.5` → `0.1.5` (semver 예시). |

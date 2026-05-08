@@ -1,6 +1,6 @@
-# DECISIONS — taskery v0.2 핵심 의사결정 로그
+# DECISIONS — taskery 핵심 의사결정 로그
 
-> v0.2 골격을 짠 *결정 사유 + 대안 + 채택 기준*의 단일 진실 소스.
+> taskery 골격을 짠 *결정 사유 + 대안 + 채택 기준*의 단일 진실 소스.
 > 각 토픽 문서(SKILLS / TASK-DOC / HOOKS / DISTRIBUTION)는 *결정 결과*만 기록하고, *왜*는 본 문서 §<N> 참조.
 
 ---
@@ -9,14 +9,14 @@
 
 | 문서 | 다루는 것 | 위치 |
 |------|---------|------|
-| `plan/DECISIONS.md` (본 문서) | v0.2의 *해결 결정* — 어떤 결정을 *왜* 채택했나 + 대안 + 채택 기준 | `plan/DECISIONS.md` |
+| `plan/DECISIONS.md` (본 문서) | taskery의 *해결 결정* — 어떤 결정을 *왜* 채택했나 + 대안 + 채택 기준 | `plan/DECISIONS.md` |
 | `plan/OVERVIEW.md` 외 토픽 doc | 결정의 *결과*만 기록. *왜*는 본 문서 link | `plan/*.md` |
 
-본 문서를 정독하면 v0.2가 *왜 이런 모양*인지 이해 가능. 토픽 doc은 *어떻게 동작하는지* 본문.
+본 문서를 정독하면 taskery이 *왜 이런 모양*인지 이해 가능. 토픽 doc은 *어떻게 동작하는지* 본문.
 
 ---
 
-## 2. v0.2 핵심 정신 (3 원칙)
+## 2. taskery 핵심 정신 (3 원칙)
 
 모든 결정의 상위 기준. 5사이클 회귀에서 도출.
 
@@ -87,7 +87,7 @@ draft → planned → developing → developed → testing → tested → closed
 
 ## 5. 결정: 3 hook 화이트리스트(practice) → 3 hook catastrophic only(process)
 
-**결정**: 5사이클의 3 hook(pre-state-save / validate-task-state / post-state-sync)이 *practice 영역(상태 전이 / 자기 행 / 검토 본문)* 차단 → *합리적 변형* 차단 → 망함. v0.2는 hook을 *process / git / 완료 보호* 영역만 catastrophic 차단.
+**결정**: 5사이클의 3 hook(pre-state-save / validate-task-state / post-state-sync)이 *practice 영역(상태 전이 / 자기 행 / 검토 본문)* 차단 → *합리적 변형* 차단 → 망함. taskery은 hook을 *process / git / 완료 보호* 영역만 catastrophic 차단.
 
 **WHY**:
 - practice 영역(예: 검토 본문 형식, 상태 전이 흐름)은 *합리적 변형 다양*. hook이 변형 차단 = 막힘
@@ -97,11 +97,11 @@ draft → planned → developing → developed → testing → tested → closed
 **폐기된 5사이클 hook**:
 | Hook | 폐기 사유 | 보존 위치 |
 |------|---------|----------|
-| `pre-state-save.sh` | 25행 화이트리스트 검증용. v0.2 7 상태에는 무의미 | `taskery-prototype/.taskestra/hooks/` |
+| `pre-state-save.sh` | 25행 화이트리스트 검증용. taskery 7 상태에는 무의미 | `taskery-prototype/.taskestra/hooks/` |
 | `validate-task-state.sh` | 합리적 변형 차단 사고의 핵심 | `taskery-prototype/.taskestra/hooks/` |
 | `post-state-sync.sh` | 자기 행 검증 + 검토 결과 검증 — practice 영역 | `taskery-prototype/.taskestra/hooks/` |
 
-**채택 v0.2 hook 3종**:
+**채택 taskery hook 3종**:
 | Hook | 영역 | 잡는 것 |
 |------|------|--------|
 | `git-guard.sh` | git catastrophic | main/dev 직접 커밋, force, no-verify, branch -D, reset --hard, clean -fd |
@@ -116,7 +116,7 @@ draft → planned → developing → developed → testing → tested → closed
 
 ## 6. 결정: 단일 거대 spec → 분산 (template/ + plan/)
 
-**결정**: 5사이클의 `project-system-plan.md` 단일 거대 spec(1500+ 행) → v0.2는 *영역별 분산*. spec의 *각 부분*이 *실제 동작하는 자리*에 위치.
+**결정**: 5사이클의 `project-system-plan.md` 단일 거대 spec(1500+ 행) → taskery은 *영역별 분산*. spec의 *각 부분*이 *실제 동작하는 자리*에 위치.
 
 **WHY**:
 - 단일 거대 문서 = 한 곳 수정 → 다른 곳과 모순
@@ -169,7 +169,7 @@ draft → planned → developing → developed → testing → tested → closed
 
 **WHY**:
 - 사용자 = 본인 + 동료 진영 (회사/집 PC). Node.js 의존 0 진입장벽
-- npx는 *최신 버전 자동 fetch* + *버전 고정 가능* (`npx taskery@0.2.5 init`)
+- npx는 *최신 버전 자동 fetch* + *버전 고정 가능* (`npx taskery@0.1.5 init`)
 - 머지 갱신 메커니즘 (`npx taskery update`) 단일 흐름
 
 **대안 검토**:
@@ -258,7 +258,7 @@ FRICTION_LOG 패턴 ≥ 3회 → /refine 회고 → 사용자 합의 → PLAYBOO
 **WHY**:
 - 본 리포 archive + prototype 리포 = *동일 자산 두 곳 중복*. sync 부담 + 헷갈림
 - 5사이클 spec은 *시제품 단계의 학습 자료* — 진화하지 않는 정적 자산 → 별도 리포가 자연
-- 본 리포는 v0.2 *진화하는 자산* (template/ + bin/ + plan/) — archive와 *수명 주기 다름*
+- 본 리포는 taskery *진화하는 자산* (template/ + bin/ + plan/) — archive와 *수명 주기 다름*
 
 **대안 검토**:
 | 대안 | 채택 X 이유 |
