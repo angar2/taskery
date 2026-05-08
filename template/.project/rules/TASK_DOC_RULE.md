@@ -14,7 +14,7 @@
 | 2026-05-08 | v1.0 | feature | medium | developing |
 
 - **생성일**: ISO 형식 (YYYY-MM-DD)
-- **플랜**: 어느 plan 버전 하위인지 (예: v1.0, v0.1.0, alpha) — `tasks/<vX.X>/` 디렉토리 명과 일치
+- **플랜**: 어느 plan 버전 하위인지 (예: v1.0, v2.0, alpha) — `tasks/<vX.X>/` 디렉토리 명과 일치
 - **유형**: `feature` / `bug` / `improvement` / `refactor` / `docs` / `chore` (git 브랜치 타입과 직결)
 - **규모**:
   - `micro` — 구현 파트 1개 (단일 함수/설정 수정)
@@ -29,10 +29,10 @@
 draft → planned → developing → developed → testing → tested → closed
 ```
 
-| 상태 | 시점 | 박는 주체 |
+| 상태 | 시점 | 작성 주체 |
 |------|------|---------|
-| `draft` | task.md 빈 골격 생성 직후 | `/task-init`이 헤더에 박음 |
-| `planned` | plan 완료 (지크 "이렇게 가자" OK) | `/task-plan` 끝에 메인이 박음 |
+| `draft` | task.md 빈 골격 생성 직후 | `/task-init`이 헤더에 작성 |
+| `planned` | plan 완료 (사용자 "이렇게 가자" OK) | `/task-plan` 끝에 메인이 갱신 |
 | `developing` | dev 시작 | `/task-dev` 호출 시 메인 |
 | `developed` | dev 끝 + self-check OK (린트/타입/빌드 PASS) | `/task-dev` 끝에 메인 |
 | `testing` | 격리 세션 진행 중 | `/task-test` 호출 시 메인 |
@@ -40,10 +40,10 @@ draft → planned → developing → developed → testing → tested → closed
 | `closed` | git 마무리 완료 | `/task-close` 끝에 메인 |
 
 **FAIL/UNCERTAIN 분기**:
-- `/task-test` PASS → `tested` 박음 → `/task-close` 진행
-- `/task-test` FAIL → 메인이 격리 결과(로그/근거) 보고 → 지크에게 *"고쳐? OK 마무리?"* 묻기 → "고쳐" 시 `developing`으로 되돌림 → `/task-dev` 재진입
-- `/task-test` UNCERTAIN → 메인이 결과 보고 → 지크 판단
-- `/task-dev` 중 self-check FAIL → `developing` 그대로, 메인 자체 수정 → PASS 시 `developed` 박음
+- `/task-test` PASS → `tested` 갱신 → `/task-close` 진행
+- `/task-test` FAIL → 메인이 격리 결과(로그/근거) 보고 → 사용자에게 *"고쳐? OK 마무리?"* 묻기 → "고쳐" 시 `developing`으로 되돌림 → `/task-dev` 재진입
+- `/task-test` UNCERTAIN → 메인이 결과 보고 → 사용자 판단
+- `/task-dev` 중 self-check FAIL → `developing` 그대로, 메인 자체 수정 → PASS 시 `developed` 갱신
 
 ### 1.3 섹션 구성 — 6 섹션
 
@@ -84,14 +84,14 @@ draft → planned → developing → developed → testing → tested → closed
 
 ### 1.4 폐기된 항목
 
-- **5사이클 11상태 → 7상태**: revision/approved 단계 폐기. *대화로 OK = 다음 상태로 자동 전이*.
+- **revision/approved 상태 단계 폐기**: 11상태 → 7상태 단순화. *대화로 OK = 다음 상태로 자동 전이*.
 - **프로젝트 컬럼**: `.project/` 폴더 자체가 프로젝트라 중복.
 - **우선순위 컬럼**: 단독 task 흐름에서 의미 약함. 필요해지면 PLAYBOOK §8 부활.
-- **Phase 별 파일 분리**: 5사이클 함정 (waterfall 미리 박기). Dev Plan 안 sub-섹션으로 점진 추가.
+- **Phase 별 파일 분리**: waterfall 선제적 작성 함정. Dev Plan 안 sub-섹션으로 점진 추가.
 
 ### 1.5 task 파일 / 폴더 / 부속 자료 위치 (단일 진실 소스)
 
-| 항목 | 위치 | 박는 주체 |
+| 항목 | 위치 | 작성 주체 |
 |------|------|---------|
 | 단일 파일 task | `.project/tasks/<vX.X>/<NNN>_<slug>.md` (예: `001_login-feature.md`) | `/task-init` |
 | 폴더 승격 task | `.project/tasks/<vX.X>/TASK-<NNN>_<slug>/task.md` | `/task-init` (규모 large 또는 사용자 명시 또는 추가 자료 다수) |
@@ -102,7 +102,7 @@ draft → planned → developing → developed → testing → tested → closed
 **원칙**:
 - spec-diffs / screenshots는 *vX.X 공통* — 파일명 NNN prefix로 task 식별. 폴더 승격 task도 동일 (별도 spec-diffs/screenshots 만들지 X).
 - vX.X 공통 디렉토리는 `/plan-init` Step 5가 mkdir.
-- 폴더 승격은 *task의 추가 자료*용 (서브 문서, mockup, 디자인 자료 등) — *spec-diffs/screenshots 박는 자리 X*.
+- 폴더 승격은 *task의 추가 자료*용 (서브 문서, mockup, 디자인 자료 등) — *spec-diffs/screenshots 위치 X*.
 
 **closed-immutable hook 보호 범위** — task.md 본 파일만 (단일 파일 또는 폴더 승격 task.md). spec-diffs / screenshots / 폴더 승격 추가 자료는 *역사적 자료*로 자유 수정.
 
@@ -115,21 +115,21 @@ draft → planned → developing → developed → testing → tested → closed
 1. `tasks/<vX.X>/` 디렉토리 안 가장 큰 NNN+1로 task 번호 결정 (예: 기존 002까지 있으면 003)
 2. kebab-slug = 태스크 이름 한국어 → 영어 kebab-case (예: "로그인 기능 추가" → `login-feature`)
 3. 파일명 = `NNN_kebab-slug.md` (예: `003_login-feature.md`). 큰 작업이면 폴더 승격 (`TASK-003_login-feature/task.md`).
-4. 파일 제목 박음: `# TASK-003 — 로그인 기능 추가`
-5. 헤더 표 박음 (5컬럼 모두 채움):
+4. 파일 제목 작성: `# TASK-003 — 로그인 기능 추가`
+5. 헤더 표 작성 (5컬럼 모두 채움):
    - 생성일: 오늘 (YYYY-MM-DD)
    - 플랜: 현재 active plan 버전 (예: v1.0)
    - 유형: 사용자/메인 합의 (feature/bug/...)
    - 규모: 사용자/메인 합의 (micro/small/medium/large)
    - 상태: `draft` (고정)
-6. 6 섹션 placeholder 박음 (Requirements / Scope / Dev Plan / Test Plan / Result는 빈 헤딩만).
+6. 6 섹션 placeholder 작성 (Requirements / Scope / Dev Plan / Test Plan / Result는 빈 헤딩만).
 
 ### 2.2 Requirements 작성 (`/task-plan` 1단계)
 
 1. 사용자 발화 정독 — 무엇을 원하는지 명확화.
 2. 메인이 *증폭/구체화* — 사용자가 빠뜨린 디테일 보충 (예: 에러 처리, 빈 값 처리, 보안 고려).
 3. 사용자 confirm — *"이렇게 이해했는데 맞아?"* 한 번 확인.
-4. Requirements 섹션에 박음:
+4. Requirements 섹션에 작성:
    - 사용자 원래 요구
    - 메인 증폭 디테일
    - 합의된 최종 요구
@@ -141,7 +141,7 @@ draft → planned → developing → developed → testing → tested → closed
    - 수정될 파일 (어느 함수/로직)
    - 신규 파일 (예상 경로/역할)
    - 인접 파일 (간접 영향 가능성)
-3. Scope 섹션에 박음 — *"이 task가 건드리는 영역은 이 범위"* 정의.
+3. Scope 섹션에 작성 — *"이 task가 다루는 영역은 이 범위"* 정의.
 
 ### 2.4 Dev Plan 작성 (`/task-plan` 3단계)
 
@@ -153,7 +153,7 @@ draft → planned → developing → developed → testing → tested → closed
    - **어떻게**: 구현 방법 요약 (1~3줄)
    - **완료 기준**: 이 phase가 끝났다고 판단할 기준 (예: "API endpoint 응답 200 반환")
    - **진행**: `[ ]` (미완료) / `[x]` (완료)
-4. **Phase 점진 추가 OK** — 처음에 medium 규모 task의 phase 4개만 박고, 진행 중 phase 5 추가 가능. waterfall 미리 박기 X.
+4. **Phase 점진 추가 OK** — 처음에 medium 규모 task의 phase 4개만 작성하고, 진행 중 phase 5 추가 가능. waterfall 선제적 작성 금지.
 
 ### 2.5 Test Plan 작성 (`/task-plan` 4단계)
 
@@ -182,10 +182,10 @@ draft → planned → developing → developed → testing → tested → closed
 
 ### 2.6 Result 기록 (`/task-dev`, `/task-test` 끝)
 
-1. `/task-dev` 끝에 phase별 진행 결과 박음:
+1. `/task-dev` 끝에 phase별 진행 결과 기록:
    - 각 phase 완료 → `진행: [x]` 갱신
    - 변경 파일 목록 / 코드 요약 추가
-2. `/task-test` 끝에 격리 세션 결과 박음:
+2. `/task-test` 끝에 격리 세션 결과 기록:
    - PASS / FAIL / UNCERTAIN
    - 근거 (로그 인용)
    - FAIL 시 무엇이 깨졌는지
@@ -198,7 +198,7 @@ draft → planned → developing → developed → testing → tested → closed
 
 - 양식 그대로 채워. 섹션 추가/삭제 금지.
 - 헤더 5컬럼 모두 채움 — *"미정"* 같은 placeholder 금지 (의사결정 위임 X).
-- 상태 7개 외 단어 박지 X.
+- 상태 7개 외 단어 사용 금지.
 
 ### 3.2 자기완결성
 
@@ -212,8 +212,8 @@ draft → planned → developing → developed → testing → tested → closed
 
 ### 3.4 점진 작성 OK
 
-- Phase 미리 다 박지 X. 진행하며 점진적으로 추가.
-- 단 *전체 스코프*는 처음에 박음 (Scope 섹션). 스코프가 진행 중 늘어나면 *task 분리 검토*.
+- Phase 선제적 일괄 작성 금지. 진행하며 점진적으로 추가.
+- 단 *전체 스코프*는 처음에 정의 (Scope 섹션). 스코프가 진행 중 늘어나면 *task 분리 검토*.
 
 ### 3.5 짧고 명확하게
 
@@ -257,7 +257,7 @@ draft → planned → developing → developed → testing → tested → closed
 
 ### 4.3 Scope
 
-**역할**: 영향 범위. *"어느 파일 어느 로직 건드리는가"*.
+**역할**: 영향 범위. *"어느 파일 어느 로직 다루는가"*.
 
 ```markdown
 ## Scope
@@ -609,5 +609,6 @@ draft → planned → developing → developed → testing → tested → closed
 
 | 날짜 | 변경 사항 |
 |------|----------|
-| 2026-05-08 | v0.2 초안 — 5컬럼 헤더 / 7상태 / 6섹션 / 4단 layer 가이드 / 완성 예시 3개 |
-| 2026-05-08 | §1.5 추가 — task 파일/폴더/부속 자료 위치 단일 진실 소스. spec-diffs/screenshots는 vX.X 공통 통일. closed-immutable hook 보호 범위는 task.md 본 파일만 (audit 발견 — 슬래시 본문 간 위치 모순 통일) |
+| 2026-05-08 | 초안 — 5컬럼 헤더 / 7상태 / 6섹션 / 4단 layer 가이드 / 완성 예시 3개 |
+| 2026-05-08 | §1.5 추가 — task 파일/폴더/부속 자료 위치 단일 진실 소스. spec-diffs/screenshots는 vX.X 공통 통일. closed-immutable hook 보호 범위는 task.md 본 파일만 (스킬 본문 간 위치 모순 통일) |
+| 2026-05-09 | 표현 정제 — 인명 / 경박 표현 / 스킬 용어 / 이전 버전 비교 단락 정리 |

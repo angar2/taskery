@@ -6,7 +6,7 @@ description: plan 버전 단위 9 기획 문서 작성 — 신규 vX.X/ 또는 �
 
 ## 개요
 
-plan 버전(vX.X)마다 호출. `.project/plans/<vX.X>/` 안에 9 기획 문서 생성. 사용자 결정 버전명(v1.0 / v0.1.0 / alpha / mvp 등 자유).
+plan 버전(vX.X)마다 호출. `.project/plans/<vX.X>/` 안에 9 기획 문서 생성. 사용자 결정 버전명(v1.0 / alpha / mvp 등 자유).
 
 9 기획 문서:
 - PLAN.md (진입 인덱스 + 체크리스트)
@@ -46,7 +46,7 @@ plan 버전(vX.X)마다 호출. `.project/plans/<vX.X>/` 안에 9 기획 문서 
 
 1. 인자로 들어왔으면 그대로 사용 (단 기존 충돌 시 사용자 confirm).
 2. 인자 없으면 사용자에게 질문:
-   - 분기 1: *"첫 plan 버전명? (예: v1.0, v0.1.0, alpha, mvp)"*
+   - 분기 1: *"첫 plan 버전명? (예: v1.0, alpha, mvp)"*
    - 분기 2: *"기존 최신은 vY.Y. 새 버전명? (예: vY.Y+1)"*
 3. 형식 강제 X. 사용자 자유.
 
@@ -117,7 +117,7 @@ plan 버전(vX.X)마다 호출. `.project/plans/<vX.X>/` 안에 9 기획 문서 
 
 **결과 commit 흐름** (GIT_RULE 정합):
 - dev 직접 commit *금지* (git-guard.sh 차단). 두 가지 default 흐름:
-  1. **첫 task에 묶기 (권장)**: 분기 1(신규)에서 `/project-init` 직후 본 슬래시 호출이면 `/project-init` 산출물과 같은 작업 브랜치(보통 TASK-001 부트스트랩 chore)에 함께 commit. 분기 2(이어가기)면 새 task 브랜치 또는 임시 docs 브랜치에서.
+  1. **첫 task에 묶기 (권장)**: 분기 1(신규)에서 `/project-init` 직후 본 스킬 호출이면 `/project-init` 산출물과 같은 작업 브랜치(보통 TASK-001 부트스트랩 chore)에 함께 commit. 분기 2(이어가기)면 새 task 브랜치 또는 임시 docs 브랜치에서.
   2. **임시 docs 브랜치**: `git checkout -b docs/{개발자}_plan-{vX.X}` 후 commit → dev에 `--no-ff` 머지. 다음 task 생성 *전*에 plan 산출물을 깔끔히 박고 싶을 때.
 
 ## 도구 가이드
@@ -138,7 +138,3 @@ plan 버전(vX.X)마다 호출. `.project/plans/<vX.X>/` 안에 9 기획 문서 
 ## 상태 전이
 
 해당 없음 (plan 레벨 — task 상태 X).
-
-## 5사이클 참조
-
-`archive/agents/architect.md`의 *9 기획 문서 작성 가이드라인 / 질문 패턴* 참조.

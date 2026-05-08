@@ -1,7 +1,7 @@
-# DISTRIBUTION — taskery v0.2 배포 메커니즘
+# DISTRIBUTION — 배포 메커니즘
 
 > 본 리포 *배포의 단일 진실 소스*. npx 진입점 + bin/ 5 스크립트 + manifest 머지 로직.
-> 본문 코드는 `bin/*.js`에 박힘 — 본 문서는 *왜 npx + 머지 흐름 정신*.
+> 본문 코드는 `bin/*.js`에 위치 — 본 문서는 *왜 npx + 머지 흐름 정신*.
 
 ---
 
@@ -9,17 +9,17 @@
 
 | 시나리오 | 동작 |
 |---------|------|
-| **새 프로젝트 시작** (지크 또는 동료) | `npx create-taskery <project-name>` — 새 폴더 생성 + 자산 카피 + manifest 박음 |
-| **기존 리포에 도입** | 리포 디렉토리에서 `npx taskery init` — 자산 카피 + manifest 박음 |
+| **새 프로젝트 시작** | `npx create-taskery <project-name>` — 새 폴더 생성 + 자산 카피 + manifest 작성 |
+| **기존 리포에 도입** | 리포 디렉토리에서 `npx taskery init` — 자산 카피 + manifest 작성 |
 | **버전 업데이트 (진화)** | `npx taskery update` — 최신 버전 fetch + manifest 비교 + 머지 갱신 |
 | **특정 버전 고정** | `npx taskery@0.2.5 init` — semver 명시 |
 
 **대상 환경**:
-- 지크 본인 (집/회사 PC)
+- 사용자 본인 (집/회사 PC)
 - 동료 진영 (Node.js 환경 — 진입장벽 0)
 - 진화/업데이트도 동일 메커니즘
 
-→ [DECISIONS.md §8](DECISIONS.md#8-결정-배포--npx-단일-default)
+→ [DECISIONS.md §8](DECISIONS.md)
 
 ---
 
@@ -34,10 +34,10 @@
 | `npx taskery@<version> <cmd>` | 특정 버전 고정 | npm semver 사용 |
 
 **대안 미채택**:
-- Claude Code plugin (`/plugin`) — 환경 미지원 (지크 VSCode extension) + 이중 유지비. PLAYBOOK §6 미래로 폐기
+- Claude Code plugin (`/plugin`) — 환경 미지원 (VSCode extension) + 이중 유지비. PLAYBOOK §6 미래로 보류
 - 직접 git clone + 카피 — 머지 갱신 자동화 X
 
-→ [DECISIONS.md §8](DECISIONS.md#8-결정-배포--npx-단일-default)
+→ [DECISIONS.md §8](DECISIONS.md)
 
 ---
 
@@ -63,7 +63,7 @@
 | 카테고리 | 파일 |
 |---------|------|
 | 메인 instruction | `CLAUDE.md` |
-| 슬래시 본문 (8) | `.claude/skills/{project,plan,task}-*.md`, `.claude/skills/refine.md` |
+| 스킬 본문 (8) | `.claude/skills/{project,plan,task}-*.md`, `.claude/skills/refine.md` |
 | Hook (3) | `.claude/hooks/{git-guard,pre-commit-verify,closed-immutable}.sh` |
 | Hook 등록 (1) | `.claude/settings.json` |
 | 룰 (2) | `.project/rules/{TASK_DOC_RULE,GIT_RULE}.md` |
@@ -77,7 +77,7 @@
 - `.project/AGENT-GUIDE.md` — `/project-init` 생성 (메인 진입 가이드)
 - `.project/LINKED-REPOS.md` — `/project-init` 생성 (멀티리포 명세)
 - `.project/.env` — 사용자 직접 작성 (멀티리포 환경 변수, gitignore)
-- `.project/plans/<vX.X>/*` — `/plan-init` 생성 (9 기획 문서)
+- `.project/plans/<vX.X>/*` — `/plan-init` 생성 (기획 문서)
 - `.project/tasks/<vX.X>/*` — `/task-init` ~ `/task-close` 생성/갱신
 - `.project/flows/<module>.md` — `/task-dev` 갱신
 - `.project/changelog/<YYYY-MM>.md` — `/task-close` 갱신
@@ -93,7 +93,7 @@
 
 **위치**: 사용자 프로젝트 루트 (cwd) hidden 단일 파일. **`init.js`가 동적 생성**.
 
-> ⚠ 원 플랜 §5-1 도식에는 `template/.taskery-manifest.json`로 박혀 있었지만, 실제 구현은 *사용자별 path / installed_at / hash가 모두 다르므로* `template/`에 박지 않고 *init.js 동적 생성*으로 수정. 결정 사유 → 부트스트랩 검증 minor #B.
+> ⚠ 원 plan §5-1 도식에는 `template/.taskery-manifest.json`로 들어 있었지만, 실제 구현은 *사용자별 path / installed_at / hash가 모두 다르므로* `template/`에 포함하지 않고 *init.js 동적 생성*으로 수정.
 
 **구조**:
 ```json
@@ -115,14 +115,14 @@
     ".project/rules/TASK_DOC_RULE.md": { ... }
     // ... 18 파일
   },
-  "updated_at": "<update 호출 시 박힘>"
+  "updated_at": "<update 호출 시 갱신>"
 }
 ```
 
 **필드**:
 - `version` — taskery 패키지 버전 (init 또는 update 호출 시 갱신)
 - `installed_at` — 최초 init 시각 (update에서도 보존)
-- `updated_at` — update 호출 시 박힘 (init은 없음)
+- `updated_at` — update 호출 시 갱신 (init은 없음)
 - `files.<path>.hash` — `sha256:` prefix + 16진수 해시
 - `files.<path>.core` — true (모두 코어 — *.local.md는 manifest에 없음)
 - `files.<path>.managed` — true (npx 관리 대상)
@@ -152,7 +152,7 @@
 // 2. template/ 새 해시 맵 (walkTemplate)
 // 3. 각 새 template 파일 분기 (a/b/c/d)
 // 4. 사라짐 검사
-// 5. 새 manifest 갱신 (updated_at 박음)
+// 5. 새 manifest 갱신 (updated_at 갱신)
 // 6. 결과 요약 출력
 ```
 
@@ -186,24 +186,24 @@ function isLocalOverride(relPath) {
 
 ## 8. npm publish 운영
 
-**현재 상태**: `package.json` 박혔지만 *publish 전*. 사용자(지크)가 명시 요청 시까지 publish X.
+**현재 상태**: `package.json` 작성 완료, *publish 전*. 사용자 명시 요청 시까지 publish X.
 
-**publish 전 보완 항목** (BUILD_RESULT.md minor #A, #C):
-1. **README.md 작성** — 설치 / 슬래시 흐름 / hook 안전망 한 페이지 가이드. publish 시 npm 첫 화면.
+**publish 전 보완 항목**:
+1. **README.md 작성** — 설치 / 스킬 흐름 / hook 안전망 한 페이지 가이드. publish 시 npm 첫 화면.
 2. **`bin/taskery.js` GitHub URL placeholder 교체** — 현재 `https://github.com/<...>/taskery` 그대로. 사용자가 link 클릭 시 깨짐.
 
 **publish 흐름** (사용자 직접):
 ```bash
 npm login                    # npm 계정 인증
-npm publish                  # 0.2.0 publish
+npm publish                  # publish
 # 또는
 npm publish --tag beta       # beta tag로 publish
 ```
 
 **semver 운영**:
-- v0.2.x — 본 골격 안 minor 보강 (hook 추가 / 슬래시 boost / bin 개선)
-- v0.3.0 — 큰 변경 (예: PLAYBOOK 부활 항목 도입, 새 슬래시)
-- v1.0.0 — 진짜 데이터 검증 충분 (사이드 프로젝트 5+ task 굴린 후)
+- patch (0.x.y → 0.x.y+1) — 본 골격 안 minor 보강 (hook 추가 / 스킬 boost / bin 개선)
+- minor (0.x.0 → 0.(x+1).0) — 큰 변경 (예: PLAYBOOK 부활 항목 도입, 새 스킬)
+- major (1.0.0) — 진짜 데이터 검증 충분 (사이드 프로젝트 5+ task 굴린 후)
 
 **`package.json` 메타** ([package.json](../package.json)):
 ```json
@@ -214,34 +214,33 @@ npm publish --tag beta       # beta tag로 publish
     "taskery": "./bin/taskery.js",
     "create-taskery": "./bin/create.js"
   },
-  "files": ["bin/", "template/", "plan/PLAYBOOK.md", "RETROSPECTIVE.md", "README.md"],
+  "files": ["bin/", "template/", "plan/PLAYBOOK.md", "README.md"],
   "engines": { "node": ">=18.0.0" }
 }
 ```
 
 **`files` 배열 — npm publish 포함 대상**:
 - `bin/` — 5 스크립트 모두
-- `template/` — 사용자 카피 대상 18 파일
+- `template/` — 사용자 카피 대상 23 파일
 - `plan/PLAYBOOK.md` — 미래 옵션 카탈로그 (사용자가 정독 가능하게)
-- `RETROSPECTIVE.md` — 5사이클 회고 (학습 자료)
 - `README.md` — npm 첫 화면
 
 **`files` 미포함**:
 - `.git/`, `.gitignore`, `.temp/` — 개발 환경 자산
-- `plan/{OVERVIEW,SLASH-COMMANDS,TASK-DOC,HOOKS,DISTRIBUTION,DECISIONS}.md` — 본 plan/ 6 문서는 *taskery 시스템 자체 spec*. 사용자 프로젝트는 *template/CLAUDE.md*만 보면 됨. 단 *동료 학습용*으로 publish 대상에 추가할지는 검토 필요 (현재 미포함)
+- `plan/{OVERVIEW,SKILLS,TASK-DOC,HOOKS,DISTRIBUTION,DECISIONS}.md` — 본 plan/ 6 문서는 *taskery 시스템 자체 spec*. 사용자 프로젝트는 *template/CLAUDE.md*만 보면 됨. 단 *동료 학습용*으로 publish 대상에 추가할지는 검토 필요 (현재 미포함)
 
 ---
 
-## 9. 빌드 시스템 폐기
+## 9. 자동 빌드 미채택
 
-5사이클의 `extract-spec.js` (plan → template 자동 빌드) + IDEMPOTENT 해시 검증 → **폐기**.
+자동 빌드 시스템(`extract-spec.js` 류 — plan → template 자동 빌드 + IDEMPOTENT 해시 검증)은 **채택하지 않음**.
 
 **WHY**:
 - 자동 동기화 = *spec과 빌드 사이 또 다른 source of truth* 생성 → 모순 누적
-- IDEMPOTENT 검증 = *practice 영역 강제*의 다른 형태 — 5사이클 함정 재발
+- IDEMPOTENT 검증 = *practice 영역 강제*의 또 다른 형태 — 동일 형태의 함정 재발
 
 **대신**:
-- *plan ↔ template* 동기화 의무는 **사용자(지크) 직접**
+- *plan ↔ template* 동기화 의무는 **사용자 직접**
 - 사용자 의무 명시 위치: 사용자 프로젝트 `CLAUDE.md` `## 동기화 룰`
 
 **예시** (사용자 프로젝트 CLAUDE.md):
@@ -249,11 +248,11 @@ npm publish --tag beta       # beta tag로 publish
 ## 동기화 룰
 
 - plan/ ↔ template/ 동기화는 사용자 직접 (자동 빌드 X)
-- 검증 명령 (위) 변경 시 슬래시 instruction이 그대로 따름
+- 검증 명령 (위) 변경 시 스킬 instruction이 그대로 따름
 - npx update 시 사용자 customize 충돌은 *.bak 백업 + confirm 받음
 ```
 
-→ [DECISIONS.md §7](DECISIONS.md#7-결정-extract-specjs-빌드--idempotent-해시--폐기)
+→ [DECISIONS.md §7](DECISIONS.md)
 
 ---
 
@@ -274,7 +273,7 @@ npm publish --tag beta       # beta tag로 publish
 
 ## 11. 동작 검증
 
-`bin/` 스크립트 모두 동작 검증 완료 (taskery v0.2 부트스트랩 시):
+`bin/` 스크립트 모두 동작 검증 완료 (부트스트랩 시):
 
 | 시나리오 | 결과 |
 |---------|------|
@@ -287,7 +286,7 @@ npm publish --tag beta       # beta tag로 publish
 
 **아직 검증 안 된 것**:
 - 실제 npm publish (사용자 직접)
-- 진짜 사이드 프로젝트에 적용 후 update 흐름 (C11 대기)
+- 진짜 사이드 프로젝트에 적용 후 update 흐름
 
 ---
 
@@ -295,6 +294,7 @@ npm publish --tag beta       # beta tag로 publish
 
 | 날짜 | 변경 사항 |
 |------|----------|
-| 2026-05-08 | 신규 작성 — npx 시나리오 + bin/ 5 스크립트 + 카피 대상 / 미대상 + manifest 구조 + update 머지 4 분기 + *.local 룰 + npm publish 운영 + 빌드 시스템 폐기 사유 |
+| 2026-05-08 | 신규 작성 — npx 시나리오 + bin/ 5 스크립트 + 카피 대상 / 미대상 + manifest 구조 + update 머지 4 분기 + *.local 룰 + npm publish 운영 + 자동 빌드 미채택 사유 |
 | 2026-05-08 | §4 카피 대상 18 → 19 갱신 (settings.json hook 등록 행 추가) |
-| 2026-05-08 | §4 카피 대상 19 → 23 갱신 (사용자 영역 빈 골격 4 .gitkeep 추가 — changelog/flows/plans/tasks). audit 발견: init 직후 .project/ 비대칭 — /project-init 슬래시가 채우기 전에 빈 폴더는 미리 박혀야 사용자 입장에서 *세팅된 느낌* |
+| 2026-05-08 | §4 카피 대상 19 → 23 갱신 (사용자 영역 빈 골격 4 .gitkeep 추가 — changelog/flows/plans/tasks). init 직후 .project/ 비대칭 fix — /project-init 스킬이 채우기 전에 빈 폴더는 미리 작성되어야 사용자 입장에서 *세팅된 느낌* |
+| 2026-05-09 | 표현 정제 — 인명 / 경박 표현 / 스킬 용어 / 이전 버전 비교 단락 정리. `package.json` files 필드에서 외부 회고 문서 참조 제거 (현 리포에 부재). plan/ 파일명 SLASH-COMMANDS.md → SKILLS.md 반영. |

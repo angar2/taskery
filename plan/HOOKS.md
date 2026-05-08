@@ -1,39 +1,30 @@
-# HOOKS — taskery v0.2 catastrophic 차단 3종
+# HOOKS — catastrophic 차단 3종
 
-> 본 리포 *hook 정신의 단일 진실 소스*. 3 catastrophic hook 정책 + 5사이클과의 영역 차이 + 우회 절차.
-> hook 본문은 `template/.claude/hooks/<hook>.sh`에 박힘 — 본 문서는 *왜 이 hook인지* + *영역 분리 정신*.
+> 본 리포 *hook 정신의 단일 진실 소스*. 3 catastrophic hook 정책 + 영역 분리 + 우회 절차.
+> hook 본문은 `template/.claude/hooks/<hook>.sh`에 위치 — 본 문서는 *왜 이 hook인지* + *영역 분리 정신*.
 
 ---
 
-## 1. v0.2 hook 정신 — *catastrophic만 차단*
+## 1. hook 정신 — *catastrophic만 차단*
 
 **원칙**: hook은 *복구 불가능한 사고*만 차단. *합리적 변형 있는 영역*은 instruction + 대화로.
 
 **잘 지키면 hook 작동 0회 (무해). 안 지키면 차단 (catastrophic 막음).**
 
-→ [DECISIONS.md §5](DECISIONS.md#5-결정-3-hook-화이트리스트practice--3-hook-catastrophic-onlyprocess--git--완료-보호)
+→ [DECISIONS.md §5](DECISIONS.md)
 
 ---
 
-## 2. 5사이클 hook과의 영역 차이
-
-5사이클 회귀의 핵심 결함은 *practice 영역*을 hook으로 강제했다는 것.
+## 2. 영역 분리 — practice / process / git / 완료 보호
 
 | 영역 | 정의 | 예시 | hook 강제 |
 |------|------|------|---------|
-| **practice** | 합리적 변형 있는 영역 | 검토 본문 형식 / 상태 전이 흐름 / 자기 행 박기 | **X** (5사이클 함정) |
+| **practice** | 합리적 변형 있는 영역 | 검토 본문 형식 / 상태 전이 흐름 / 자기 행 작성 등 | **X** (instruction + 대화로) |
 | **process** | 결정적 영역 — exit code 0 또는 != 0 | 린트 / 타입체크 / 빌드 / 단위 테스트 | **OK** (정당) |
 | **git catastrophic** | 복구 불가능한 git 명령 | main/dev 직접 커밋 / force push / branch -D | **OK** (사고 차단) |
 | **완료 보호** | closed task.md 재수정 차단 | task.md 본 파일 수정 (spec-diffs/screenshots는 자유 — §6 단순화 결정) | **OK** (이력 보호) |
 
-**5사이클 hook 3종은 모두 practice 영역**:
-- `pre-state-save.sh` — 상태 캡처 (화이트리스트 검증용)
-- `validate-task-state.sh` — 25행 화이트리스트 검증
-- `post-state-sync.sh` — 자기 행 검증 + 검토 결과 검증
-
-→ 합리적 변형 차단 → 5사이클 회귀 5번 발생 → 폐기.
-
-**v0.2 hook 3종은 모두 process / git / 완료 보호 영역** (§3 정책표).
+practice 영역에 hook을 강제하면 *합리적 변형 차단 사고*가 발생한다. 본 hook 3종은 모두 process / git / 완료 보호 영역에 한정 (§3 정책표).
 
 ---
 
@@ -112,14 +103,14 @@
 
 **왜 process catastrophic** — 결정적 영역 (린트/타입/빌드/테스트). 합리적 변형 없음. *exit 0 또는 != 0*만 존재. hook 차단이 정당.
 
-**잘 지키면 작동 0회** — `/task-dev` self-check + `/task-close` 최종 게이트로 이미 PASS 받은 상태에서 commit. 부분 작업 / 환경 변화 / 가정 누설 시 catastrophic 차단 안전망.
+**잘 지키면 작동 0회** — `/task-dev` self-check + `/task-close` 최종 게이트로 이미 PASS 받은 상태에서 commit. 부분 작업 / 환경 변화 / 가정 누락 시 catastrophic 차단 안전망.
 
 **우회**: `git commit --no-verify` (단 git-guard가 차단). 정상 흐름에서 우회 사유 없음.
 
 **검증 명령 단일 진실 소스**:
 - 사용자 프로젝트 루트 `CLAUDE.md` `## 검증 명령` 섹션 (백틱 안 명령)
 - 한 곳 수정하면 self-check / 격리 게이트 / 최종 게이트 / hook 모두 따름
-- → [SLASH-COMMANDS.md §5](SLASH-COMMANDS.md#5-검증-명령--단일-진실-소스)
+- → [SKILLS.md §5](SKILLS.md)
 
 **본문**: [template/.claude/hooks/pre-commit-verify.sh](../template/.claude/hooks/pre-commit-verify.sh) (2,951 B)
 
@@ -139,7 +130,7 @@
 - 폴더 승격 task의 *추가 자료* (서브 문서, mockup 등) — 자유
 - closed task의 *관련 코드* 영역 — 새 task로 처리가 정상 흐름
 
-**왜 단순화** (audit 발견 fix):
+**왜 단순화**:
 - 이전 spec은 *폴더 승격 task의 spec-diffs/만* 보호하고 *vX.X 공통 spec-diffs는 미커버* — 비대칭
 - spec-diffs/screenshots 위치는 vX.X 공통으로 통일 (TASK_DOC_RULE §1.5 단일 진실 소스)
 - vX.X 공통 spec-diffs를 보호하려면 *NNN prefix로 부모 task.md 추적 로직* 필요 → 정규식 복잡 + 에러 위험
@@ -172,23 +163,11 @@ sed -i '' 's/| closed |/| developing |/' .project/tasks/v1.0/001_some-task.md
 | git 룰 (브랜치/커밋/머지) | [template/.project/rules/GIT_RULE.md](../template/.project/rules/GIT_RULE.md) |
 | 검증 명령 (사용자 프로젝트) | 사용자 프로젝트 `CLAUDE.md` `## 검증 명령` |
 
-본 문서는 *상위 추상 + 영역 정신 + link*. 본문은 실 구현 파일에서 읽는다.
+본 문서는 *상위 추상 + 영역 정신 + link*. 본문은 실 구현 파일에서 정독.
 
 ---
 
-## 8. 폐기된 v0.1.0 hook 3종
-
-| Hook | 폐기 사유 | 보존 위치 |
-|------|---------|---------|
-| `pre-state-save.sh` | 25행 화이트리스트 검증용 — practice 영역 | `taskery-prototype` 리포 (`.taskestra/hooks/`) |
-| `validate-task-state.sh` | 합리적 변형 차단 사고의 핵심 — practice 영역 | `taskery-prototype` 리포 |
-| `post-state-sync.sh` | 자기 행 검증 + 검토 결과 검증 — practice 영역 | `taskery-prototype` 리포 |
-
-→ [DECISIONS.md §5](DECISIONS.md#5-결정-3-hook-화이트리스트practice--3-hook-catastrophic-onlyprocess--git--완료-보호) + [DECISIONS.md §11](DECISIONS.md#11-결정-archive-5사이클-자산-본-리포-x--taskery-prototype-보존)
-
----
-
-## 9. PLAYBOOK 부활 트리거
+## 8. PLAYBOOK 부활 트리거
 
 hook 영역에서 부활 가능한 미래 옵션:
 
@@ -196,13 +175,13 @@ hook 영역에서 부활 가능한 미래 옵션:
 |-----------|------|----------|
 | §4 | minimal form hook | 태스크 문서 형식 위반 (헤더 누락 / 섹션 빠짐) ≥ 5회 누적 → 진짜 짜증 데이터 |
 
-**부활 시 주의**: *섹션 존재* 검사만, *내용 검증 X*. 5사이클의 25행 화이트리스트 함정 회피.
+**부활 시 주의**: *섹션 존재* 검사만, *내용 검증 X*. 내용 검증 함정(합리적 변형 차단) 회피.
 
 → [PLAYBOOK.md](PLAYBOOK.md) §4
 
 ---
 
-## 10. 잘 지키면 hook 작동 0회 정신
+## 9. 잘 지키면 hook 작동 0회 정신
 
 3 hook 모두 *catastrophic 안전망*. 정상 흐름:
 
@@ -219,9 +198,9 @@ hook 영역에서 부활 가능한 미래 옵션:
 
 ---
 
-## 11. 동작 검증
+## 10. 동작 검증
 
-3 hook 모두 단위 동작 검증 완료 (taskery v0.2 부트스트랩 시):
+3 hook 모두 단위 동작 검증 완료 (부트스트랩 시):
 
 | Hook | 검증 시나리오 | 결과 |
 |------|------------|------|
@@ -240,10 +219,11 @@ hook 영역에서 부활 가능한 미래 옵션:
 
 ---
 
-## 12. 수정 이력
+## 11. 수정 이력
 
 | 날짜 | 변경 사항 |
 |------|----------|
-| 2026-05-08 | 신규 작성 — v0.2 hook 정신 + 영역 차이(practice/process/git/완료 보호) + 3 hook 정책 + 우회 절차 + 폐기 5사이클 hook + 동작 검증 결과 |
-| 2026-05-08 | §3에 settings.json 단일 진실 소스 + JSON 본문 + 미등록 시 hook fire 안 함 안내 추가 (audit 발견 #누락) |
-| 2026-05-08 | §6 closed-immutable 차단 범위 단순화 (task.md 본 파일만) — vX.X 공통 spec-diffs 미커버 비대칭 fix. spec-diffs/screenshots는 자유 수정. §11 동작 검증 표 갱신 (audit 발견 — spec-diffs 위치 모순) |
+| 2026-05-08 | 신규 작성 — hook 정신 + 영역 차이(practice/process/git/완료 보호) + 3 hook 정책 + 우회 절차 + 동작 검증 결과 |
+| 2026-05-08 | §3에 settings.json 단일 진실 소스 + JSON 본문 + 미등록 시 hook fire 안 함 안내 추가 |
+| 2026-05-08 | §6 closed-immutable 차단 범위 단순화 (task.md 본 파일만) — vX.X 공통 spec-diffs 미커버 비대칭 fix. spec-diffs/screenshots는 자유 수정. §10 동작 검증 표 갱신 |
+| 2026-05-09 | 표현 정제 — 인명 / 경박 표현 / 스킬 용어 / 이전 버전 비교 단락(§2 영역 차이 / §8 폐기된 hook) 정리. 폐기 hook 비교는 [DECISIONS.md](DECISIONS.md)로 위임. |

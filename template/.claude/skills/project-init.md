@@ -6,7 +6,7 @@ description: taskery 도입 직후 1회성 — PROJECT.md / AGENT-GUIDE.md / LIN
 
 ## 개요
 
-taskery 도입 직후 **1회성**으로 호출. 사용자(지크) 또는 동료가 새 리포에 npx로 taskery 세팅 직후 처음 부르는 슬래시. `.project/` 영역의 사람용/메인용 진입 문서 골격을 만든다.
+taskery 도입 직후 **1회성**으로 호출. 사용자 또는 동료가 새 리포에 npx로 taskery 세팅 직후 처음 부르는 스킬. `.project/` 영역의 사람용/메인용 진입 문서 골격을 만든다.
 
 ## 호출 시점
 
@@ -35,7 +35,7 @@ taskery 도입 직후 **1회성**으로 호출. 사용자(지크) 또는 동료�
 
 **기존 코드 분석 분기**:
 1. README.md / package.json / 디렉토리 구조 정독.
-2. 프로젝트 추정값 박음 (이름 / 타입 / 도메인).
+2. 프로젝트 추정값 작성 (이름 / 타입 / 도메인).
 3. 사용자에게 *"이렇게 이해했는데 맞아?"* 한 번 confirm.
 
 **빈 프로젝트 인터뷰 분기**:
@@ -79,7 +79,7 @@ taskery 도입 직후 **1회성**으로 호출. 사용자(지크) 또는 동료�
 
 ### Step 4 — `.project/AGENT-GUIDE.md` 작성
 
-메인 세션 진입 가이드 (5사이클 살림). 새 메인 세션이 부르는 *"읽고 시작"* 문서.
+메인 세션 진입 가이드. 새 메인 세션이 부르는 *"읽고 시작"* 문서.
 
 ```markdown
 # AGENT-GUIDE.md
@@ -148,8 +148,8 @@ taskery 도입 직후 **1회성**으로 호출. 사용자(지크) 또는 동료�
 `npx taskery init`이 이미 다음 빈 골격 폴더 생성:
 - `.project/changelog/` (`.gitkeep`)
 - `.project/flows/` (`.gitkeep`)
-- `.project/plans/` (`.gitkeep` — `/plan-init`이 `vX.X/` 하위 박음)
-- `.project/tasks/` (`.gitkeep` — `/task-init`이 `vX.X/<NNN>_<slug>.md` 박음)
+- `.project/plans/` (`.gitkeep` — `/plan-init`이 `vX.X/` 하위 작성)
+- `.project/tasks/` (`.gitkeep` — `/task-init`이 `vX.X/<NNN>_<slug>.md` 작성)
 - `.project/shared/{sent,received}/completed/` (`.gitkeep`)
 - `.project/FRICTION_LOG.md` (빈 템플릿)
 - `.project/rules/{TASK_DOC_RULE,GIT_RULE}.md` (코어 룰)
@@ -162,12 +162,12 @@ mkdir -p .project/{changelog,flows,plans,tasks}
 mkdir -p .project/shared/sent/completed .project/shared/received/completed
 ```
 
-`.project/FRICTION_LOG.md`도 `init`이 박은 빈 템플릿 그대로 사용. **이미 있으면 덮어쓰기 X** — 사용자 데이터 보호.
+`.project/FRICTION_LOG.md`도 `init`이 카피한 빈 템플릿 그대로 사용. **이미 있으면 덮어쓰기 X** — 사용자 데이터 보호.
 
 ### Step 8 — 결과 보고
 
 작성된 파일 목록 + 다음 단계 안내:
-- *"PROJECT.md / AGENT-GUIDE.md / LINKED-REPOS.md / .env 생성. (FRICTION_LOG.md / 빈 골격 폴더는 npx init이 이미 박은 것 그대로). 다음은 `/plan-init <버전명>`으로 9 기획 문서 작성."*
+- *"PROJECT.md / AGENT-GUIDE.md / LINKED-REPOS.md / .env 생성. (FRICTION_LOG.md / 빈 골격 폴더는 npx init이 이미 카피한 것 그대로). 다음은 `/plan-init <버전명>`으로 9 기획 문서 작성."*
 
 **결과 commit 흐름** (GIT_RULE 정합):
 - dev 직접 commit *금지* (git-guard.sh 차단). 두 가지 default 흐름:
@@ -184,14 +184,10 @@ mkdir -p .project/shared/sent/completed .project/shared/received/completed
 ## 주의사항
 
 - *덮어쓰기 default 금지* — 이미 PROJECT.md 있으면 confirm.
-- 인터뷰 분기에서 *자동 추정 진행 금지*. 빈 프로젝트면 사용자 답 받고 박음.
+- 인터뷰 분기에서 *자동 추정 진행 금지*. 빈 프로젝트면 사용자 답 받고 작성.
 - 한 번에 너무 많은 질문 X. 사용자 답 받고 다음 질문.
-- 이 슬래시는 **1회성**. 두 번째 호출은 의미 X (덮어쓰기 confirm 거치게 됨).
+- 이 스킬은 **1회성**. 두 번째 호출은 의미 X (덮어쓰기 confirm 거치게 됨).
 
 ## 상태 전이
 
 해당 없음 (project 레벨 — task 상태 X).
-
-## 5사이클 참조
-
-`archive/agents/architect.md`의 *질문 패턴 / 인터뷰 흐름* 참조.

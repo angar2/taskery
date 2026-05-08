@@ -6,7 +6,7 @@ description: task 구현 — Dev Plan Phase 순서대로 코드 작성 + self-ch
 
 ## 개요
 
-`planned` 상태 task의 Dev Plan을 Phase 순서대로 구현. 각 Phase 완료 시 체크박스 갱신 + Result 섹션에 진행 기록. 모든 Phase 완료 + self-check (린트/타입/빌드/단위테스트) PASS 시 status를 `developed`로 박음.
+`planned` 상태 task의 Dev Plan을 Phase 순서대로 구현. 각 Phase 완료 시 체크박스 갱신 + Result 섹션에 진행 기록. 모든 Phase 완료 + self-check (린트/타입/빌드/단위테스트) PASS 시 status를 `developed`로 갱신.
 
 self-check 명령은 프로젝트 루트 `CLAUDE.md`의 *검증 명령* 섹션 참조 — 단일 진실 소스.
 
@@ -132,12 +132,12 @@ Step 1에서 추출한 검증 명령을 *전부* 실행. 모두 PASS여야 `deve
 
 ## 주의사항
 
-- **git 명령 절대 X** — 본 슬래시는 코드만. `git commit` / `git push` / `git branch` 등 모두 `/task-close`에서. self-check fail 후 *재실행*도 git 무관.
+- **git 명령 절대 X** — 본 스킬은 코드만. `git commit` / `git push` / `git branch` 등 모두 `/task-close`에서. self-check fail 후 *재실행*도 git 무관.
 - **Phase 순서 건너뛰기 X** — Phase 1 끝나기 전 Phase 2 진행 X. 의존 관계 깨짐 + 디버깅 어려워짐.
-- **계획 외 스코프 확장 X** — Dev Plan에 없는 파일 건드리기 전 사용자 confirm. *"이 부분 같이 손대야 할 것 같은데 OK?"* 합의 후 진행.
-- **self-check FAIL 시 `developed` 전환 X** — 무리하게 상태 박지 X. 메인 자체 수정 시도 → 안 되면 사용자에게 보고. *"잘 될 거야"* 가정 금지.
-- **로그 심기 잊지 X** — Dev Plan 작성 시 `[로그]` 항목 박혔으면 *반드시* 실제 로그 코드 삽입. 격리 세션 / 운영 디버깅 모두 의존.
-- **Result 섹션 진행만** — 테스트 결과는 `/task-test`가 박음. 메인이 *"잘 됐을 거야"* 가정 박지 X.
+- **계획 외 스코프 확장 X** — Dev Plan에 없는 파일 다루기 전 사용자 confirm. *"이 부분 같이 작업해야 할 것 같은데 OK?"* 합의 후 진행.
+- **self-check FAIL 시 `developed` 전환 X** — 무리하게 상태 갱신 금지. 메인 자체 수정 시도 → 안 되면 사용자에게 보고. *"잘 될 거야"* 가정 금지.
+- **로그 심기 잊지 X** — Dev Plan 작성 시 `[로그]` 항목 명시되어 있으면 *반드시* 실제 로그 코드 삽입. 격리 세션 / 운영 디버깅 모두 의존.
+- **Result 섹션 진행만** — 테스트 결과는 `/task-test`가 기록. 메인이 *"잘 됐을 거야"* 가정 작성 금지.
 - **flows/ 업데이트 누락 X** — 신규 기능 / 로직 변경이면 `.project/flows/<module>.md` 갱신. 미갱신 시 다음 task가 옛 정보 보고 헤맴.
 
 ## 상태 전이
@@ -149,22 +149,7 @@ Step 1에서 추출한 검증 명령을 *전부* 실행. 모두 PASS여야 `deve
 
 self-check FAIL → `developing` 그대로 유지 (수정 + 재PASS 시까지).
 
-## 5사이클 참조
-
-`archive/agents/developer.md` *Mode 1 / Mode 2 절차* 참조:
-- Phase 순서 진행 + 체크박스 갱신
-- `[로그]` 항목 강제 (Step 3)
-- 경로 prefix 해석 (Step 5 flows/)
-- 계획 외 변경 사용자 확인
-
-`archive/agents/develop-reviewer.md` *hard-fail 조건* 참조 — v0.2는 self-check 게이트로 흡수:
+**self-check 게이트 hard-fail 조건**:
 - 완료 조건 미체크 (Phase `진행: [ ]` 잔존) → `developed` 전환 차단
 - Bash 에러 (검증 명령 fail) → `developed` 전환 차단
 - 보안 취약점 — 메인 자체 검토 (1차 자기검토. 진짜 데이터 모이면 PLAYBOOK §7 자동 PR 리뷰 부활)
-
-v0.2 변경점:
-- developer + develop-reviewer 분리 폐기 (1 슬래시 흡수)
-- self-check 게이트 추가 (린트/타입/빌드/테스트 PASS 필수) — 5사이클은 reviewer 별도 검증
-- developing → developed 단일 전이 (revision/approved 단계 폐기)
-- flows/ 업데이트 본 슬래시에 흡수 (5사이클 Mode 3 별도 호출)
-- plan/roadmap Mode 4 폐기 (`/project-init` / `/plan-init`이 흡수)

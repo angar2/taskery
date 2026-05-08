@@ -8,7 +8,7 @@ description: 회고 메타 — FRICTION_LOG 정독 + 반복 패턴 감지 + bott
 
 5 task마다 또는 사용자 호출 시 메인이 `.project/FRICTION_LOG.md`를 정독해 *반복 패턴 감지* + *bottoms-up 보강 제안*. PLAYBOOK 미래 옵션 항목 부활 검토 또는 새 룰 추가 제안. 사용자 OK 시 적용.
 
-**핵심 정신**: *"미리 박지 X, 진짜 데이터 모이면 그때 추가"* — 5사이클 함정(top-down 미리 박기) 회피.
+**핵심 정신**: *"선제적 작성 금지, 진짜 데이터 모이면 그때 추가"* — top-down 선제적 작성 함정 회피.
 
 ## 호출 시점
 
@@ -37,9 +37,9 @@ description: 회고 메타 — FRICTION_LOG 정독 + 반복 패턴 감지 + bott
 
 | 카테고리 | 예시 |
 |---------|------|
-| 형식 위반 | task 헤더 누락 / 섹션 빠짐 / status 잘못 박힘 |
+| 형식 위반 | task 헤더 누락 / 섹션 빠짐 / status 잘못 작성 |
 | 컨텍스트 부담 | 메인 세션이 무거워짐 / 답변 느림 / 압축 발생 |
-| 슬래시 미스매치 | `/task-init` 인터뷰 짜증 / `/task-plan` 질문 너무 많음 / 등 |
+| 스킬 미스매치 | `/task-init` 인터뷰 짜증 / `/task-plan` 질문 너무 많음 / 등 |
 | Test Plan 가정 | 격리 세션이 메인 가정 못 풀어 헤맴 |
 | git/커밋 흐름 | 브랜치 이름 충돌 / 커밋 순서 헛갈림 |
 | 멀티리포 통신 | shared/ 메시지 못 잡음 / .env 빠짐 |
@@ -72,12 +72,12 @@ description: 회고 메타 — FRICTION_LOG 정독 + 반복 패턴 감지 + bott
 |------------------|--------------------|
 | 형식 위반 | §4 minimal form hook |
 | 컨텍스트 부담 | §1 컨텍스트 격리 강화 / §2 압축 평가 subagent |
-| 슬래시 미스매치 | (PLAYBOOK 외 — 슬래시 instruction 보강 검토) |
+| 스킬 미스매치 | (PLAYBOOK 외 — 스킬 instruction 보강 검토) |
 | Test Plan 가정 | (PLAYBOOK 외 — TASK_DOC_RULE.md §3.3 보강 검토) |
 | git/커밋 흐름 | (PLAYBOOK 외 — GIT_RULE.md 보강 검토) |
 | 멀티리포 통신 | (PLAYBOOK 외 — LINKED-REPOS.md 보강 검토) |
 | 자동화 부족 | §3 Python orchestrator (큰 그림) / §7 자동 PR 리뷰 |
-| 큰 묶음 작업 부담 | §5 `/plan-roadmap` 슬래시 |
+| 큰 묶음 작업 부담 | §5 `/plan-roadmap` 스킬 |
 | task 누적 우선순위 | §8 우선순위 컬럼 부활 |
 | npx update 충돌 | §9 머지 로직 엣지 케이스 보강 |
 
@@ -100,7 +100,7 @@ description: 회고 메타 — FRICTION_LOG 정독 + 반복 패턴 감지 + bott
 2. ...
 
 ### PLAYBOOK 외 보강 제안
-1. **<문서 / 슬래시>** 보강
+1. **<문서 / 스킬>** 보강
    - 사유: <패턴 N회>
    - 보강 방향: <구체 수정 제안>
    - 영향 범위: <수정 대상 파일>
@@ -109,7 +109,7 @@ description: 회고 메타 — FRICTION_LOG 정독 + 반복 패턴 감지 + bott
 - <짜증 인용 N>회
 
 ### 추천 다음 행동
-- <지크 OK 시 적용 순서>
+- <사용자 OK 시 적용 순서>
 ```
 
 ### Step 6 — 사용자 합의
@@ -119,7 +119,7 @@ description: 회고 메타 — FRICTION_LOG 정독 + 반복 패턴 감지 + bott
 분기:
 - **사용자 OK한 항목 → 즉시 적용 (또는 별도 task로 분리)**:
   - PLAYBOOK 부활: 해당 PLAYBOOK 항목 *방법* 그대로 따라 새 task 생성 — `/task-init` 호출 권장 (큰 변경이면).
-  - 슬래시 instruction 보강: 해당 `template/.claude/skills/<슬래시>.md` 직접 Edit + 사유 기록.
+  - 스킬 instruction 보강: 해당 `template/.claude/skills/<스킬>.md` 직접 Edit + 사유 기록.
   - TASK_DOC_RULE / GIT_RULE 보강: 해당 룰 파일 Edit + 수정 이력 행 추가.
 - **거부한 항목 → 보류** (FRICTION_LOG에 *"보류 — `/refine` <YYYY-MM-DD>"* 메모).
 - **단발성 → 그대로 누적** (반복되면 다음 `/refine`에서 다시 검토).
@@ -155,34 +155,23 @@ description: 회고 메타 — FRICTION_LOG 정독 + 반복 패턴 감지 + bott
 
 ## 도구 가이드
 
-- **Read**: `.project/FRICTION_LOG.md` / `plan/PLAYBOOK.md` / 보강 대상 룰/슬래시 파일 정독
-- **Edit**: 보강 적용 (TASK_DOC_RULE / GIT_RULE / 슬래시 instruction Edit) + FRICTION_LOG 메타 행 추가
+- **Read**: `.project/FRICTION_LOG.md` / `plan/PLAYBOOK.md` / 보강 대상 룰/스킬 파일 정독
+- **Edit**: 보강 적용 (TASK_DOC_RULE / GIT_RULE / 스킬 instruction Edit) + FRICTION_LOG 메타 행 추가
 - **AskUserQuestion**: Step 6 합의 — 어느 항목 적용할지 사용자 답
 - **Write**: 신규 룰/문서 추가 (드뭄 — 보통 PLAYBOOK 부활 항목이 새 hook 등 신규 파일 생성 요청 시)
 
 ## 주의사항
 
-- **미리 박지 X** — *진짜 데이터(반복 패턴) 없이* PLAYBOOK 부활 절대 X. 5사이클 함정 재발 회피의 핵심.
+- **선제적 작성 금지** — *진짜 데이터(반복 패턴) 없이* PLAYBOOK 부활 절대 X. 합리적 변형 차단 함정 회피의 핵심.
 - **단발성 짜증 = 데이터 부족** — < 3회 패턴은 *부활 검토 X*. 누적 대기.
-- **자체 판단으로 룰 박지 X** — 보강 제안은 *사용자 합의 후* 적용. *"이거 좋아 보여"* 자체 판단으로 즉시 Edit X.
-- **5사이클 함정 — 합리적 변형 차단** — minimal form hook 부활 시 *섹션 존재* 검사만. *내용 검증 X*. 5사이클의 25행 화이트리스트 함정 회피 (PLAYBOOK §4 §주의 참조).
-- **PLAYBOOK 본문 인용 그대로** — *방법* 인용 시 자체 추측 박지 X. PLAYBOOK 본문 한 줄씩 따라가며 적용.
+- **자체 판단으로 룰 작성 금지** — 보강 제안은 *사용자 합의 후* 적용. *"이거 좋아 보여"* 자체 판단으로 즉시 Edit X.
+- **합리적 변형 차단 함정** — minimal form hook 부활 시 *섹션 존재* 검사만. *내용 검증 X* — 25행 화이트리스트 함정 회피 (PLAYBOOK §4 §주의 참조).
+- **PLAYBOOK 본문 인용 그대로** — *방법* 인용 시 자체 추측 작성 금지. PLAYBOOK 본문 한 줄씩 따라가며 적용.
 - **`/refine` 호출 빈도** — 매 task마다 호출 X. 5 task 또는 짜증 누적 폭증 시. 너무 잦으면 *회고 자체가 짜증*.
-- **회고 → 보강 → 다음 task** 흐름 — 보강 적용은 *별도 task로 분리* 권장 (큰 변경이면). `/task-init` 호출하고 plan에 부활 사유 박음.
+- **회고 → 보강 → 다음 task** 흐름 — 보강 적용은 *별도 task로 분리* 권장 (큰 변경이면). `/task-init` 호출하고 plan에 부활 사유 기록.
 
 ## 상태 전이
 
 해당 없음 (meta 레벨 — task 상태 전이 X).
 
 단 보강 적용이 *별도 task*로 분리되면 그 task는 일반 흐름 (draft → planned → ... → closed) 따라감.
-
-## 5사이클 참조
-
-5사이클 자료 X (`/refine`은 v0.2 신규 슬래시).
-
-대신 `RETROSPECTIVE.md` (5사이클 회고 본문) 정독 권장 — 어떤 짜증이 5사이클에서 발생했는지 패턴 학습. 단 *그 회고 자체*는 5사이클 끝났을 때 1회성으로 진행한 것이고, `/refine`은 *주기적 mini-회고*가 핵심 차이.
-
-v0.2 신규점:
-- bottoms-up 보강 시스템화 (5사이클은 사후 회고 1회만)
-- PLAYBOOK 카탈로그 + 매핑 테이블 (Step 4) — 진짜 필요해질 때 *어디 봐야 할지* 명확
-- FRICTION_LOG 단일 진실 소스 (5사이클은 분산된 짜증 추적 — 통합 못 함)
