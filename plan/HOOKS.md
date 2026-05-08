@@ -50,7 +50,33 @@
 - `.claude/hooks/pre-commit-verify.sh`
 - `.claude/hooks/closed-immutable.sh`
 
-**Claude Code hook 등록** — 사용자 프로젝트 `.claude/settings.json` 또는 `~/.claude/settings.json`에 PreToolUse 매칭 등록 (사용자 환경에 따라).
+**Claude Code hook 등록 — 단일 진실 소스**: [template/.claude/settings.json](../template/.claude/settings.json)
+
+이 파일이 *없으면* hook은 디스크의 .sh 파일일 뿐 — Claude Code가 *fire 안 함*. `npx taskery init`이 settings.json도 함께 카피해 PreToolUse 매칭이 자동 등록됨.
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          { "type": "command", "command": ".claude/hooks/git-guard.sh" },
+          { "type": "command", "command": ".claude/hooks/pre-commit-verify.sh" }
+        ]
+      },
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          { "type": "command", "command": ".claude/hooks/closed-immutable.sh" }
+        ]
+      }
+    ]
+  }
+}
+```
+
+> 사용자 환경 글로벌 등록(`~/.claude/settings.json`)도 가능하지만 *프로젝트 단위 settings*가 single source of truth — npx로 갱신되어 사용자 customize 충돌 시 *.bak 백업 + confirm 받음.
 
 ---
 
@@ -207,3 +233,4 @@ hook 영역에서 부활 가능한 미래 옵션:
 | 날짜 | 변경 사항 |
 |------|----------|
 | 2026-05-08 | 신규 작성 — v0.2 hook 정신 + 영역 차이(practice/process/git/완료 보호) + 3 hook 정책 + 우회 절차 + 폐기 5사이클 hook + 동작 검증 결과 |
+| 2026-05-08 | §3에 settings.json 단일 진실 소스 + JSON 본문 + 미등록 시 hook fire 안 함 안내 추가 (audit 발견 #누락) |

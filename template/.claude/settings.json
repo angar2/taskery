@@ -1,0 +1,19 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          { "type": "command", "command": ".claude/hooks/git-guard.sh" },
+          { "type": "command", "command": ".claude/hooks/pre-commit-verify.sh" }
+        ]
+      },
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          { "type": "command", "command": ".claude/hooks/closed-immutable.sh" }
+        ]
+      }
+    ]
+  }
+}

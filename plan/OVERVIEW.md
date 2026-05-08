@@ -96,10 +96,11 @@ taskery/                                  ← 본 리포 (v0.2 시스템 자체)
 │   ├─ create.js                         ← npx create-taskery
 │   └─ update.js                         ← npx taskery update
 │
-└─ template/                              ← 사용자 프로젝트로 카피되는 자산 (코어 18 파일)
+└─ template/                              ← 사용자 프로젝트로 카피되는 자산 (코어 19 파일)
     ├─ CLAUDE.md                         ← 사용자 프로젝트 메인 진입점
     ├─ .gitignore                        ← .project/.env 등 박힘
     ├─ .claude/
+    │   ├─ settings.json                 ← Claude Code hook 등록 (PreToolUse 매칭)
     │   ├─ skills/                       ← 8 슬래시 본문
     │   └─ hooks/                        ← 3 catastrophic 안전망
     └─ .project/
@@ -119,6 +120,7 @@ my-app/                                   ← 사용자 프로젝트
 ├─ .gitignore                             ← template/.gitignore 카피
 │
 ├─ .claude/                               ← 코어 (npx 갱신)
+│   ├─ settings.json                     ← hook 등록 (PreToolUse 매칭)
 │   ├─ skills/ (8)
 │   └─ hooks/ (3)
 │
@@ -168,6 +170,7 @@ my-app/                                   ← 사용자 프로젝트
 |------|--------------|
 | 슬래시 본문 (Step 1~N) | [template/.claude/skills/<slash>.md](../template/.claude/skills/) (8 파일) |
 | Hook 본문 + 정규식 | [template/.claude/hooks/<hook>.sh](../template/.claude/hooks/) (3 파일) |
+| Hook 등록 (Claude Code PreToolUse 매칭) | [template/.claude/settings.json](../template/.claude/settings.json) |
 | 태스크 양식 + 4단 layer + 완성 예시 3개 | [template/.project/rules/TASK_DOC_RULE.md](../template/.project/rules/TASK_DOC_RULE.md) |
 | 프로젝트별 git 룰 | [template/.project/rules/GIT_RULE.md](../template/.project/rules/GIT_RULE.md) → `~/.claude/rules/GIT_RULE.md` (글로벌 fallback) |
 | 검증 명령 (사용자 프로젝트) | 사용자 프로젝트 `CLAUDE.md` `## 검증 명령` |
@@ -264,3 +267,4 @@ my-app/                                   ← 사용자 프로젝트
 | 날짜 | 변경 사항 |
 |------|----------|
 | 2026-05-08 | 신규 작성 — 진입 문서. v0.2 정신 3원칙 + 큰 그림 4영역 + 5사이클 폐기 간략 + 디렉토리 구조 (본 리포 + 사용자 프로젝트) + 핵심 결정 9개 표 + 단일 진실 소스 표 + plan/ 7 문서 인덱스 + 외부 참조 + 메인 세션 진입 가이드 + 현재 상태 + 남은 작업 |
+| 2026-05-08 | settings.json 추가 반영 — §5-1/§5-2 디렉토리 구조에 표기 + §7 단일 진실 소스 표에 hook 등록 항목 추가 (audit 발견 #누락) |
