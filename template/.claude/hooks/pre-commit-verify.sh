@@ -58,8 +58,13 @@ if not m:
     raise SystemExit('section_missing')
 
 section = m.group(1)
-# 백틱 안 명령 추출 — 한 줄에 하나
-cmds = re.findall(r'`([^`]+)`', section)
+# 백틱 안 명령 추출 — list item(`-`로 시작) 줄에서만
+# (blockquote `>` 메타 텍스트 등 비-list 백틱 오인식 방지)
+cmds = []
+for line in section.split('\n'):
+    stripped = line.strip()
+    if stripped.startswith('-'):
+        cmds.extend(re.findall(r'`([^`]+)`', stripped))
 for c in cmds:
     print(c)
 PYEOF
