@@ -96,7 +96,7 @@ taskery/                                  ← 본 리포 (v0.2 시스템 자체)
 │   ├─ create.js                         ← npx create-taskery
 │   └─ update.js                         ← npx taskery update
 │
-└─ template/                              ← 사용자 프로젝트로 카피되는 자산 (코어 19 파일)
+└─ template/                              ← 사용자 프로젝트로 카피되는 자산 (코어 23 파일)
     ├─ CLAUDE.md                         ← 사용자 프로젝트 메인 진입점
     ├─ .gitignore                        ← .project/.env 등 박힘
     ├─ .claude/
@@ -105,10 +105,12 @@ taskery/                                  ← 본 리포 (v0.2 시스템 자체)
     │   └─ hooks/                        ← 3 catastrophic 안전망
     └─ .project/
         ├─ FRICTION_LOG.md               ← 짜증 누적 빈 템플릿
-        ├─ rules/
-        │   ├─ TASK_DOC_RULE.md          ← task 양식 spec (4단 layer)
-        │   └─ GIT_RULE.md               ← 프로젝트별 git 정책
-        └─ shared/                       ← 멀티리포 메시지 빈 골격
+        ├─ rules/                        ← 코어 룰 (TASK_DOC_RULE / GIT_RULE)
+        ├─ changelog/.gitkeep            ← 사용자 영역 빈 골격 (/task-close 갱신)
+        ├─ flows/.gitkeep                ← 사용자 영역 빈 골격 (/task-dev 갱신)
+        ├─ plans/.gitkeep                ← 사용자 영역 빈 골격 (/plan-init이 vX.X/ 박음)
+        ├─ tasks/.gitkeep                ← 사용자 영역 빈 골격 (/task-init이 vX.X/<NNN>_<slug>.md 박음)
+        └─ shared/                       ← 멀티리포 메시지 빈 골격 ({sent,received}/completed/.gitkeep)
 ```
 
 ### 5-2. 사용자 프로젝트 (`npx taskery init` 후)
@@ -133,11 +135,11 @@ my-app/                                   ← 사용자 프로젝트
 │   │   ├─ TASK_DOC_RULE.md              ← 코어 (npx 갱신, *.bak 백업)
 │   │   ├─ GIT_RULE.md                   ← 코어 (npx 갱신)
 │   │   └─ *.local.md                    ← (옵션) 사용자 오버라이드 (npx 미터치)
-│   ├─ plans/<vX.X>/                     ← /plan-init 생성 (9 기획 문서)
-│   ├─ tasks/<vX.X>/                     ← /task-init ~ /task-close 생성/갱신
-│   ├─ flows/<module>.md                 ← /task-dev 갱신 (도메인 흐름)
+│   ├─ plans/                            ← .gitkeep (template에서) → /plan-init이 vX.X/ + 9 기획 문서 박음
+│   ├─ tasks/                            ← .gitkeep (template에서) → /task-init이 vX.X/<NNN>_<slug>.md 박음
+│   ├─ flows/                            ← .gitkeep (template에서) → /task-dev이 <module>.md 박음
+│   ├─ changelog/                        ← .gitkeep (template에서) → /task-close가 <YYYY-MM>.md 박음
 │   ├─ shared/                           ← 멀티리포 메시지 (template에서 빈 골격)
-│   ├─ changelog/<YYYY-MM>.md            ← /task-close 갱신
 │   └─ FRICTION_LOG.md                   ← 짜증 누적 (template에서 빈 템플릿)
 │
 ├─ src/ ...                               ← 사용자 코드
@@ -268,3 +270,4 @@ my-app/                                   ← 사용자 프로젝트
 |------|----------|
 | 2026-05-08 | 신규 작성 — 진입 문서. v0.2 정신 3원칙 + 큰 그림 4영역 + 5사이클 폐기 간략 + 디렉토리 구조 (본 리포 + 사용자 프로젝트) + 핵심 결정 9개 표 + 단일 진실 소스 표 + plan/ 7 문서 인덱스 + 외부 참조 + 메인 세션 진입 가이드 + 현재 상태 + 남은 작업 |
 | 2026-05-08 | settings.json 추가 반영 — §5-1/§5-2 디렉토리 구조에 표기 + §7 단일 진실 소스 표에 hook 등록 항목 추가 (audit 발견 #누락) |
+| 2026-05-08 | 사용자 영역 빈 골격 4 .gitkeep 추가 반영 — §5-1 카피 대상 19 → 23, §5-2 사용자 영역에 plans/tasks/flows/changelog가 init 시점부터 박힘 표기. /project-init Step 7도 정정 (audit 발견: init 직후 .project/ 비대칭) |

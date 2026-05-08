@@ -59,7 +59,7 @@
 
 `bin/init.js`는 *`template/` 디렉토리 안 모든 파일*을 사용자 cwd로 카피.
 
-**카피 대상 (코어 영역 — npx 갱신)** — 19 파일:
+**카피 대상 (코어 영역 — npx 갱신)** — 23 파일:
 | 카테고리 | 파일 |
 |---------|------|
 | 메인 instruction | `CLAUDE.md` |
@@ -68,7 +68,8 @@
 | Hook 등록 (1) | `.claude/settings.json` |
 | 룰 (2) | `.project/rules/{TASK_DOC_RULE,GIT_RULE}.md` |
 | 짜증 누적 빈 템플릿 | `.project/FRICTION_LOG.md` |
-| 멀티리포 골격 | `.project/shared/{sent,received}/completed/.gitkeep` |
+| 사용자 영역 빈 골격 (4) | `.project/{changelog,flows,plans,tasks}/.gitkeep` |
+| 멀티리포 골격 (2) | `.project/shared/{sent,received}/completed/.gitkeep` |
 | 루트 .gitignore | `.gitignore` |
 
 **카피 미대상 (사용자 영역)** — `template/`에 없으므로 자동으로 미카피:
@@ -296,3 +297,4 @@ npm publish --tag beta       # beta tag로 publish
 |------|----------|
 | 2026-05-08 | 신규 작성 — npx 시나리오 + bin/ 5 스크립트 + 카피 대상 / 미대상 + manifest 구조 + update 머지 4 분기 + *.local 룰 + npm publish 운영 + 빌드 시스템 폐기 사유 |
 | 2026-05-08 | §4 카피 대상 18 → 19 갱신 (settings.json hook 등록 행 추가) |
+| 2026-05-08 | §4 카피 대상 19 → 23 갱신 (사용자 영역 빈 골격 4 .gitkeep 추가 — changelog/flows/plans/tasks). audit 발견: init 직후 .project/ 비대칭 — /project-init 슬래시가 채우기 전에 빈 폴더는 미리 박혀야 사용자 입장에서 *세팅된 느낌* |

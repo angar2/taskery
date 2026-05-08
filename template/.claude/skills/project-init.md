@@ -143,22 +143,26 @@ taskery 도입 직후 **1회성**으로 호출. 사용자(지크) 또는 동료�
 # REPO_BACKEND_PATH=/Users/.../my-app-backend
 ```
 
-### Step 7 — `.project/changelog/` + `.project/FRICTION_LOG.md` 빈 템플릿
+### Step 7 — `.project/` 빈 골격 점검
+
+`npx taskery init`이 이미 다음 빈 골격 폴더 생성:
+- `.project/changelog/` (`.gitkeep`)
+- `.project/flows/` (`.gitkeep`)
+- `.project/plans/` (`.gitkeep` — `/plan-init`이 `vX.X/` 하위 박음)
+- `.project/tasks/` (`.gitkeep` — `/task-init`이 `vX.X/<NNN>_<slug>.md` 박음)
+- `.project/shared/{sent,received}/completed/` (`.gitkeep`)
+- `.project/FRICTION_LOG.md` (빈 템플릿)
+- `.project/rules/{TASK_DOC_RULE,GIT_RULE}.md` (코어 룰)
+
+→ `/project-init`은 폴더 생성 X. 누락 시(`init` 안 거치고 수동 셋업한 경우)에만 `mkdir -p` 실행.
 
 ```bash
-mkdir -p .project/changelog .project/flows
+# 누락 시에만:
+mkdir -p .project/{changelog,flows,plans,tasks}
+mkdir -p .project/shared/sent/completed .project/shared/received/completed
 ```
 
-`.project/FRICTION_LOG.md`:
-```markdown
-# FRICTION_LOG
-
-> 짜증/한계/짚이는 부분 누적. 메인이 한 줄씩 추가.
-> `/refine` 슬래시가 정독 + 패턴 감지 + 보강 제안.
-
-| 날짜 | 짜증 | 맥락 (어느 task / 슬래시) |
-|------|------|------|
-```
+`.project/FRICTION_LOG.md`도 `init`이 박은 빈 템플릿 그대로 사용. **이미 있으면 덮어쓰기 X** — 사용자 데이터 보호.
 
 ### Step 8 — 결과 보고
 
