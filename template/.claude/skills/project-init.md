@@ -1,0 +1,188 @@
+---
+description: taskery 도입 직후 1회성 — PROJECT.md / AGENT-GUIDE.md / LINKED-REPOS.md / .env 빈 골격 생성
+---
+
+# /project-init
+
+## 개요
+
+taskery 도입 직후 **1회성**으로 호출. 사용자(지크) 또는 동료가 새 리포에 npx로 taskery 세팅 직후 처음 부르는 슬래시. `.project/` 영역의 사람용/메인용 진입 문서 골격을 만든다.
+
+## 호출 시점
+
+- `npx taskery init` 또는 `npx create-taskery <name>` 직후 첫 메인 세션.
+- 또는 기존 리포에 taskery 사후 도입 후 첫 세션.
+
+## 입력 처리
+
+인자 없음. 두 분기:
+- **빈 프로젝트**: 사용자에게 질문 라운드 (프로젝트명/타입/멀티리포 여부 등).
+- **기존 코드 있음**: 코드베이스 분석 → 메타 추정 + 사용자 confirm.
+
+`.project/PROJECT.md` 이미 존재 시 → 경고 + confirm. *덮어쓰기 default X*.
+
+## 단계
+
+### Step 1 — 환경 점검 + 분기 판단
+
+1. `.project/PROJECT.md` 존재 확인.
+   - 존재 시: 사용자에게 *"이미 있는데 덮어쓸까? (y/N)"* 묻고 N이면 종료.
+2. `package.json`, `Cargo.toml`, `go.mod`, `pyproject.toml`, `pom.xml` 등 *기존 프로젝트 마커* 확인.
+   - 있음 → "기존 코드 분석" 분기.
+   - 없음 → "빈 프로젝트 인터뷰" 분기.
+
+### Step 2 — 메타 수집 (분기별)
+
+**기존 코드 분석 분기**:
+1. README.md / package.json / 디렉토리 구조 정독.
+2. 프로젝트 추정값 박음 (이름 / 타입 / 도메인).
+3. 사용자에게 *"이렇게 이해했는데 맞아?"* 한 번 confirm.
+
+**빈 프로젝트 인터뷰 분기**:
+1. 질문 라운드 — 한 번에 한 질문씩, 사용자 답 받고 다음:
+   - Q1: 프로젝트 이름?
+   - Q2: 타입? (frontend / backend / fullstack / cli / library / other)
+   - Q3: 도메인/한 줄 비전?
+   - Q4: 단일 리포 / 멀티 리포?
+   - Q5: (멀티 리포 시) 연결 리포 목록 + 각 역할?
+
+### Step 3 — `.project/PROJECT.md` 작성
+
+사람용 진입 문서. 개발자가 *"이 프로젝트 뭐 하는 거야?"* 알 수 있게.
+
+```markdown
+# <프로젝트명>
+
+## 개요
+<한 줄 비전>
+
+## 도메인
+<예: 이커머스 / SaaS / 개인 블로그 등>
+
+## 타입
+<frontend / backend / fullstack / ...>
+
+## 멀티리포 여부
+<단일 / 멀티 — 멀티면 LINKED-REPOS.md 참조>
+
+## 시작
+- 의존성 설치: `<명령>`
+- 개발 서버: `<명령>`
+- 빌드: `<명령>`
+- 테스트: `<명령>`
+
+## 디렉토리 구조
+- `src/` — 소스 코드
+- `.project/` — taskery 메타 영역
+- ...
+```
+
+### Step 4 — `.project/AGENT-GUIDE.md` 작성
+
+메인 세션 진입 가이드 (5사이클 살림). 새 메인 세션이 부르는 *"읽고 시작"* 문서.
+
+```markdown
+# AGENT-GUIDE.md
+
+## 활성 plan 버전
+<예: v1.0 — `.project/plans/v1.0/` 참조>
+
+## 메인이 매 세션 시작 시 읽을 것
+1. `CLAUDE.md` — 프로젝트 메타 + 검증 명령 + 룰 참조
+2. `.project/PROJECT.md` — 프로젝트 개요
+3. `.project/plans/<활성버전>/PLAN.md` — 활성 plan 진입 (이게 9 기획 문서 인덱스)
+4. `.project/AGENT-GUIDE.md` — 본 파일 (그대로)
+
+## 작업 흐름
+- task 시작: `/task-init` 또는 `/task-plan`
+- task 진행: `/task-dev` → `/task-test` → `/task-close`
+- 회고: `/refine` (5 task마다 또는 사용자 호출)
+
+## 폴더 구조
+- `.project/rules/` — 코어 룰 (TASK_DOC_RULE / GIT_RULE)
+- `.project/plans/<vX.X>/` — 9 기획 문서
+- `.project/tasks/<vX.X>/` — task 문서
+- `.project/flows/` — 도메인 흐름
+- `.project/shared/` — 멀티리포 메시지
+- `.project/changelog/` — 월별 변경 이력
+- `.project/FRICTION_LOG.md` — 짜증 데이터
+
+## 멀티리포
+<단일 리포면 "단일 리포. LINKED-REPOS.md 빈 템플릿."
+멀티 리포면 "LINKED-REPOS.md 참조">
+```
+
+### Step 5 — `.project/LINKED-REPOS.md` 작성
+
+```markdown
+# LINKED-REPOS.md
+
+## 멀티리포 여부
+<단일 / 멀티>
+
+## 연결 리포 목록
+<단일 리포면 "해당 없음">
+<멀티 리포면 표로 정리>
+
+| 리포명 | 역할 | 경로 (.env 변수명) |
+|--------|------|------|
+| ... | ... | ... |
+
+## 세션 간 통신
+- 송신: `.project/shared/sent/<filename>.md` 작성
+- 수신: `.project/shared/received/<filename>.md` 정독
+- 처리 완료: `sent/completed/` 또는 `received/completed/`로 이동
+```
+
+### Step 6 — `.project/.env` 빈 템플릿
+
+```bash
+# 멀티리포 환경 변수 (gitignore 대상)
+# 예시:
+# REPO_FRONTEND_PATH=/Users/.../my-app-frontend
+# REPO_BACKEND_PATH=/Users/.../my-app-backend
+```
+
+### Step 7 — `.project/changelog/` + `.project/FRICTION_LOG.md` 빈 템플릿
+
+```bash
+mkdir -p .project/changelog .project/flows
+```
+
+`.project/FRICTION_LOG.md`:
+```markdown
+# FRICTION_LOG
+
+> 짜증/한계/짚이는 부분 누적. 메인이 한 줄씩 추가.
+> `/refine` 슬래시가 정독 + 패턴 감지 + 보강 제안.
+
+| 날짜 | 짜증 | 맥락 (어느 task / 슬래시) |
+|------|------|------|
+```
+
+### Step 8 — 결과 보고
+
+작성된 파일 목록 + 다음 단계 안내:
+- *"PROJECT.md / AGENT-GUIDE.md / LINKED-REPOS.md / .env / FRICTION_LOG.md 생성. 다음은 `/plan-init <버전명>`으로 9 기획 문서 작성."*
+
+## 도구 가이드
+
+- **Read**: 기존 README / package.json 정독
+- **Write**: 신규 .md 파일 생성
+- **Bash**: `mkdir -p .project/changelog .project/flows`, `ls`, `cat package.json | head -20`
+- **AskUserQuestion**: 인터뷰 분기 시 질문 라운드 (한 번에 한 질문씩)
+
+## 주의사항
+
+- *덮어쓰기 default 금지* — 이미 PROJECT.md 있으면 confirm.
+- 인터뷰 분기에서 *자동 추정 진행 금지*. 빈 프로젝트면 사용자 답 받고 박음.
+- 한 번에 너무 많은 질문 X. 사용자 답 받고 다음 질문.
+- 이 슬래시는 **1회성**. 두 번째 호출은 의미 X (덮어쓰기 confirm 거치게 됨).
+
+## 상태 전이
+
+해당 없음 (project 레벨 — task 상태 X).
+
+## 5사이클 참조
+
+`archive/agents/architect.md`의 *질문 패턴 / 인터뷰 흐름* 참조.

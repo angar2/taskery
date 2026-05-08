@@ -1,0 +1,201 @@
+---
+description: task 격리 세션 검증 — Task tool 격리 호출 + Test Plan 그대로 수행, developed → testing → tested
+---
+
+# /task-test
+
+## 개요
+
+`developed` 상태 task를 *격리 세션*으로 검증. 메인이 *Task tool*로 sub-agent 호출 + task.md를 prompt로 넘김. 격리 세션은 *task.md만 보고 자기완결적*으로 Test Plan 수행 + PASS/FAIL/UNCERTAIN + 근거 리턴.
+
+**왜 격리?** 메인 세션은 plan/dev 컨텍스트가 박혀 있어 *"잘 됐을 거야"* confirmation bias 작동. 격리 세션이 *코드와 동작만 신뢰*해서 가정 없이 검증.
+
+## 호출 시점
+
+- `/task-dev` 끝나고 self-check PASS 받은 직후.
+- 도중 끊겼던 검증 이어서 (status=`testing`).
+
+## 입력 처리
+
+인자 = (선택) `TASK-NNN` 또는 자동 선택.
+
+분기:
+- **인자 명시**: 해당 task 파일.
+- **인자 없음**: 활성 plan 버전의 *상태=developed인 가장 최근 task* 자동 선택 + confirm.
+
+## 단계
+
+### Step 1 — task 파일 + Test Plan 추출
+
+1. `.project/AGENT-GUIDE.md` Read → 활성 plan 버전 확인.
+2. task 파일 Read:
+   - 인자 있음 → 해당 파일.
+   - 인자 없음 → `developed` 상태 가장 최근 task. 발견 시 confirm. 없으면 *"검증할 task 없음."* + 종료.
+3. 상태 = `developed` 검증. `testing`이면 이어가기 (Step 2 skip). 그 외면 종료.
+4. `## Test Plan` 섹션 + `## Dev Plan`의 Phase별 *완료 기준* 정독. 자기완결성 점검 — 다른 문서 참조나 *"위에서 만든 X"* 같은 표현 있으면 사용자에게 보고 + Test Plan 보강 후 재시도.
+
+### Step 2 — status 전환 (developed → testing)
+
+진입 시 `developed`인 경우만 헤더 status를 `testing`으로 Edit.
+
+### Step 3 — 격리 세션 호출 (Task tool)
+
+Task tool로 sub-agent spawn. prompt는 *자기완결적* — task.md 경로 + 격리 룰만 박음. 메인 컨텍스트 일체 안 들어감.
+
+**Task tool prompt 본문 (정확히 이 형식)**:
+
+```
+당신은 격리 세션의 tester입니다. 이 prompt에 박힌 룰만 따르고, 메인 세션의 plan/dev 가정은 일체 없습니다.
+
+## 대상 task
+
+파일 경로: <ABSOLUTE_PATH_TO_TASK_MD>
+
+이 파일을 직접 Read 해서 ## Test Plan 섹션 + ## Dev Plan의 Phase별 완료 기준을 정독하세요. 다른 문서 참조 X — task.md 하나만 봅니다.
+
+## 수행 룰
+
+1. ## Test Plan 시나리오를 *순서대로* 그대로 수행. 임의 추가 / 스킵 / 변형 금지.
+2. 각 시나리오마다 *실제 명령 실행* — 실행 없이 pass 처리 절대 금지.
+3. 검증 명령 (린트/타입/빌드/테스트) 모두 직접 실행.
+4. 코드와 동작만 신뢰. *"잘 될 거야"* / *"문제 없을 듯"* 같은 가정 일체 금지.
+5. UI/브라우저 시나리오는 가능한 범위에서 자동화 (Playwright 사용 가능). 자동화 불가능 시 UNCERTAIN으로 표기 + 사용자검수 필요 안내.
+6. 코드 파일 직접 수정 절대 금지. 임시 파일(테스트 스크립트 등) 생성 시 종료 후 삭제.
+
+## 결과 형식 (이 포맷 그대로 리턴)
+
+### 종합 판정
+- **PASS** / **FAIL** / **UNCERTAIN** 중 하나
+- 한 줄 요약
+
+### 시나리오별 결과
+| # | 시나리오 | 실행 명령/방식 | 결과 | 근거 |
+|---|---------|------------|------|------|
+| 1 | <Test Plan 시나리오 1 그대로> | <실행한 명령> | ✅/❌/❓ | <로그 인용 / 응답 / 출력> |
+| 2 | ... | ... | ... | ... |
+
+### 검증 명령 결과
+- 린트: <PASS/FAIL + exit code + 메시지>
+- 타입체크: <...>
+- 빌드: <...>
+- 단위 테스트: <PASS 케이스 수 / FAIL 케이스 수>
+
+### 실패 / 불확정 상세 (해당 시)
+- <어느 시나리오 / 무엇이 깨졌는지 / 어느 로그가 그 증거인지>
+
+### 사용자검수 필요 항목 (해당 시)
+- <자동화 불가능한 시나리오 — 스크린샷 경로 또는 수동 검수 가이드>
+
+## 종료 조건
+
+위 형식 그대로 리턴 후 종료. 코드 수정 시도 금지 — 결과 리턴만.
+```
+
+**구현 디테일**:
+- `<ABSOLUTE_PATH_TO_TASK_MD>` 자리에 `.project/tasks/<vX.X>/<NNN>_<slug>.md` (또는 폴더 승격 시 `<...>/task.md`)의 절대 경로 박음.
+- Task tool의 `subagent_type`: `general-purpose` (도구 풀 다 필요).
+- Task tool의 `description`: `Isolated test for TASK-<NNN>`.
+
+### Step 4 — 결과 리턴 + Result 섹션 기록
+
+격리 세션 리턴 결과를 `## Result` 섹션의 *테스트* 부분에 박음:
+
+```markdown
+## Result
+
+### 진행
+(`/task-dev`에서 박힌 그대로)
+
+### 테스트 (격리 세션 결과)
+- **<PASS / FAIL / UNCERTAIN>**.
+- 시나리오 <N>개 중 PASS <X>개 / FAIL <Y>개 / UNCERTAIN <Z>개.
+- 검증 명령 (린트/타입/빌드/테스트) 모두 PASS.
+- 근거:
+  - <격리 세션 표 인용 — 핵심 시나리오 + 증거>
+  - <검증 명령 출력 인용>
+
+(FAIL / UNCERTAIN 시) 실패 상세:
+- <시나리오 N: 무엇이 깨졌는지 + 로그 인용>
+```
+
+### Step 5 — PASS / FAIL / UNCERTAIN 분기
+
+격리 세션 종합 판정에 따라 분기.
+
+#### PASS 분기
+
+1. 헤더 status → `tested` Edit.
+2. 결과 보고:
+```
+✅ TASK-<NNN> 격리 검증 PASS
+- 시나리오 <N>개 모두 PASS
+- 검증 명령 모두 PASS
+- 상태: testing → tested
+- 다음: /task-close TASK-<NNN> 으로 git 마무리
+```
+
+#### FAIL 분기
+
+1. status는 `testing` 그대로 (자체 전환 X — 사용자 판단 필요).
+2. 사용자에게 보고:
+```
+❌ TASK-<NNN> 격리 검증 FAIL
+- 실패 시나리오: <목록>
+- 근거: <로그 / 응답 인용>
+
+어떻게 할까?
+1. "고쳐" — 메인이 status를 developing으로 되돌림 + /task-dev 재진입
+2. "OK 마무리" — 실패 알면서 /task-close 진행 (위험: 알려진 결함 채로 closed)
+```
+3. 사용자 *"고쳐"* → 헤더 status `testing` → `developing` Edit + `/task-dev` 안내. 사용자 *"OK 마무리"* → status `testing` → `tested` Edit (단 Result 섹션에 *"알려진 결함 있음"* 명시) + `/task-close` 안내.
+
+#### UNCERTAIN 분기
+
+격리 세션이 자동화 불가능한 시나리오(예: 모바일 사파리 / 외부 결제 / 시각 디자인) 발견 시:
+
+1. 사용자검수 필요 항목 사용자에게 표시 + 스크린샷 경로 (있으면).
+2. 사용자에게 *"이 부분 직접 검수 부탁. 결과 어땠어?"* 묻기.
+3. 사용자 *"PASS"* → PASS 분기로. 사용자 *"FAIL"* → FAIL 분기로.
+
+### Step 6 — 결과 보고 (위 분기별 메시지)
+
+## 도구 가이드
+
+- **Read**: task 파일 / `## Test Plan` + `## Dev Plan` 정독
+- **Edit**: status 전환 + Result 섹션 기록
+- **Task tool**: 격리 세션 호출 (Step 3 prompt 박아서)
+- **AskUserQuestion**: FAIL/UNCERTAIN 시 사용자 판단 받기
+
+## 주의사항
+
+- **격리 세션이 코드 수정하면 안 됨** — prompt에 *"코드 파일 직접 수정 절대 금지"* 박혔지만 한 번 더 결과 검토 시 코드 변경 흔적 있으면 사용자에게 보고.
+- **메인이 시나리오 임의 추가 X** — `## Test Plan`에 박힌 것만 격리 세션이 수행. 진행 중 *"이것도 같이 검증하자"* 떠오르면 task.md `## Test Plan` Edit 후 재호출.
+- **자기완결성 검증 먼저** — Step 1에서 Test Plan이 *"위에서 만든 X"* 같은 메인 컨텍스트 의존 표현 있으면 격리 세션이 헤맴. 보강 후 재시도.
+- **PASS 자체 판정 X** — 메인이 *"잘 됐을 듯"* 판정하지 X. 격리 세션 결과만 신뢰.
+- **임시 파일 정리** — 격리 세션이 만든 Playwright 스크립트 / 임시 데이터 종료 시 삭제. 코드베이스 오염 X.
+- **사용자검수 시나리오는 자동화 못 잡음** — UI 미세 조정 / 시각 디자인 / 외부 결제 등은 UNCERTAIN으로 가야 정상. PASS 강제 X.
+- **FAIL → developing 자동 되돌림 X** — 사용자 *"고쳐"* 답 받기 전 status 박지 X. *대화로 OK = 자동 전이* 룰의 핵심.
+
+## 상태 전이
+
+| 진입 시 | 종료 시 |
+|--------|--------|
+| `developed` | `tested` (PASS) |
+| `developed` | `developing` (FAIL + 사용자 *"고쳐"*) |
+| `developed` | `tested` (FAIL + 사용자 *"OK 마무리"* — 알려진 결함 명시) |
+| `testing` (이어가기) | 동일 분기 |
+
+## 5사이클 참조
+
+`archive/agents/tester.md` *업무 플로우 + 사용자검수 분기* 참조:
+- 사전 탐색 (테스트 환경 파악) — Step 3 격리 prompt에 흡수
+- 테스트 방법별 실행 방식 표 (브라우저/API/로그/DB/파일시스템/사용자검수)
+- 증거 기반 PASS/FAIL 기록 (실행 없이 pass 절대 X)
+- Round 2 사용자검수 흐름 — v0.2는 UNCERTAIN 분기 + 대화로 흡수
+
+v0.2 변경점:
+- *"대기중 / 검수 일시"* 필드 폐기 (격리 세션 단일 호출 + 사용자 대화)
+- Round 1/Round 2 분기 폐기 (UNCERTAIN으로 단순화)
+- 사용자검수 (user) 표 폐기 (Result 섹션 자유 형식)
+- 자동/수동 시나리오 분리 메타 폐기 — Test Plan 자유 형식이 알아서 표현
+- 격리 메커니즘은 Task tool 단일 default (5사이클은 별도 spawn 메커니즘)
