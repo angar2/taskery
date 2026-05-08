@@ -1,0 +1,31 @@
+{
+  "name": "taskery",
+  "version": "0.2.0",
+  "description": "Lightweight task system for Claude Code — 1 메인 세션 + 슬래시 8종 + catastrophic hook 안전망 3종",
+  "bin": {
+    "taskery": "./bin/taskery.js",
+    "create-taskery": "./bin/create.js"
+  },
+  "files": [
+    "bin/",
+    "template/",
+    "plan/PLAYBOOK.md",
+    "RETROSPECTIVE.md",
+    "README.md"
+  ],
+  "scripts": {
+    "smoke:init": "node bin/init.js",
+    "smoke:update": "node bin/update.js"
+  },
+  "keywords": [
+    "claude-code",
+    "task-management",
+    "ai-coding-workflow",
+    "slash-commands",
+    "agent-hooks"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
