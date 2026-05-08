@@ -84,7 +84,7 @@
 - **`.project/plans/<vX.X>/` 변경 시** → 관련 task의 `spec-diffs/` 갱신 (`/task-plan` Phase 0 흐름 — 진행 중 task 있으면)
 - **`CLAUDE.md` 검증 명령 변경 시** → 모든 스킬 + hook이 그대로 따름. 별도 동기화 불필요
 - **룰(`*.md` in `.project/rules/`) 변경 시** → 스킬 instruction이 다음 호출부터 변경 반영
-- **`*.local.md` 사용자 오버라이드** → `npx taskery update`가 미터치. 코어 룰 갱신 시 `*.bak` 백업 후 사용자 confirm
+- **`*.local.md` 사용자 오버라이드** → `npx @angar2/taskery update`가 미터치. 코어 룰 갱신 시 `*.bak` 백업 후 사용자 confirm
 
 ---
 

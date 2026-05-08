@@ -141,7 +141,7 @@
 
 ## 9. 머지 로직 엣지 케이스 보강
 
-- **상황**: `npx taskery update` 시 사용자 customize 충돌 빈발 — 자동 머지가 의도한 customize 깨뜨리는 케이스
+- **상황**: `npx @angar2/taskery update` 시 사용자 customize 충돌 빈발 — 자동 머지가 의도한 customize 깨뜨리는 케이스
 - **요소**: `bin/update.js` 머지 로직에 엣지 케이스 처리 추가
 - **방법**:
   1. FRICTION_LOG에서 머지 충돌 케이스 수집
@@ -174,3 +174,4 @@
 |------|----------|
 | 2026-05-08 | 신규 작성 — 9 미래 옵션 카탈로그 |
 | 2026-05-09 | 표현 정제 — 인명 / 경박 표현 / 스킬 용어 / 이전 버전 비교 단락 정리 |
+| 2026-05-09 | npm 패키지명 `@angar2/taskery`로 변경 반영 — §9 `npx taskery update` → `npx @angar2/taskery update`. |

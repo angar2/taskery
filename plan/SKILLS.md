@@ -183,7 +183,7 @@ description: <한 줄 설명>
 **사용자 프로젝트 첫 셋업**:
 ```
 1. cd <user-project>
-2. npx taskery init        # template/ 자산 카피 + manifest 생성
+2. npx @angar2/taskery init  # template/ 자산 카피 + manifest 생성
 3. claude code              # 메인 세션 진입 (CLAUDE.md 자동 정독)
 4. /project-init            # PROJECT/AGENT-GUIDE/LINKED-REPOS/.env 골격
 5. /plan-init v1.0          # 기획 문서 작성
@@ -207,3 +207,4 @@ description: <한 줄 설명>
 |------|----------|
 | 2026-05-08 | 신규 작성 (`SLASH-COMMANDS.md`) — 8 스킬 명세 + 흐름 + 컨텍스트 관리 + 회고 메타 |
 | 2026-05-09 | 파일명 변경: `SLASH-COMMANDS.md` → `SKILLS.md`. 표현 정제 — 인명 / 경박 표현 / 스킬 용어 / 이전 버전 언급 정리 |
+| 2026-05-09 | npm 패키지명 `@angar2/taskery`로 변경 반영 — `npx taskery init` → `npx @angar2/taskery init`. |

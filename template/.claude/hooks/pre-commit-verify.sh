@@ -38,7 +38,7 @@ fi
 # CLAUDE.md 정독 — 프로젝트 루트
 if [ ! -f "./CLAUDE.md" ]; then
   echo "pre-commit-verify: 프로젝트 루트 CLAUDE.md 없음. 검증 명령 단일 진실 소스 누락 — commit 차단." >&2
-  echo "  '/project-init' 또는 'npx taskery init' 호출해 CLAUDE.md 생성." >&2
+  echo "  '/project-init' 또는 'npx @angar2/taskery init' 호출해 CLAUDE.md 생성." >&2
   exit 2
 fi
 

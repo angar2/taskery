@@ -169,8 +169,8 @@ draft → planned → developing → developed → testing → tested → closed
 
 **WHY**:
 - 사용자 = 본인 + 동료 진영 (회사/집 PC). Node.js 의존 0 진입장벽
-- npx는 *최신 버전 자동 fetch* + *버전 고정 가능* (`npx taskery@0.1.5 init`)
-- 머지 갱신 메커니즘 (`npx taskery update`) 단일 흐름
+- npx는 *최신 버전 자동 fetch* + *버전 고정 가능* (`npx @angar2/taskery@0.1.5 init`)
+- 머지 갱신 메커니즘 (`npx @angar2/taskery update`) 단일 흐름
 
 **대안 검토**:
 | 대안 | 채택 X 이유 |
@@ -182,10 +182,10 @@ draft → planned → developing → developed → testing → tested → closed
 **채택 명령**:
 | 명령 | 동작 |
 |------|------|
-| `npx create-taskery <name>` | 새 폴더 + 세팅 |
-| `npx taskery init` | 기존 리포에 세팅 |
-| `npx taskery update` | 최신 버전 머지 갱신 |
-| `npx taskery@<version> init` | 특정 버전 고정 |
+| `npx -p @angar2/taskery create-taskery <name>` | 새 폴더 + 세팅 |
+| `npx @angar2/taskery init` | 기존 리포에 세팅 |
+| `npx @angar2/taskery update` | 최신 버전 머지 갱신 |
+| `npx @angar2/taskery@<version> init` | 특정 버전 고정 |
 
 **보조 옵션 미래로 유보**: Claude Code plugin은 PLAYBOOK §6 (진짜 환경 지원되면 검토).
 
@@ -271,7 +271,7 @@ FRICTION_LOG 패턴 ≥ 3회 → /refine 회고 → 사용자 합의 → PLAYBOO
 
 **부수 처리**:
 - `template/.claude/skills/*.md`의 과거 *5사이클 참조* 섹션은 정정 작업으로 통째 제거 — broken link 가능성 자체 해소
-- 사용자 프로젝트(`npx taskery init`)에는 archive 카피 X (template/만 카피) → 영향 없음
+- 사용자 프로젝트(`npx @angar2/taskery init`)에는 archive 카피 X (template/만 카피) → 영향 없음
 
 **결과 위치**: 본 리포 `archive/` 디렉토리 부재
 
@@ -294,3 +294,4 @@ FRICTION_LOG 패턴 ≥ 3회 → /refine 회고 → 사용자 합의 → PLAYBOO
 |------|----------|
 | 2026-05-08 | 신규 작성 — 핵심 의사결정 11개 + 변경 이력 자리 |
 | 2026-05-09 | 표현 정제 — 인명 / 경박 표현 / 스킬 용어 / 외부 부재 문서(RETROSPECTIVE.md) 참조 정리. 이전 버전 비교 본문은 결정 사유 설명 목적이므로 유지. |
+| 2026-05-09 | §8 채택 명령 표 + WHY의 npx 명령 표기를 `@angar2/taskery`로 갱신 (npm 이름 충돌 해소). |

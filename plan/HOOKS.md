@@ -43,7 +43,7 @@ practice 영역에 hook을 강제하면 *합리적 변형 차단 사고*가 발�
 
 **Claude Code hook 등록 — 단일 진실 소스**: [template/.claude/settings.json](../template/.claude/settings.json)
 
-이 파일이 *없으면* hook은 디스크의 .sh 파일일 뿐 — Claude Code가 *fire 안 함*. `npx taskery init`이 settings.json도 함께 카피해 PreToolUse 매칭이 자동 등록됨.
+이 파일이 *없으면* hook은 디스크의 .sh 파일일 뿐 — Claude Code가 *fire 안 함*. `npx @angar2/taskery init`이 settings.json도 함께 카피해 PreToolUse 매칭이 자동 등록됨.
 
 ```json
 {
@@ -227,3 +227,4 @@ hook 영역에서 부활 가능한 미래 옵션:
 | 2026-05-08 | §3에 settings.json 단일 진실 소스 + JSON 본문 + 미등록 시 hook fire 안 함 안내 추가 |
 | 2026-05-08 | §6 closed-immutable 차단 범위 단순화 (task.md 본 파일만) — vX.X 공통 spec-diffs 미커버 비대칭 fix. spec-diffs/screenshots는 자유 수정. §10 동작 검증 표 갱신 |
 | 2026-05-09 | 표현 정제 — 인명 / 경박 표현 / 스킬 용어 / 이전 버전 비교 단락(§2 영역 차이 / §8 폐기된 hook) 정리. 폐기 hook 비교는 [DECISIONS.md](DECISIONS.md)로 위임. |
+| 2026-05-09 | npm 패키지명 `@angar2/taskery`로 변경 반영 — `npx taskery init` → `npx @angar2/taskery init` (settings.json 카피 안내). |

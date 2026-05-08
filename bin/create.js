@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * bin/create.js
- * `npx create-taskery <project-name>` — 새 디렉토리 생성 + 진입 + init 흐름.
+ * `npx -p @angar2/taskery create-taskery <project-name>` — 새 디렉토리 생성 + 진입 + init 흐름.
  *
  * 동작:
  *   1. <project-name> 인자 검증 (없으면 에러)
@@ -21,7 +21,7 @@ function fail(msg) {
 
 const arg = process.argv[2];
 if (!arg) {
-  fail(`프로젝트 이름 인자 필요. 예: npx create-taskery my-app`);
+  fail(`프로젝트 이름 인자 필요. 예: npx -p @angar2/taskery create-taskery my-app`);
 }
 
 // 안전한 디렉토리 이름 검증 — 절대경로 / .. / 빈 문자열 등 차단
@@ -32,7 +32,7 @@ if (arg.startsWith('/') || arg.includes('..') || arg.trim() === '') {
 const targetDir = path.resolve(process.cwd(), arg);
 
 if (fs.existsSync(targetDir)) {
-  fail(`'${arg}' 이미 존재. 다른 이름 사용하거나 'cd ${arg} && npx taskery init' 호출.`);
+  fail(`'${arg}' 이미 존재. 다른 이름 사용하거나 'cd ${arg} && npx @angar2/taskery init' 호출.`);
 }
 
 console.log(`create-taskery: '${arg}' 생성 + taskery init...`);

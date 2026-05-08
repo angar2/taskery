@@ -1,5 +1,5 @@
 {
-  "name": "taskery",
+  "name": "@angar2/taskery",
   "version": "0.1.0",
   "description": "Lightweight task system for Claude Code — 1 메인 세션 + 스킬 8종 + catastrophic hook 안전망 3종",
   "bin": {
@@ -33,6 +33,9 @@
   "homepage": "https://github.com/angar2/taskery#readme",
   "bugs": {
     "url": "https://github.com/angar2/taskery/issues"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "engines": {
     "node": ">=18.0.0"
