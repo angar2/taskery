@@ -70,6 +70,7 @@ PASS 시 Step 3으로.
      - **slug**: task 파일명에서 그대로
      - 예: `feature/claude_TASK-007_login-feature`
 3. 작업 브랜치 진입 후 *변경분이 미리 stage* 되어 있어야 함. dev에서 작업했다면 이미 working tree에 변경분 있음 — 그대로 새 브랜치 진입 후 staging.
+4. **작업 브랜치 생성과 staging/commit은 별도 Bash 호출로 분리**. `git checkout -b ... && git add ... && git commit ...` 같이 `&&`로 묶으면 git-guard.sh가 *명령 텍스트 분석 시점*에 dev 브랜치로 판정해 commit을 차단함 (분리하면 정상 통과). 묶음 명령 default X.
 
 ### Step 4 — 커밋 (GIT_RULE 순서 준수)
 
