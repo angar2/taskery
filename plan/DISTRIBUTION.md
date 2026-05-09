@@ -63,7 +63,7 @@
 | 카테고리 | 파일 |
 |---------|------|
 | 메인 instruction | `CLAUDE.md` |
-| 스킬 본문 (8) | `.claude/skills/{project,plan,task}-*.md`, `.claude/skills/refine.md` |
+| 스킬 본문 (8) | `.claude/skills/{project-init,plan-init,task-init,task-plan,task-dev,task-test,task-close,refine}/SKILL.md` |
 | Hook (3) | `.claude/hooks/{git-guard,pre-commit-verify,closed-immutable}.sh` |
 | Hook 등록 (1) | `.claude/settings.json` |
 | 룰 (2) | `.project/rules/{TASK_DOC_RULE,GIT_RULE}.md` |
@@ -106,7 +106,7 @@
       "core": true,
       "managed": true
     },
-    ".claude/skills/task-init.md": {
+    ".claude/skills/task-init/SKILL.md": {
       "hash": "sha256:...",
       "core": true,
       "managed": true
@@ -304,3 +304,4 @@ npm publish --tag beta       # beta tag로 publish
 | 2026-05-09 | §8 publish-prep 4 항목 완료 반영 — README.md 작성 + `bin/taskery.js` GitHub URL 채움 + `package.json` metadata 보강(author/repository/homepage/bugs) + LICENSE 작성. `files` 배열 슬림(plan/PLAYBOOK.md 제거 + LICENSE 추가). |
 | 2026-05-09 | publish 첫 버전이 0.1.0임을 반영 — `0.2.0` → `0.1.0` (manifest 예시 + §8 package.json 메타 예시), `npx taskery@0.2.5` → `0.1.5` (semver 예시). |
 | 2026-05-09 | npm 패키지명 `@angar2/taskery`로 변경 (이름 충돌 해소) — npx/npm 명령 표기 모두 갱신. §8 `package.json` 메타 예시도 동기화 (name + publishConfig 추가 + bin `./` prefix 제거 반영). 프로젝트 정체성 호칭은 *taskery* 그대로 유지. |
+| 2026-05-10 | 스킬 8종 구조 마이그레이션 반영 — §4 카피 대상 표 스킬 본문 행 + §5 manifest 예시 안 키 경로를 `<name>.md` → `<name>/SKILL.md`로 갱신. (Claude Code 표준 스킬 구조 적용, 카피 대상 23 파일 갯수 자체는 동일. 0.1.1 후보) |

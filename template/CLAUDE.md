@@ -54,7 +54,7 @@
 | `/task-close` | task | 검증 명령 게이트 + 커밋 + dev 병합 (tested → closed) |
 | `/refine` | meta | FRICTION_LOG 정독 + 패턴 감지 + bottoms-up 보강 제안 |
 
-본문은 `.claude/skills/<스킬>.md` 참조.
+본문은 `.claude/skills/<스킬>/SKILL.md` 참조.
 
 ---
 

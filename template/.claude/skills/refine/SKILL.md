@@ -1,4 +1,5 @@
 ---
+name: refine
 description: 회고 메타 — FRICTION_LOG 정독 + 반복 패턴 감지 + bottoms-up 보강 제안 (PLAYBOOK 부활 / 새 룰)
 ---
 
@@ -119,7 +120,7 @@ description: 회고 메타 — FRICTION_LOG 정독 + 반복 패턴 감지 + bott
 분기:
 - **사용자 OK한 항목 → 즉시 적용 (또는 별도 task로 분리)**:
   - PLAYBOOK 부활: 해당 PLAYBOOK 항목 *방법* 그대로 따라 새 task 생성 — `/task-init` 호출 권장 (큰 변경이면).
-  - 스킬 instruction 보강: 해당 `template/.claude/skills/<스킬>.md` 직접 Edit + 사유 기록.
+  - 스킬 instruction 보강: 해당 `template/.claude/skills/<스킬>/SKILL.md` 직접 Edit + 사유 기록.
   - TASK_DOC_RULE / GIT_RULE 보강: 해당 룰 파일 Edit + 수정 이력 행 추가.
 - **거부한 항목 → 보류** (FRICTION_LOG에 *"보류 — `/refine` <YYYY-MM-DD>"* 메모).
 - **단발성 → 그대로 누적** (반복되면 다음 `/refine`에서 다시 검토).

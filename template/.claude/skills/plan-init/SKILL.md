@@ -1,4 +1,5 @@
 ---
+name: plan-init
 description: plan 버전 단위 9 기획 문서 작성 — 신규 vX.X/ 또는 기존 카피 후 변경 인터뷰
 ---
 

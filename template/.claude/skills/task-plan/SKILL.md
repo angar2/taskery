@@ -1,4 +1,5 @@
 ---
+name: task-plan
 description: task 기획 채우기 — Requirements / Scope / Dev Plan / Test Plan 4 섹션 작성, draft → planned
 ---
 
