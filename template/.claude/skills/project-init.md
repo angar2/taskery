@@ -164,10 +164,35 @@ mkdir -p .project/shared/sent/completed .project/shared/received/completed
 
 `.project/FRICTION_LOG.md`도 `init`이 카피한 빈 템플릿 그대로 사용. **이미 있으면 덮어쓰기 X** — 사용자 데이터 보호.
 
+### Step 7.5 — git 초기화 + 첫 ref 분기 (빈 폴더 케이스)
+
+`git status`가 *fatal: not a git repository* 에러면 빈 폴더 진입 케이스. 다음 4단계 실행:
+
+```bash
+git status 2>&1 | head -1
+# "fatal: not a git repository" 면 미초기화
+```
+
+미초기화 시:
+
+```bash
+git init
+git commit --allow-empty -m "chore: root commit"   # ref 생성용 (commit 0 상태에선 branch 만들어도 ref 안 박힘)
+git symbolic-ref --short HEAD                       # 현재 default branch 확인 (예: main 또는 master)
+git branch dev                                       # 같은 sha에 dev 분기
+git branch -a                                        # main(또는 master) + dev 둘 다 떠야 함
+```
+
+이렇게 하지 않으면 첫 task `git checkout -b feature/...`까지는 동작하지만 **dev 브랜치 ref 자체가 없어서** `--no-ff` 머지 시점에 막힘. 사용자가 수동 `git branch dev <root-sha>` 매핑 필요.
+
+이미 git 초기화된 리포면 (status 정상) 이 step 건너뜀.
+
+> root commit이 빈 commit으로 박히는 게 싫으면 생략 가능. 단 그러면 첫 task chore commit이 박히기 *전엔* dev/main ref 못 만듦 → 첫 머지 직전에 사용자/메인이 명시 매핑 필요.
+
 ### Step 8 — 결과 보고
 
 작성된 파일 목록 + 다음 단계 안내:
-- *"PROJECT.md / AGENT-GUIDE.md / LINKED-REPOS.md / .env 생성. (FRICTION_LOG.md / 빈 골격 폴더는 npx init이 이미 카피한 것 그대로). 다음은 `/plan-init <버전명>`으로 9 기획 문서 작성."*
+- *"PROJECT.md / AGENT-GUIDE.md / LINKED-REPOS.md / .env 생성. (FRICTION_LOG.md / 빈 골격 폴더는 npx init이 이미 카피한 것 그대로). **빈 폴더 케이스라 git init + dev 분기까지 완료** (이미 git 리포면 건너뜀). 다음은 `/plan-init <버전명>`으로 9 기획 문서 작성."*
 
 **결과 commit 흐름** (GIT_RULE 정합):
 - dev 직접 commit *금지* (git-guard.sh 차단). 두 가지 default 흐름:
