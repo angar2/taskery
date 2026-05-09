@@ -141,7 +141,7 @@ my-app/                                   ← 사용자 프로젝트
 
 | 정보 | 단일 진실 소스 |
 |------|--------------|
-| 스킬 본문 (Step 1~N) | [template/.claude/skills/<skill>.md](../template/.claude/skills/) (8 파일) |
+| 스킬 본문 (Step 1~N) | [template/.claude/skills/<skill>/SKILL.md](../template/.claude/skills/) (8 디렉토리) |
 | Hook 본문 + 정규식 | [template/.claude/hooks/<hook>.sh](../template/.claude/hooks/) (3 파일) |
 | Hook 등록 (Claude Code PreToolUse 매칭) | [template/.claude/settings.json](../template/.claude/settings.json) |
 | 태스크 양식 + 4단 layer + 완성 예시 3개 | [template/.project/rules/TASK_DOC_RULE.md](../template/.project/rules/TASK_DOC_RULE.md) |
@@ -174,7 +174,7 @@ my-app/                                   ← 사용자 프로젝트
 | 자료 | 위치 | 용도 |
 |------|------|------|
 | 사용자 프로젝트 메인 진입점 | `<user-project>/CLAUDE.md` | 메인 세션 자동 정독 (검증 명령 + 룰 참조 + 스킬 8종) |
-| 스킬 본문 | `<user-project>/.claude/skills/*.md` | 스킬 호출 시 메인이 정독 |
+| 스킬 본문 | `<user-project>/.claude/skills/*/SKILL.md` | 스킬 호출 시 메인이 정독 |
 | Hook | `<user-project>/.claude/hooks/*.sh` | Claude Code PreToolUse 자동 실행 |
 | task 양식 룰 | `<user-project>/.project/rules/TASK_DOC_RULE.md` | task 작성 시 메인이 정독 |
 | git 룰 | `<user-project>/.project/rules/GIT_RULE.md` | git 작업 시 메인이 정독 |
@@ -199,7 +199,7 @@ my-app/                                   ← 사용자 프로젝트
 1. `<user-project>/CLAUDE.md` (메인 세션 자동 정독)
 2. `<user-project>/.project/AGENT-GUIDE.md` (활성 plan 버전 + 폴더 구조)
 3. `<user-project>/.project/plans/<활성버전>/PLAN.md` (기획 문서 진입)
-4. 스킬 호출 시 메인이 해당 `<user-project>/.claude/skills/<skill>.md` 정독
+4. 스킬 호출 시 메인이 해당 `<user-project>/.claude/skills/<skill>/SKILL.md` 정독
 
 **글로벌 룰** (`~/.claude/CLAUDE.md`)은 모든 세션에서 자동 적용 — 사용자 닉네임 / 반말 대화 / md 수정 이력 의무 등.
 
@@ -233,3 +233,4 @@ my-app/                                   ← 사용자 프로젝트
 | 2026-05-09 | 외부 비교 자료 / 배경 단락 정리 — 비교/배경은 [DECISIONS.md](DECISIONS.md)로 통합. shared/ 하위 폴더 구조 표시. §10 현재 상태 갱신 (smoke test + follow-up fix 반영) |
 | 2026-05-09 | 표현 정제 — 인명 / 경박 표현 / 스킬 용어 정정 (DECISIONS.md 외) |
 | 2026-05-09 | npm 패키지명 `@angar2/taskery`로 변경 (이름 충돌 해소) — npx/npm 명령 표기 갱신. 프로젝트 정체성 호칭은 *taskery* 그대로 유지. |
+| 2026-05-10 | 스킬 8종 구조 마이그레이션 반영 — §6 단일 진실 소스 표 + §7 사용자 프로젝트 자산 표 + §8 정독 순서 라인 `<skill>.md` → `<skill>/SKILL.md` 갱신. (Claude Code가 npx init 후 스킬을 인식 못 하던 동작 버그 해결, 0.1.1 후보) |

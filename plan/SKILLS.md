@@ -63,22 +63,23 @@ draft → planned → developing → developed → testing → tested → closed
 
 ## 4. 스킬 본문 — 단일 진실 소스
 
-**본문 step별 디테일**은 `template/.claude/skills/<skill>.md`에 위치. 본 문서는 link만:
+**본문 step별 디테일**은 `template/.claude/skills/<skill>/SKILL.md`에 위치. 본 문서는 link만:
 
 | 스킬 | 본문 위치 | 분량 |
 |------|---------|------|
-| `/project-init` | [template/.claude/skills/project-init.md](../template/.claude/skills/project-init.md) | 5,990 B |
-| `/plan-init` | [template/.claude/skills/plan-init.md](../template/.claude/skills/plan-init.md) | 5,494 B |
-| `/task-init` | [template/.claude/skills/task-init.md](../template/.claude/skills/task-init.md) | 7,079 B |
-| `/task-plan` | [template/.claude/skills/task-plan.md](../template/.claude/skills/task-plan.md) | 9,273 B |
-| `/task-dev` | [template/.claude/skills/task-dev.md](../template/.claude/skills/task-dev.md) | 8,035 B |
-| `/task-test` | [template/.claude/skills/task-test.md](../template/.claude/skills/task-test.md) | 9,038 B |
-| `/task-close` | [template/.claude/skills/task-close.md](../template/.claude/skills/task-close.md) | 9,077 B |
-| `/refine` | [template/.claude/skills/refine.md](../template/.claude/skills/refine.md) | 8,011 B |
+| `/project-init` | [template/.claude/skills/project-init/SKILL.md](../template/.claude/skills/project-init/SKILL.md) | 5,990 B |
+| `/plan-init` | [template/.claude/skills/plan-init/SKILL.md](../template/.claude/skills/plan-init/SKILL.md) | 5,494 B |
+| `/task-init` | [template/.claude/skills/task-init/SKILL.md](../template/.claude/skills/task-init/SKILL.md) | 7,079 B |
+| `/task-plan` | [template/.claude/skills/task-plan/SKILL.md](../template/.claude/skills/task-plan/SKILL.md) | 9,273 B |
+| `/task-dev` | [template/.claude/skills/task-dev/SKILL.md](../template/.claude/skills/task-dev/SKILL.md) | 8,035 B |
+| `/task-test` | [template/.claude/skills/task-test/SKILL.md](../template/.claude/skills/task-test/SKILL.md) | 9,038 B |
+| `/task-close` | [template/.claude/skills/task-close/SKILL.md](../template/.claude/skills/task-close/SKILL.md) | 9,077 B |
+| `/refine` | [template/.claude/skills/refine/SKILL.md](../template/.claude/skills/refine/SKILL.md) | 8,011 B |
 
-**공통 형식** (각 스킬 .md):
+**공통 형식** (각 SKILL.md):
 ```markdown
 ---
+name: <스킬>
 description: <한 줄 설명>
 ---
 
@@ -147,7 +148,7 @@ description: <한 줄 설명>
 6. FAIL/UNCERTAIN → 사용자 보고 → "고쳐" or "OK 마무리" 분기
 ```
 
-격리 prompt 정확한 본문은 → [template/.claude/skills/task-test.md](../template/.claude/skills/task-test.md) Step 3 참조.
+격리 prompt 정확한 본문은 → [template/.claude/skills/task-test/SKILL.md](../template/.claude/skills/task-test/SKILL.md) Step 3 참조.
 
 **bottoms-up 보강**: 사이드 프로젝트 굴리며 *컨텍스트 부담 데이터* 수집. 어느 스킬이 부담 큰지 → PLAYBOOK §1(컨텍스트 격리 강화) 부활 검토.
 
@@ -174,7 +175,7 @@ description: <한 줄 설명>
 
 **핵심 정신**: *선제적 작성 금지 — 진짜 데이터(반복 패턴) 없이 PLAYBOOK 부활 절대 X*.
 
-본문 → [template/.claude/skills/refine.md](../template/.claude/skills/refine.md) 참조.
+본문 → [template/.claude/skills/refine/SKILL.md](../template/.claude/skills/refine/SKILL.md) 참조.
 
 ---
 
@@ -208,3 +209,4 @@ description: <한 줄 설명>
 | 2026-05-08 | 신규 작성 (`SLASH-COMMANDS.md`) — 8 스킬 명세 + 흐름 + 컨텍스트 관리 + 회고 메타 |
 | 2026-05-09 | 파일명 변경: `SLASH-COMMANDS.md` → `SKILLS.md`. 표현 정제 — 인명 / 경박 표현 / 스킬 용어 / 이전 버전 언급 정리 |
 | 2026-05-09 | npm 패키지명 `@angar2/taskery`로 변경 반영 — `npx taskery init` → `npx @angar2/taskery init`. |
+| 2026-05-10 | 스킬 8종 구조 마이그레이션 반영 — §4 표 + 라인 150/177 본문 링크 `<name>.md` → `<name>/SKILL.md` 갱신, frontmatter 공통 형식 예시에 `name` 필드 추가. (Claude Code가 npx init 후 스킬을 인식 못 하던 동작 버그 해결, 0.1.1 후보) |

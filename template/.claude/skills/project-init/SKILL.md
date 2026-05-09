@@ -1,4 +1,5 @@
 ---
+name: project-init
 description: taskery 도입 직후 1회성 — PROJECT.md / AGENT-GUIDE.md / LINKED-REPOS.md / .env 빈 골격 생성
 ---
 

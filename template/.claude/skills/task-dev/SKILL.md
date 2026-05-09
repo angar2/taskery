@@ -1,4 +1,5 @@
 ---
+name: task-dev
 description: task 구현 — Dev Plan Phase 순서대로 코드 작성 + self-check 게이트, planned → developing → developed
 ---
 

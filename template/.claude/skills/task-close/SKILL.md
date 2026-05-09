@@ -1,4 +1,5 @@
 ---
+name: task-close
 description: task git 마무리 — 검증 명령 재실행 게이트 + 커밋 순서 준수 + dev --no-ff 병합, tested → closed
 ---
 

@@ -216,7 +216,7 @@ draft → planned → developing → developed → testing → tested → closed
 - 격리 세션이 *task.md만 보고도* 수행 가능
 - 결과 = PASS/FAIL/UNCERTAIN + 근거 (로그 인용)
 
-**결과 위치**: `plan/SKILLS.md` §컨텍스트 관리 + `template/.claude/skills/task-test.md` Step 3
+**결과 위치**: `plan/SKILLS.md` §컨텍스트 관리 + `template/.claude/skills/task-test/SKILL.md` Step 3
 
 ---
 
@@ -270,7 +270,7 @@ FRICTION_LOG 패턴 ≥ 3회 → /refine 회고 → 사용자 합의 → PLAYBOO
 **채택**: 본 리포 `archive/` 디렉토리 부재. 5사이클 참조 필요 시 `taskery-prototype` 리포 정독.
 
 **부수 처리**:
-- `template/.claude/skills/*.md`의 과거 *5사이클 참조* 섹션은 정정 작업으로 통째 제거 — broken link 가능성 자체 해소
+- `template/.claude/skills/*/SKILL.md`의 과거 *5사이클 참조* 섹션은 정정 작업으로 통째 제거 — broken link 가능성 자체 해소
 - 사용자 프로젝트(`npx @angar2/taskery init`)에는 archive 카피 X (template/만 카피) → 영향 없음
 
 **결과 위치**: 본 리포 `archive/` 디렉토리 부재
@@ -295,3 +295,4 @@ FRICTION_LOG 패턴 ≥ 3회 → /refine 회고 → 사용자 합의 → PLAYBOO
 | 2026-05-08 | 신규 작성 — 핵심 의사결정 11개 + 변경 이력 자리 |
 | 2026-05-09 | 표현 정제 — 인명 / 경박 표현 / 스킬 용어 / 외부 부재 문서(RETROSPECTIVE.md) 참조 정리. 이전 버전 비교 본문은 결정 사유 설명 목적이므로 유지. |
 | 2026-05-09 | §8 채택 명령 표 + WHY의 npx 명령 표기를 `@angar2/taskery`로 갱신 (npm 이름 충돌 해소). |
+| 2026-05-10 | 스킬 8종 구조 마이그레이션 반영 — §9 task-test 결과 위치 + §11 5사이클 참조 부수 처리 라인의 `<name>.md`/`*.md` → `<name>/SKILL.md`/`*/SKILL.md` 갱신. (Claude Code 표준 스킬 구조 적용, 0.1.1 후보) |

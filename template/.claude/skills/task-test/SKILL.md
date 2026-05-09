@@ -1,4 +1,5 @@
 ---
+name: task-test
 description: task 격리 세션 검증 — Task tool 격리 호출 + Test Plan 그대로 수행, developed → testing → tested
 ---
 

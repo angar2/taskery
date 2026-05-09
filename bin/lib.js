@@ -37,7 +37,7 @@ function sha256(filePath) {
 
 function walkTemplate(templateDir) {
   // template/ 안 모든 파일 상대경로 + 해시 맵 리턴
-  // 결과: { 'CLAUDE.md': 'sha256:...', '.claude/skills/task-init.md': 'sha256:...', ... }
+  // 결과: { 'CLAUDE.md': 'sha256:...', '.claude/skills/task-init/SKILL.md': 'sha256:...', ... }
   const result = {};
   function walk(dir, relBase) {
     const entries = fs.readdirSync(dir, { withFileTypes: true });
