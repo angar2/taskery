@@ -5,6 +5,14 @@
 
 ---
 
+## [Unreleased]
+
+### 추가
+
+- `/project-init` 스킬 Step 7.5 — 빈 폴더 케이스 `git init` + root commit + dev 분기 가이드 (smoke test 후속, 첫 task 머지 시점 dev/main ref 누락 회피)
+
+---
+
 ## [0.1.0] - 2026-05-09
 
 ### 추가
@@ -21,3 +29,4 @@
 |------|----------|
 | 2026-05-09 | 신규 작성 — 0.1.0 첫 기록 |
 | 2026-05-09 | npm 패키지명 `@angar2/taskery`로 변경 반영 (이름 충돌 해소) |
+| 2026-05-09 | `[Unreleased]` 섹션 도입 — publish 단위로 변경 사항 누적 패턴 (Keep a Changelog 표준) |
