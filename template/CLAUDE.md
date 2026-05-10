@@ -52,7 +52,7 @@
 | `/task-dev` | task | Phase 순서 구현 + self-check (planned → developed) |
 | `/task-test` | task | Task tool 격리 검증 (developed → tested) |
 | `/task-close` | task | 검증 명령 게이트 + 커밋 + dev 병합 (tested → closed) |
-| `/refine` | meta | FRICTION_LOG 정독 + 패턴 감지 + bottoms-up 보강 제안 |
+| `/log-friction` | meta | FRICTION_LOG.md에 사용자 불편 한 행 기록 |
 
 본문은 `.claude/skills/<스킬>/SKILL.md` 참조.
 
@@ -70,10 +70,10 @@
 
 ---
 
-## 짜증 데이터
+## 불편 데이터
 
-- **누적**: `.project/FRICTION_LOG.md` — 메인이 한 줄씩 추가 (사용자 발화 *"이거 짜증나"* 또는 자동 감지)
-- **회고**: `/refine` 스킬 — 5 task마다 또는 사용자 호출. 반복 패턴 감지 + PLAYBOOK 부활/새 룰 제안
+- **누적**: `.project/FRICTION_LOG.md` — 메인이 한 줄씩 추가 (사용자 불만 발화 캐치 또는 사용자 명시)
+- **등록**: `/log-friction` 스킬 — 사용자 명시 호출 / 불만 발화 캐치 / task-close 직후 마찰 신호 자체 감지 시 한 행 기록
 
 ---
 

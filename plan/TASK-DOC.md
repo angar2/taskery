@@ -170,22 +170,22 @@ draft → planned → developing → developed → testing → tested → closed
 |------|--------------|
 | 양식 spec + 작성 방법 + 가이드 + 예시 (4단 layer) | [template/.project/rules/TASK_DOC_RULE.md](../template/.project/rules/TASK_DOC_RULE.md) |
 | 스킬별 task.md 갱신 흐름 | [template/.claude/skills/task-{init,plan,dev,test,close}.md](../template/.claude/skills/) |
-| 형식 위반 차단 | (현재 없음) — instruction + 대화. PLAYBOOK §4 minimal form hook 부활 트리거 |
+| 형식 위반 차단 | (현재 없음) — instruction + 대화. PLAYBOOK §4 minimal form hook 부활 검토 시점 |
 
 본 문서는 *상위 추상 + link*만. 본문 spec은 TASK_DOC_RULE.md.
 
 ---
 
-## 8. PLAYBOOK 부활 트리거
+## 8. PLAYBOOK 부활 검토 시점
 
 태스크 양식 영역에서 부활 가능한 미래 옵션:
 
-| PLAYBOOK § | 항목 | 부활 트리거 |
+| PLAYBOOK § | 항목 | 부활 검토 시점 |
 |-----------|------|----------|
 | §4 | minimal form hook | 태스크 문서 형식 위반 (헤더 누락 / 섹션 빠짐) ≥ 5회 누적 |
 | §8 | 우선순위 컬럼 부활 | task 누적 ↑ → 우선순위 정렬 필요해질 때 |
 
-**부활 흐름**: FRICTION_LOG 패턴 ≥ 3회 → `/refine` 회고 → 사용자 합의 → PLAYBOOK 본문 §방법 그대로 적용.
+**부활 흐름**: FRICTION_LOG 누적 → 사용자 직접 정독 → PLAYBOOK 본문 §방법 그대로 적용.
 
 → [PLAYBOOK.md](PLAYBOOK.md)
 

@@ -97,7 +97,7 @@ taskery 도입 직후 **1회성**으로 호출. 사용자 또는 동료가 새 �
 ## 작업 흐름
 - task 시작: `/task-init` 또는 `/task-plan`
 - task 진행: `/task-dev` → `/task-test` → `/task-close`
-- 회고: `/refine` (5 task마다 또는 사용자 호출)
+- 불편 등록: `/log-friction` (사용자 호출 / 발화 캐치 / task-close 자체 감지)
 
 ## 폴더 구조
 - `.project/rules/` — 코어 룰 (TASK_DOC_RULE / GIT_RULE)
@@ -106,7 +106,7 @@ taskery 도입 직후 **1회성**으로 호출. 사용자 또는 동료가 새 �
 - `.project/flows/` — 도메인 흐름
 - `.project/shared/` — 멀티리포 메시지
 - `.project/changelog/` — 월별 변경 이력
-- `.project/FRICTION_LOG.md` — 짜증 데이터
+- `.project/FRICTION_LOG.md` — 불편 데이터
 
 ## 멀티리포
 <단일 리포면 "단일 리포. LINKED-REPOS.md 빈 템플릿."

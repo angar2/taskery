@@ -63,11 +63,11 @@
 | 카테고리 | 파일 |
 |---------|------|
 | 메인 instruction | `CLAUDE.md` |
-| 스킬 본문 (8) | `.claude/skills/{project-init,plan-init,task-init,task-plan,task-dev,task-test,task-close,refine}/SKILL.md` |
+| 스킬 본문 (8) | `.claude/skills/{project-init,plan-init,task-init,task-plan,task-dev,task-test,task-close,log-friction}/SKILL.md` |
 | Hook (3) | `.claude/hooks/{git-guard,pre-commit-verify,closed-immutable}.sh` |
 | Hook 등록 (1) | `.claude/settings.json` |
 | 룰 (2) | `.project/rules/{TASK_DOC_RULE,GIT_RULE}.md` |
-| 짜증 누적 빈 템플릿 | `.project/FRICTION_LOG.md` |
+| 불편 누적 빈 템플릿 | `.project/FRICTION_LOG.md` |
 | 사용자 영역 빈 골격 (4) | `.project/{changelog,flows,plans,tasks}/.gitkeep` |
 | 멀티리포 골격 (2) | `.project/shared/{sent,received}/completed/.gitkeep` |
 | 루트 .gitignore | `.gitignore` |
@@ -259,16 +259,16 @@ npm publish --tag beta       # beta tag로 publish
 
 ---
 
-## 10. PLAYBOOK 부활 트리거
+## 10. PLAYBOOK 부활 검토 시점
 
 배포 영역에서 부활 가능한 미래 옵션:
 
-| PLAYBOOK § | 항목 | 부활 트리거 |
+| PLAYBOOK § | 항목 | 부활 검토 시점 |
 |-----------|------|----------|
 | §6 | Claude Code plugin 발행 | `/plugin` 환경 지원 + 동료 사용자 충분 |
 | §9 | 머지 로직 엣지 케이스 보강 | npx update 시 사용자 customize 충돌 빈발 |
 
-**부활 흐름**: FRICTION_LOG 패턴 ≥ 3회 → `/refine` 회고 → 사용자 합의 → PLAYBOOK 본문 §방법 그대로 적용.
+**부활 흐름**: FRICTION_LOG 누적 → 사용자 직접 정독 → PLAYBOOK 본문 §방법 그대로 적용.
 
 → [PLAYBOOK.md](PLAYBOOK.md) §6 / §9
 

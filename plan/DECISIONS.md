@@ -222,7 +222,7 @@ draft → planned → developing → developed → testing → tested → closed
 
 ## 10. 결정: PLAYBOOK 카탈로그 (top-down 선제적 작성 금지, bottoms-up)
 
-**결정**: 미래 가능 옵션을 *카탈로그*로 두되 *현재 도입 X*. 진짜 데이터(반복 패턴 ≥ 3회)가 모이면 `/refine` 회고 + 사용자 합의로 부활.
+**결정**: 미래 가능 옵션을 *카탈로그*로 두되 *현재 도입 X*. 진짜 데이터(FRICTION_LOG 누적 불편)가 모이면 사용자가 직접 PLAYBOOK 정독 후 부활 결정.
 
 **WHY**:
 - 5사이클은 *선제적 일괄 작성* → 합리적 변형 차단 → 망함
@@ -230,7 +230,7 @@ draft → planned → developing → developed → testing → tested → closed
 - bottoms-up = *진짜 짜증 발생 시점*에서 옵션 검토 → 정당화
 
 **카탈로그 9 항목** (`plan/PLAYBOOK.md`):
-| # | 주제 | 부활 트리거 |
+| # | 주제 | 부활 검토 시점 |
 |---|------|----------|
 | 1 | 컨텍스트 격리 강화 (Task tool default 확장) | 30+ task 메인 컨텍스트 폭발 |
 | 2 | 압축 평가 기준 subagent (유사 RAG) | 9 기획 문서 / 코드 컨벤션 누적 부담 |
@@ -244,10 +244,10 @@ draft → planned → developing → developed → testing → tested → closed
 
 **부활 흐름**:
 ```
-FRICTION_LOG 패턴 ≥ 3회 → /refine 회고 → 사용자 합의 → PLAYBOOK 항목 본문 §방법 그대로 적용
+FRICTION_LOG 누적 → 사용자 직접 정독 → PLAYBOOK 항목 §방법 그대로 적용
 ```
 
-**결과 위치**: `plan/PLAYBOOK.md` (본문) + `plan/SKILLS.md` `/refine` 섹션
+**결과 위치**: `plan/PLAYBOOK.md` (본문)
 
 ---
 

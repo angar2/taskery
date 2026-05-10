@@ -18,7 +18,7 @@ Claude Code 메인 세션을 위한 *가벼운 task 시스템*.
 |---|------|------|
 | 1 | *Process는 자동화 OK, Practice는 자유롭게 + 사용자 판단 신뢰* | 결정적 영역(린트/타입/빌드)만 강제, 휴리스틱 영역은 강제 X |
 | 2 | *Catastrophic만 hook 차단, 형식 위반은 instruction + 대화* | 합리적 변형 차단 사고 회피 |
-| 3 | *Top-down 선제적 작성 금지, bottoms-up — 진짜 데이터 모이면 그때 추가* | PLAYBOOK 카탈로그 + FRICTION_LOG 패턴 ≥ 3회 트리거 |
+| 3 | *Top-down 선제적 작성 금지, bottoms-up — 진짜 데이터 모이면 그때 추가* | PLAYBOOK 카탈로그 + FRICTION_LOG 누적 후 사용자 직접 검토 |
 
 **결정 사유 본문**: [DECISIONS.md](DECISIONS.md).
 
@@ -29,7 +29,7 @@ Claude Code 메인 세션을 위한 *가벼운 task 시스템*.
 | 영역 | 정신 | 결과물 |
 |------|------|------|
 | **세션 모델** | 1 메인 세션 = 사용자 = 오케스트레이터 + 실행자 | 메인 세션 직접 호출 (서브에이전트는 옵션) |
-| **흐름 표지** | 스킬 8종 — project > plan > task 위계 + 회고 메타 | `/project-init` ~ `/refine` |
+| **흐름 표지** | 스킬 8종 — project > plan > task 위계 + 불편 등록 메타 | `/project-init` ~ `/log-friction` |
 | **안전망** | catastrophic only hook 3종 — process / git / 완료 보호 | `pre-commit-verify.sh` / `git-guard.sh` / `closed-immutable.sh` |
 | **배포** | 단일 default = npx | `npx @angar2/taskery init` / `update` / `create-taskery` |
 
@@ -167,7 +167,7 @@ my-app/                                   ← 사용자 프로젝트
 | [TASK-DOC.md](TASK-DOC.md) | 태스크 위계 + 양식 + 7 상태 + 4단 layer 가이드 | task 작성 / 상태 전이 의문 시 |
 | [HOOKS.md](HOOKS.md) | 3 catastrophic hook 정책 + 우회 절차 | hook 차단 발생 시 / 우회 필요 시 |
 | [DISTRIBUTION.md](DISTRIBUTION.md) | npx 배포 + bin/ + manifest 머지 로직 | 사용자 프로젝트 셋업 / npx update / publish 시 |
-| [PLAYBOOK.md](PLAYBOOK.md) | 미래 옵션 카탈로그 (bottoms-up 부활 카탈로그) | `/refine` 회고 시 |
+| [PLAYBOOK.md](PLAYBOOK.md) | 미래 옵션 카탈로그 (bottoms-up 부활 카탈로그) | 사용자 직접 정독 시 |
 
 ### 사용자 프로젝트 자산 (template/ 카피 후)
 
