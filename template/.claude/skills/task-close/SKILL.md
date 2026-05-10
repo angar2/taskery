@@ -138,6 +138,8 @@ PASS 시 Step 3으로.
 4. Step 4-3: 태스크 문서 커밋 (status=closed 적용된 채로)
 5. Step 4-4: CHANGELOG 커밋
 6. Step 5: dev 병합
+7. Step 7: 마찰 신호 자체 감지 (`/log-friction` 발동 후보)
+8. Step 8: 결과 보고
 
 ### Step 7 — 마찰 신호 자체 감지 (`/log-friction` 발동 후보)
 

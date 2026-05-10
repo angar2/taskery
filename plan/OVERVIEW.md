@@ -68,7 +68,7 @@ taskery/                                  ← 본 리포 (시스템 자체)
     │   ├─ skills/                       ← 8 스킬 본문
     │   └─ hooks/                        ← 3 catastrophic 안전망
     └─ .project/
-        ├─ FRICTION_LOG.md               ← 짜증 누적 빈 템플릿
+        ├─ FRICTION_LOG.md               ← 불편 누적 빈 템플릿
         ├─ rules/                        ← 코어 룰 (TASK_DOC_RULE / GIT_RULE)
         ├─ changelog/.gitkeep            ← 사용자 영역 빈 골격 (/task-close 갱신)
         ├─ flows/.gitkeep                ← 사용자 영역 빈 골격 (/task-dev 갱신)
@@ -112,7 +112,7 @@ my-app/                                   ← 사용자 프로젝트
 │   │   │   └─ completed/                ← 처리 완료 송신 메시지 보관
 │   │   └─ received/
 │   │       └─ completed/                ← 처리 완료 수신 메시지 보관
-│   └─ FRICTION_LOG.md                   ← 짜증 누적 (template에서 빈 템플릿)
+│   └─ FRICTION_LOG.md                   ← 불편 누적 (template에서 빈 템플릿)
 │
 ├─ src/ ...                               ← 사용자 코드
 └─ package.json                           ← 사용자 프로젝트
