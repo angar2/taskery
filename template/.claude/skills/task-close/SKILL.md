@@ -1,4 +1,5 @@
 ---
+name: task-close
 description: task git 마무리 — 검증 명령 재실행 게이트 + 커밋 순서 준수 + dev --no-ff 병합, tested → closed
 ---
 
@@ -137,8 +138,23 @@ PASS 시 Step 3으로.
 4. Step 4-3: 태스크 문서 커밋 (status=closed 적용된 채로)
 5. Step 4-4: CHANGELOG 커밋
 6. Step 5: dev 병합
+7. Step 7: 마찰 신호 자체 감지 (`/log-friction` 발동 후보)
+8. Step 8: 결과 보고
 
-### Step 7 — 결과 보고
+### Step 7 — 마찰 신호 자체 감지 (`/log-friction` 발동 후보)
+
+본 task 진행 중 *마찰 신호* 누적 여부를 검사한다. 감지 시 `/log-friction` 등록을 사용자에게 제안.
+
+검사 항목:
+- 동일 단계 재호출 ≥ 2회 (예: `/task-dev` Phase 동일 단계 반복 진입)
+- 실패 반복 (검증 명령 FAIL 2회 이상 / 격리 세션 FAIL 후 재구현 반복)
+- 사용자 부정 반응 발화 누적 (불편·짜증·답답함 신호)
+
+분기:
+- **감지 신호 있음** → *"이번 task에서 X 부분이 마찰이었어 보여 — `/log-friction`으로 등록할까?"* 사용자 합의 받음. OK 시 `/log-friction` 자동 발동.
+- **감지 신호 없음** → prompt X (정상 close 진행).
+
+### Step 8 — 결과 보고
 
 ```
 ✅ TASK-<NNN> closed
@@ -147,7 +163,7 @@ PASS 시 Step 3으로.
 - dev 병합: --no-ff 완료
 - 상태: tested → closed
 - 작업 브랜치 보존 (삭제하려면 "브랜치 삭제해" 명시)
-- 다음: 새 task 시작은 /task-init, 5 task 누적 시 /refine으로 회고
+- 다음: 새 task 시작은 /task-init. 본 task에서 마찰 신호 감지된 경우 /log-friction 등록 제안
 ```
 
 ## 도구 가이드

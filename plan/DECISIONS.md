@@ -216,13 +216,13 @@ draft → planned → developing → developed → testing → tested → closed
 - 격리 세션이 *task.md만 보고도* 수행 가능
 - 결과 = PASS/FAIL/UNCERTAIN + 근거 (로그 인용)
 
-**결과 위치**: `plan/SKILLS.md` §컨텍스트 관리 + `template/.claude/skills/task-test.md` Step 3
+**결과 위치**: `plan/SKILLS.md` §컨텍스트 관리 + `template/.claude/skills/task-test/SKILL.md` Step 3
 
 ---
 
 ## 10. 결정: PLAYBOOK 카탈로그 (top-down 선제적 작성 금지, bottoms-up)
 
-**결정**: 미래 가능 옵션을 *카탈로그*로 두되 *현재 도입 X*. 진짜 데이터(반복 패턴 ≥ 3회)가 모이면 `/refine` 회고 + 사용자 합의로 부활.
+**결정**: 미래 가능 옵션을 *카탈로그*로 두되 *현재 도입 X*. 진짜 데이터(FRICTION_LOG 누적 불편)가 모이면 사용자가 직접 PLAYBOOK 정독 후 부활 결정.
 
 **WHY**:
 - 5사이클은 *선제적 일괄 작성* → 합리적 변형 차단 → 망함
@@ -230,7 +230,7 @@ draft → planned → developing → developed → testing → tested → closed
 - bottoms-up = *진짜 짜증 발생 시점*에서 옵션 검토 → 정당화
 
 **카탈로그 9 항목** (`plan/PLAYBOOK.md`):
-| # | 주제 | 부활 트리거 |
+| # | 주제 | 부활 검토 시점 |
 |---|------|----------|
 | 1 | 컨텍스트 격리 강화 (Task tool default 확장) | 30+ task 메인 컨텍스트 폭발 |
 | 2 | 압축 평가 기준 subagent (유사 RAG) | 9 기획 문서 / 코드 컨벤션 누적 부담 |
@@ -244,10 +244,10 @@ draft → planned → developing → developed → testing → tested → closed
 
 **부활 흐름**:
 ```
-FRICTION_LOG 패턴 ≥ 3회 → /refine 회고 → 사용자 합의 → PLAYBOOK 항목 본문 §방법 그대로 적용
+FRICTION_LOG 누적 → 사용자 직접 정독 → PLAYBOOK 항목 §방법 그대로 적용
 ```
 
-**결과 위치**: `plan/PLAYBOOK.md` (본문) + `plan/SKILLS.md` `/refine` 섹션
+**결과 위치**: `plan/PLAYBOOK.md` (본문)
 
 ---
 
@@ -270,7 +270,7 @@ FRICTION_LOG 패턴 ≥ 3회 → /refine 회고 → 사용자 합의 → PLAYBOO
 **채택**: 본 리포 `archive/` 디렉토리 부재. 5사이클 참조 필요 시 `taskery-prototype` 리포 정독.
 
 **부수 처리**:
-- `template/.claude/skills/*.md`의 과거 *5사이클 참조* 섹션은 정정 작업으로 통째 제거 — broken link 가능성 자체 해소
+- `template/.claude/skills/*/SKILL.md`의 과거 *5사이클 참조* 섹션은 정정 작업으로 통째 제거 — broken link 가능성 자체 해소
 - 사용자 프로젝트(`npx @angar2/taskery init`)에는 archive 카피 X (template/만 카피) → 영향 없음
 
 **결과 위치**: 본 리포 `archive/` 디렉토리 부재
@@ -295,3 +295,4 @@ FRICTION_LOG 패턴 ≥ 3회 → /refine 회고 → 사용자 합의 → PLAYBOO
 | 2026-05-08 | 신규 작성 — 핵심 의사결정 11개 + 변경 이력 자리 |
 | 2026-05-09 | 표현 정제 — 인명 / 경박 표현 / 스킬 용어 / 외부 부재 문서(RETROSPECTIVE.md) 참조 정리. 이전 버전 비교 본문은 결정 사유 설명 목적이므로 유지. |
 | 2026-05-09 | §8 채택 명령 표 + WHY의 npx 명령 표기를 `@angar2/taskery`로 갱신 (npm 이름 충돌 해소). |
+| 2026-05-10 | 스킬 8종 구조 마이그레이션 반영 — §9 task-test 결과 위치 + §11 5사이클 참조 부수 처리 라인의 `<name>.md`/`*.md` → `<name>/SKILL.md`/`*/SKILL.md` 갱신. (Claude Code 표준 스킬 구조 적용, 0.1.1 후보) |

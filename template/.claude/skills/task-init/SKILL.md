@@ -1,4 +1,5 @@
 ---
+name: task-init
 description: task 시작 — 6 섹션 빈 골격 + 헤더 5컬럼 (status=draft) task.md 생성
 ---
 

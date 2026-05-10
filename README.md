@@ -1,117 +1,222 @@
 # taskery
 
-> Claude Code 메인 세션을 위한 *가벼운 task 시스템*.
-> **1 메인 세션 + 스킬 8종 + catastrophic hook 3종 + npx 배포**.
+AI 코딩 에이전트의 자율 개발을 위한 Task 기반의 가드레일 시스템.
 
 ---
 
-## 한 줄 정신
+## 해결하는 문제
 
-practice 영역(SW 개발)을 process로 강제하지 않는다.
+- Task 단위 라이프사이클의 가이드를 제시한다.
+- 메인 세션을 단독으로 운영할 때 자주 발생하는 사고를 사전 차단한다.
 
-- **Process는 자동화 OK, Practice는 자유롭게 + 사용자 판단 신뢰** — 결정적 영역(린트/타입/빌드)만 강제, 휴리스틱은 강제 X
-- **Catastrophic만 hook 차단, 형식 위반은 instruction + 대화** — 합리적 변형 차단 사고 회피
-- **Top-down 선제적 작성 금지, bottoms-up** — 진짜 데이터 모이면 그때 추가 (PLAYBOOK 카탈로그 + FRICTION_LOG 패턴 ≥ 3회 트리거)
+| 문제 | taskery 대응 |
+|------|------------|
+| AI 협업 작업이 매번 즉흥적이라 일관된 체계가 없음 | task 단위 라이프사이클로 작업 흐름 구조화 — 단계별 자동화 가능 |
+| 작업 컨텍스트가 휘발되어 이전 결정·사유를 추적하기 어려움 | task 문서로 컨텍스트와 히스토리 기록 — 작업 중 참조 가능 |
+| 에이전트가 catastrophic 사고를 일으킬 수 있음 | 필수 hook으로 차단 — 정상 흐름에는 무간섭 |
+| 에이전트가 작성한 코드의 자가검증으로 인해 문제를 놓침 (confirmation bias) | 테스트 시 별도 격리 세션 호출(`/task-test`) — 메인 세션의 가정 없이 독립 검증 |
+
+> catastrophic 사고 예시 — git 운영 정책 위반, 검증 우회, 완료된 task 문서 재수정 등
+
+---
+
+## 워크플로우
+
+task 단위 라이프사이클은 7 상태로 구성된다.
+
+**task 상태**
+
+```
+draft → planned → developing → developed → testing → tested → closed
+```
+
+| 상태 | 의미 |
+|------|------|
+| `draft` | 새 task 생성 직후 |
+| `planned` | 작업 기획 완료 |
+| `developing` | 구현 진행 중 |
+| `developed` | 구현 완료 (자가 검증 통과) |
+| `testing` | 독립 검증 진행 중 |
+| `tested` | 독립 검증 완료 |
+| `closed` | git 커밋 + dev 병합 완료 |
+
+> 상태별 전이 조건과 task 문서 양식은 [TASK-DOC.md](https://github.com/angar2/taskery/blob/main/plan/TASK-DOC.md)에서 확인 가능
 
 ---
 
 ## 빠른 시작
 
+> **요구 사항**: Node.js ≥ 18.
+
+### npx
+
+특정 프로젝트에 일회성 다운로드 방식.
+
 ```bash
 # 새 프로젝트
 npx -p @angar2/taskery create-taskery <project-name>
 
-# 기존 프로젝트에 설치
-cd <your-project>
+# 기존 프로젝트에 도입
+cd <project-name>
 npx @angar2/taskery init
 
-# 최신 버전 동기화
+# 최신 버전 머지 갱신
 npx @angar2/taskery update
 ```
 
-> 글로벌 install (`npm install -g @angar2/taskery`) 후엔 `taskery init` / `create-taskery <name>` 단축 명령 사용 가능.
+### 글로벌 npm install
 
-요구 사항: Node.js >=18, Claude Code (CLI / VS Code / JetBrains).
 
----
+```bash
+# 글로벌 설치
+npm install -g @angar2/taskery
 
-## 스킬 8종 — project > plan > task 위계 + 회고
+# 새 프로젝트
+create-taskery <project-name>
 
-| 스킬 | 레벨 | 역할 |
-|------|------|------|
-| `/project-init` | project | PROJECT/AGENT-GUIDE/LINKED-REPOS/.env 골격 생성 (1회성) |
-| `/plan-init` | plan | `.project/plans/<vX.X>/` 안 기획 문서 작성 |
-| `/task-init` | task | task.md 빈 골격 + status=draft |
-| `/task-plan` | task | Requirements/Scope/Dev Plan/Test Plan 작성 |
-| `/task-dev` | task | Phase 순서 구현 + self-check |
-| `/task-test` | task | 격리 세션 검증 (confirmation bias 회피) |
-| `/task-close` | task | 검증 명령 게이트 + 커밋 + dev 병합 |
-| `/refine` | meta | FRICTION_LOG 정독 + 패턴 감지 + bottoms-up 보강 제안 |
+# 기존 프로젝트에 도입
+cd <project-name>
+taskery init
 
-명령어 직접 호출(`/task-init` 등) 또는 메인 세션이 frontmatter description 매칭으로 자동 발동.
+# 최신 버전 머지 갱신
+taskery update
+```
 
 ---
 
-## Catastrophic Hook 3종
+## 패키지 디렉토리 구조
 
-| Hook | 영역 | 잡는 것 |
-|------|------|--------|
-| `git-guard.sh` | PreToolUse(Bash) | main/dev 직접 커밋 / `--force` / `--no-verify` / `branch -D` / `reset --hard` |
-| `pre-commit-verify.sh` | PreToolUse(Bash) | `git commit` 시 검증 명령(린트/타입/빌드/테스트) 모두 PASS 게이트 |
-| `closed-immutable.sh` | PreToolUse(Write\|Edit) | `closed` 상태 task.md 본 파일 재수정 차단 |
-
-**잘 지키면 hook 작동 0회 (무해). catastrophic만 차단.**
-
----
-
-## 디렉토리 구조 (사용자 프로젝트 — `npx @angar2/taskery init` 후)
+`taskery init` 직후 골격:
 
 ```
 my-app/
-├─ CLAUDE.md                     # 메인 세션 진입점
-├─ .taskery-manifest.json        # 자산 manifest (npx 자동 갱신)
+├─ CLAUDE.md                              # AI 에이전트 진입 문서
+├─ .taskery-manifest.json                 # 패키지 업데이트 추적
+├─ .gitignore
 ├─ .claude/
-│   ├─ settings.json             # hook 등록
-│   ├─ skills/                   # 8 스킬
-│   └─ hooks/                    # 3 catastrophic 안전망
+│   ├─ settings.json                      # hook 등록 (PreToolUse 매칭)
+│   ├─ skills/<skil-name>/SKILL.md        # 8 skill
+│   └─ hooks/<hook-name>.sh               # 3 hook
 └─ .project/
-    ├─ PROJECT.md                # /project-init 생성
-    ├─ AGENT-GUIDE.md            # /project-init 생성
+    ├─ PROJECT.md                         # 프로젝트 개요
+    ├─ AGENT-GUIDE.md                     # AI 에이전트 가이드
+    ├─ LINKED-REPOS.md                    # 관계 리포지토리 정보
+    ├─ .env                               # 사용자 설정 환경변수 (관계 리포지토리 환경변수 등)
     ├─ rules/
-    │   ├─ TASK_DOC_RULE.md      # task 양식
-    │   └─ GIT_RULE.md           # git 정책
-    ├─ plans/                    # /plan-init 생성
-    ├─ tasks/                    # /task-init 생성
-    ├─ flows/                    # /task-dev 갱신
-    ├─ changelog/                # /task-close 갱신
-    ├─ shared/                   # 멀티리포 메시지
-    └─ FRICTION_LOG.md           # 짜증 누적
+    │   ├─ TASK_DOC_RULE.md               # task 문서 작성 규칙
+    │   ├─ GIT_RULE.md                    # 로컬 깃 운영 규칙
+    │   └─ *.local.md                     # 사용자 오버라이드 규칙 (패키지 업데이트 대상 제외)
+    ├─ plans/                             # plan 문서
+    ├─ tasks/                             # task 문서
+    ├─ flows/                             # 서비스 로직 플로우 정보
+    ├─ changelog/                         # 수정사항 정보
+    ├─ shared/                            # 관계 리포지토리 소통 메세지함
+    │   ├─ sent/completed/
+    │   └─ received/completed/
+    └─ FRICTION_LOG.md                    # taskery 불편사항 누적 로그
 ```
+
+---
+
+## Skills
+
+스킬은 호출 시점에 따라 4 카테고리(`project` / `plan` / `task` / `meta`)로 분류된다.
+
+- `project` — 프로젝트 첫 도입 시 1회만 호출
+- `plan` — 새 기획 버전 시작 시 호출
+- `task` — 새 task 작업 진행 단계에서 호출
+- `meta` — 그 외 taskery 관리
+
+| 스킬 | 레벨 | 역할 |
+|------|------|------|
+| `/project-init` | project | 프로젝트 첫 도입 시 메타 문서와 디렉토리 골격 생성 (1회성) |
+| `/plan-init` | plan | 새 기획 버전의 기획 문서 작성 |
+| `/task-init` | task | 새 task의 빈 문서 생성 |
+| `/task-plan` | task | task의 요구사항·범위·개발 계획·테스트 계획 작성 |
+| `/task-dev` | task | 계획에 따른 단계별 구현 + 자가 검증 |
+| `/task-test` | task | 별도 격리 세션에서 독립 검증 (메인 가정 차단) |
+| `/task-close` | task | 최종 검증 후 git 커밋 + dev 브랜치 `--no-ff` 병합 |
+| `/log-friction` | meta | 사용자 불편을 `.project/FRICTION_LOG.md`에 한 행 기록 |
+
+각 스킬은 슬래시로 직접 호출하거나, 사용자 발화의 의미가 스킬의 frontmatter description과 매칭되면 메인 세션이 자동으로 발동시킨다.
+
+`/project-init`, `/plan-init`, `/task-init` 세 스킬은 호출 시 다음 문서를 생성한다.
+
+| 스킬 | 생성 위치 | 생성 문서 |
+|------|---------|---------|
+| `/project-init` | `.project/` | PROJECT.md / AGENT-GUIDE.md / LINKED-REPOS.md / .env |
+| `/plan-init` | `.project/plans/<plan-name>/` | 9 기획 문서 — PLAN.md / SERVICE-POLICY.md / FEATURES.md / UX-UI.md / TECH-STACK.md / ARCHITECTURE.md / DATA-MODEL.md / API-SPEC.md / ROADMAP.md (프로젝트 타입에 따라 일부 제외) |
+| `/task-init` | `.project/tasks/<plan-name>/` | `<NNN>_<slug>.md` (단일 파일) 또는 `TASK-<NNN>_<slug>/task.md` (규모 `large` 시 폴더 승격) |
+
+> 각 스킬의 호출 시점, 입력 처리 방식, 단계별 절차, 주의사항은 [SKILLS.md](https://github.com/angar2/taskery/blob/main/plan/SKILLS.md)에서 확인 가능
+
+---
+
+## Hooks
+
+| Hook | 작동 시점 | 차단 대상 |
+|------|---------|---------|
+| `git-guard.sh` | git 명령 실행 직전 | 주력 브랜치 직접 커밋 / `--force` / `--no-verify` / 강제 브랜치 삭제 / `reset --hard` / `clean -fd` |
+| `pre-commit-verify.sh` | `git commit` 실행 직전 | 검증 명령(린트·타입체크·빌드·테스트) 통과 실패 commit |
+| `closed-immutable.sh` | 파일 수정 직전 | 완료(`closed`)된 task.md 본 파일 재수정 (관련 spec-diff·스크린샷은 자유) |
+
+hook은 catastrophic 사고만 차단한다. 정상 흐름에는 간섭하지 않는다.
+
+> 각 hook의 영역 분리 정신, 등록 매칭, 차단 정책, 예외 처리 절차는 [HOOKS.md](https://github.com/angar2/taskery/blob/main/plan/HOOKS.md)에서 확인 가능
+
+---
+
+## 워크플로우 예시
+
+```bash
+# 사용자 프로젝트 첫 셋업
+cd <project-name>
+npx @angar2/taskery init
+```
+
+이후 메인 세션에 진입(`CLAUDE.md` 자동 정독)하여 다음 시퀀스로 호출한다. task 5 스킬은 호출과 동시에 상태를 전이시킨다.
+
+```
+/project-init                  # 진입 메타 문서와 디렉토리 골격 생성
+/plan-init v1.0                # v1.0 기획 문서 작성
+/task-init                     # draft : 첫 task의 빈 문서 생성
+/task-plan TASK-001            # draft → planned : 요구사항·범위·개발 계획·테스트 계획 작성
+/task-dev TASK-001             # planned → developed : 단계별 구현과 자체 검증
+/task-test TASK-001            # developed → tested : 별도 격리 세션으로 독립 검증
+/task-close TASK-001           # tested → closed : 최종 검증 후 git 커밋과 dev 병합
+
+# 불편 발생 시 등록
+/log-friction                  # 사용자 불편 한 행 기록
+```
+
+**자동 발동 예시** — 사용자 발화 의미가 스킬 description과 매칭되면 메인이 슬래시 직접 호출 없이 다음 스킬을 자동 발동한다.
+
+- *"로그인 기능 추가해줘"* / *"이 버그 고쳐줘"* → `/task-init` 자동 발동 (새 task 시작 의도)
+- *"기획 다 됐으니 이제 구현 시작해"* → `/task-dev` 자동 발동 (planned task의 다음 단계)
+- *"이거 진짜 불편하다"* / *"이 부분 답답하네"* → `/log-friction` 자동 발동 (불만 발화 캐치)
+
+**실패·불확정 분기** — `/task-test`가 FAIL 또는 UNCERTAIN을 반환하면 메인 세션이 사용자에게 판단을 묻고, 사용자의 자연어 답변에서 의도를 해석해 다음 흐름을 *자동 발동*한다(별도 슬래시 호출 없이 진행됨).
+
+- 사용자가 재구현을 요청하면 → `testing` → `developing`으로 회귀해 `/task-dev`가 자동 발동된다.
+- 사용자가 결함을 인지한 채 종결을 지시하면 → `testing` → `tested`로 진행하고 결함을 명시한 후 `/task-close`로 이행된다.
+- UNCERTAIN(자동 검증이 불가능한 시나리오)은 사용자가 직접 검수한 결과를 답하면 메인 세션이 PASS/FAIL로 해석해 위 두 흐름 중 하나로 합류시킨다.
 
 ---
 
 ## 상세 문서
 
-> 본 리포 spec 문서는 npm 패키지에 포함되지 않으므로 GitHub에서 정독.
+spec 문서는 GitHub에서 참고할 수 있다.
 
-- [plan/OVERVIEW.md](https://github.com/angar2/taskery/blob/main/plan/OVERVIEW.md) — 진입 + 큰 그림 + 단일 진실 소스
-- [plan/SKILLS.md](https://github.com/angar2/taskery/blob/main/plan/SKILLS.md) — 스킬 8종 명세 + 흐름
-- [plan/TASK-DOC.md](https://github.com/angar2/taskery/blob/main/plan/TASK-DOC.md) — 태스크 양식 + 7 상태
-- [plan/HOOKS.md](https://github.com/angar2/taskery/blob/main/plan/HOOKS.md) — 3 catastrophic hook 정책
-- [plan/DISTRIBUTION.md](https://github.com/angar2/taskery/blob/main/plan/DISTRIBUTION.md) — npx 배포 + manifest
-- [plan/DECISIONS.md](https://github.com/angar2/taskery/blob/main/plan/DECISIONS.md) — 핵심 의사결정
-- [plan/PLAYBOOK.md](https://github.com/angar2/taskery/blob/main/plan/PLAYBOOK.md) — 미래 옵션 카탈로그
+- [OVERVIEW.md](https://github.com/angar2/taskery/blob/main/plan/OVERVIEW.md) — 시스템 진입 가이드와 전체 구조 개요.
+- [SKILLS.md](https://github.com/angar2/taskery/blob/main/plan/SKILLS.md) — 스킬 8종의 상세 명세와 호출 흐름.
+- [TASK-DOC.md](https://github.com/angar2/taskery/blob/main/plan/TASK-DOC.md) — task 문서의 작성 양식과 7 상태 머신의 동작 정의.
+- [HOOKS.md](https://github.com/angar2/taskery/blob/main/plan/HOOKS.md) — catastrophic hook 3종의 정책과 예외 처리 절차.
+- [DISTRIBUTION.md](https://github.com/angar2/taskery/blob/main/plan/DISTRIBUTION.md) — npx 배포 메커니즘과 자산 갱신 로직.
+- [DECISIONS.md](https://github.com/angar2/taskery/blob/main/plan/DECISIONS.md) — 시스템 설계의 핵심 의사결정과 변경 이력.
+- [PLAYBOOK.md](https://github.com/angar2/taskery/blob/main/plan/PLAYBOOK.md) — 향후 도입 가능한 기능 후보 목록.
 
 ---
 
-## 라이선스
+## 라이센스
 
 [MIT](LICENSE)
-
----
-
-## 수정 이력
-
-| 날짜 | 변경 사항 |
-|------|----------|
-| 2026-05-09 | 신규 작성 — npm 페이지 진입 문서 |

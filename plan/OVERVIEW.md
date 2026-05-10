@@ -18,7 +18,7 @@ Claude Code 메인 세션을 위한 *가벼운 task 시스템*.
 |---|------|------|
 | 1 | *Process는 자동화 OK, Practice는 자유롭게 + 사용자 판단 신뢰* | 결정적 영역(린트/타입/빌드)만 강제, 휴리스틱 영역은 강제 X |
 | 2 | *Catastrophic만 hook 차단, 형식 위반은 instruction + 대화* | 합리적 변형 차단 사고 회피 |
-| 3 | *Top-down 선제적 작성 금지, bottoms-up — 진짜 데이터 모이면 그때 추가* | PLAYBOOK 카탈로그 + FRICTION_LOG 패턴 ≥ 3회 트리거 |
+| 3 | *Top-down 선제적 작성 금지, bottoms-up — 진짜 데이터 모이면 그때 추가* | PLAYBOOK 카탈로그 + FRICTION_LOG 누적 후 사용자 직접 검토 |
 
 **결정 사유 본문**: [DECISIONS.md](DECISIONS.md).
 
@@ -29,7 +29,7 @@ Claude Code 메인 세션을 위한 *가벼운 task 시스템*.
 | 영역 | 정신 | 결과물 |
 |------|------|------|
 | **세션 모델** | 1 메인 세션 = 사용자 = 오케스트레이터 + 실행자 | 메인 세션 직접 호출 (서브에이전트는 옵션) |
-| **흐름 표지** | 스킬 8종 — project > plan > task 위계 + 회고 메타 | `/project-init` ~ `/refine` |
+| **흐름 표지** | 스킬 8종 — project > plan > task 위계 + 불편 등록 메타 | `/project-init` ~ `/log-friction` |
 | **안전망** | catastrophic only hook 3종 — process / git / 완료 보호 | `pre-commit-verify.sh` / `git-guard.sh` / `closed-immutable.sh` |
 | **배포** | 단일 default = npx | `npx @angar2/taskery init` / `update` / `create-taskery` |
 
@@ -68,7 +68,7 @@ taskery/                                  ← 본 리포 (시스템 자체)
     │   ├─ skills/                       ← 8 스킬 본문
     │   └─ hooks/                        ← 3 catastrophic 안전망
     └─ .project/
-        ├─ FRICTION_LOG.md               ← 짜증 누적 빈 템플릿
+        ├─ FRICTION_LOG.md               ← 불편 누적 빈 템플릿
         ├─ rules/                        ← 코어 룰 (TASK_DOC_RULE / GIT_RULE)
         ├─ changelog/.gitkeep            ← 사용자 영역 빈 골격 (/task-close 갱신)
         ├─ flows/.gitkeep                ← 사용자 영역 빈 골격 (/task-dev 갱신)
@@ -112,7 +112,7 @@ my-app/                                   ← 사용자 프로젝트
 │   │   │   └─ completed/                ← 처리 완료 송신 메시지 보관
 │   │   └─ received/
 │   │       └─ completed/                ← 처리 완료 수신 메시지 보관
-│   └─ FRICTION_LOG.md                   ← 짜증 누적 (template에서 빈 템플릿)
+│   └─ FRICTION_LOG.md                   ← 불편 누적 (template에서 빈 템플릿)
 │
 ├─ src/ ...                               ← 사용자 코드
 └─ package.json                           ← 사용자 프로젝트
@@ -141,7 +141,7 @@ my-app/                                   ← 사용자 프로젝트
 
 | 정보 | 단일 진실 소스 |
 |------|--------------|
-| 스킬 본문 (Step 1~N) | [template/.claude/skills/<skill>.md](../template/.claude/skills/) (8 파일) |
+| 스킬 본문 (Step 1~N) | [template/.claude/skills/<skill>/SKILL.md](../template/.claude/skills/) (8 디렉토리) |
 | Hook 본문 + 정규식 | [template/.claude/hooks/<hook>.sh](../template/.claude/hooks/) (3 파일) |
 | Hook 등록 (Claude Code PreToolUse 매칭) | [template/.claude/settings.json](../template/.claude/settings.json) |
 | 태스크 양식 + 4단 layer + 완성 예시 3개 | [template/.project/rules/TASK_DOC_RULE.md](../template/.project/rules/TASK_DOC_RULE.md) |
@@ -167,14 +167,14 @@ my-app/                                   ← 사용자 프로젝트
 | [TASK-DOC.md](TASK-DOC.md) | 태스크 위계 + 양식 + 7 상태 + 4단 layer 가이드 | task 작성 / 상태 전이 의문 시 |
 | [HOOKS.md](HOOKS.md) | 3 catastrophic hook 정책 + 우회 절차 | hook 차단 발생 시 / 우회 필요 시 |
 | [DISTRIBUTION.md](DISTRIBUTION.md) | npx 배포 + bin/ + manifest 머지 로직 | 사용자 프로젝트 셋업 / npx update / publish 시 |
-| [PLAYBOOK.md](PLAYBOOK.md) | 미래 옵션 카탈로그 (bottoms-up 부활 카탈로그) | `/refine` 회고 시 |
+| [PLAYBOOK.md](PLAYBOOK.md) | 미래 옵션 카탈로그 (bottoms-up 부활 카탈로그) | 사용자 직접 정독 시 |
 
 ### 사용자 프로젝트 자산 (template/ 카피 후)
 
 | 자료 | 위치 | 용도 |
 |------|------|------|
 | 사용자 프로젝트 메인 진입점 | `<user-project>/CLAUDE.md` | 메인 세션 자동 정독 (검증 명령 + 룰 참조 + 스킬 8종) |
-| 스킬 본문 | `<user-project>/.claude/skills/*.md` | 스킬 호출 시 메인이 정독 |
+| 스킬 본문 | `<user-project>/.claude/skills/*/SKILL.md` | 스킬 호출 시 메인이 정독 |
 | Hook | `<user-project>/.claude/hooks/*.sh` | Claude Code PreToolUse 자동 실행 |
 | task 양식 룰 | `<user-project>/.project/rules/TASK_DOC_RULE.md` | task 작성 시 메인이 정독 |
 | git 룰 | `<user-project>/.project/rules/GIT_RULE.md` | git 작업 시 메인이 정독 |
@@ -199,7 +199,7 @@ my-app/                                   ← 사용자 프로젝트
 1. `<user-project>/CLAUDE.md` (메인 세션 자동 정독)
 2. `<user-project>/.project/AGENT-GUIDE.md` (활성 plan 버전 + 폴더 구조)
 3. `<user-project>/.project/plans/<활성버전>/PLAN.md` (기획 문서 진입)
-4. 스킬 호출 시 메인이 해당 `<user-project>/.claude/skills/<skill>.md` 정독
+4. 스킬 호출 시 메인이 해당 `<user-project>/.claude/skills/<skill>/SKILL.md` 정독
 
 **글로벌 룰** (`~/.claude/CLAUDE.md`)은 모든 세션에서 자동 적용 — 사용자 닉네임 / 반말 대화 / md 수정 이력 의무 등.
 
@@ -233,3 +233,4 @@ my-app/                                   ← 사용자 프로젝트
 | 2026-05-09 | 외부 비교 자료 / 배경 단락 정리 — 비교/배경은 [DECISIONS.md](DECISIONS.md)로 통합. shared/ 하위 폴더 구조 표시. §10 현재 상태 갱신 (smoke test + follow-up fix 반영) |
 | 2026-05-09 | 표현 정제 — 인명 / 경박 표현 / 스킬 용어 정정 (DECISIONS.md 외) |
 | 2026-05-09 | npm 패키지명 `@angar2/taskery`로 변경 (이름 충돌 해소) — npx/npm 명령 표기 갱신. 프로젝트 정체성 호칭은 *taskery* 그대로 유지. |
+| 2026-05-10 | 스킬 8종 구조 마이그레이션 반영 — §6 단일 진실 소스 표 + §7 사용자 프로젝트 자산 표 + §8 정독 순서 라인 `<skill>.md` → `<skill>/SKILL.md` 갱신. (Claude Code가 npx init 후 스킬을 인식 못 하던 동작 버그 해결, 0.1.1 후보) |
