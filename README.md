@@ -136,11 +136,19 @@ my-app/
 | `/task-dev` | task | 계획에 따른 단계별 구현 + 자가 검증 |
 | `/task-test` | task | 별도 격리 세션에서 독립 검증 (메인 가정 차단) |
 | `/task-close` | task | 최종 검증 후 git 커밋 + dev 브랜치 `--no-ff` 병합 |
-| `/refine` | meta | 누적된 불편 기록 분석 + 반복 패턴과 보강 후보 제안 |
+| `/log-friction` | meta | 사용자 불편을 `.project/FRICTION_LOG.md`에 한 행 기록 |
 
 각 스킬은 슬래시로 직접 호출하거나, 사용자 발화의 의미가 스킬의 frontmatter description과 매칭되면 메인 세션이 자동으로 발동시킨다.
 
-> 각 스킬의 호출 시점, 입력 처리 방식, 단계별 절차, 주의사항은 [plan/SKILLS.md](https://github.com/angar2/taskery/blob/main/plan/SKILLS.md)에서 확인 가능
+`/project-init`, `/plan-init`, `/task-init` 세 스킬은 호출 시 다음 문서를 생성한다.
+
+| 스킬 | 생성 위치 | 생성 문서 |
+|------|---------|---------|
+| `/project-init` | `.project/` | PROJECT.md / AGENT-GUIDE.md / LINKED-REPOS.md / .env |
+| `/plan-init` | `.project/plans/<plan-name>/` | 9 기획 문서 — PLAN.md / SERVICE-POLICY.md / FEATURES.md / UX-UI.md / TECH-STACK.md / ARCHITECTURE.md / DATA-MODEL.md / API-SPEC.md / ROADMAP.md (프로젝트 타입에 따라 일부 제외) |
+| `/task-init` | `.project/tasks/<plan-name>/` | `<NNN>_<slug>.md` (단일 파일) 또는 `TASK-<NNN>_<slug>/task.md` (규모 `large` 시 폴더 승격) |
+
+> 각 스킬의 호출 시점, 입력 처리 방식, 단계별 절차, 주의사항은 [SKILLS.md](https://github.com/angar2/taskery/blob/main/plan/SKILLS.md)에서 확인 가능
 
 ---
 
@@ -153,6 +161,8 @@ my-app/
 | `closed-immutable.sh` | 파일 수정 직전 | 완료(`closed`)된 task.md 본 파일 재수정 (관련 spec-diff·스크린샷은 자유) |
 
 hook은 catastrophic 사고만 차단한다. 정상 흐름에는 간섭하지 않는다.
+
+> 각 hook의 영역 분리 정신, 등록 매칭, 차단 정책, 예외 처리 절차는 [HOOKS.md](https://github.com/angar2/taskery/blob/main/plan/HOOKS.md)에서 확인 가능
 
 ---
 
@@ -169,15 +179,21 @@ npx @angar2/taskery init
 ```
 /project-init                  # 진입 메타 문서와 디렉토리 골격 생성
 /plan-init v1.0                # v1.0 기획 문서 작성
-/task-init                     # — → draft : 첫 task의 빈 문서 생성
+/task-init                     # draft : 첫 task의 빈 문서 생성
 /task-plan TASK-001            # draft → planned : 요구사항·범위·개발 계획·테스트 계획 작성
 /task-dev TASK-001             # planned → developed : 단계별 구현과 자체 검증
 /task-test TASK-001            # developed → tested : 별도 격리 세션으로 독립 검증
 /task-close TASK-001           # tested → closed : 최종 검증 후 git 커밋과 dev 병합
 
-# 5 task 후 회고
-/refine                        # 불편 기록 분석과 보강 후보 제안
+# 불편 발생 시 등록
+/log-friction                  # 사용자 불편 한 행 기록
 ```
+
+**자동 발동 예시** — 사용자 발화 의미가 스킬 description과 매칭되면 메인이 슬래시 직접 호출 없이 다음 스킬을 자동 발동한다.
+
+- *"로그인 기능 추가해줘"* / *"이 버그 고쳐줘"* → `/task-init` 자동 발동 (새 task 시작 의도)
+- *"기획 다 됐으니 이제 구현 시작해"* → `/task-dev` 자동 발동 (planned task의 다음 단계)
+- *"이거 진짜 불편하다"* / *"이 부분 답답하네"* → `/log-friction` 자동 발동 (불만 발화 캐치)
 
 **실패·불확정 분기** — `/task-test`가 FAIL 또는 UNCERTAIN을 반환하면 메인 세션이 사용자에게 판단을 묻고, 사용자의 자연어 답변에서 의도를 해석해 다음 흐름을 *자동 발동*한다(별도 슬래시 호출 없이 진행됨).
 
@@ -189,15 +205,15 @@ npx @angar2/taskery init
 
 ## 상세 문서
 
-본 리포 spec 문서는 npm 패키지에 포함되지 않는다. GitHub에서 참고할 수 있다.
+spec 문서는 GitHub에서 참고할 수 있다.
 
-- [plan/OVERVIEW.md](https://github.com/angar2/taskery/blob/main/plan/OVERVIEW.md) — 시스템 진입 가이드와 전체 구조 개요.
-- [plan/SKILLS.md](https://github.com/angar2/taskery/blob/main/plan/SKILLS.md) — 스킬 8종의 상세 명세와 호출 흐름.
-- [plan/TASK-DOC.md](https://github.com/angar2/taskery/blob/main/plan/TASK-DOC.md) — task 문서의 작성 양식과 7 상태 머신의 동작 정의.
-- [plan/HOOKS.md](https://github.com/angar2/taskery/blob/main/plan/HOOKS.md) — catastrophic hook 3종의 정책과 예외 처리 절차.
-- [plan/DISTRIBUTION.md](https://github.com/angar2/taskery/blob/main/plan/DISTRIBUTION.md) — npx 배포 메커니즘과 자산 갱신 로직.
-- [plan/DECISIONS.md](https://github.com/angar2/taskery/blob/main/plan/DECISIONS.md) — 시스템 설계의 핵심 의사결정과 변경 이력.
-- [plan/PLAYBOOK.md](https://github.com/angar2/taskery/blob/main/plan/PLAYBOOK.md) — 향후 도입 가능한 기능 후보 목록.
+- [OVERVIEW.md](https://github.com/angar2/taskery/blob/main/plan/OVERVIEW.md) — 시스템 진입 가이드와 전체 구조 개요.
+- [SKILLS.md](https://github.com/angar2/taskery/blob/main/plan/SKILLS.md) — 스킬 8종의 상세 명세와 호출 흐름.
+- [TASK-DOC.md](https://github.com/angar2/taskery/blob/main/plan/TASK-DOC.md) — task 문서의 작성 양식과 7 상태 머신의 동작 정의.
+- [HOOKS.md](https://github.com/angar2/taskery/blob/main/plan/HOOKS.md) — catastrophic hook 3종의 정책과 예외 처리 절차.
+- [DISTRIBUTION.md](https://github.com/angar2/taskery/blob/main/plan/DISTRIBUTION.md) — npx 배포 메커니즘과 자산 갱신 로직.
+- [DECISIONS.md](https://github.com/angar2/taskery/blob/main/plan/DECISIONS.md) — 시스템 설계의 핵심 의사결정과 변경 이력.
+- [PLAYBOOK.md](https://github.com/angar2/taskery/blob/main/plan/PLAYBOOK.md) — 향후 도입 가능한 기능 후보 목록.
 
 ---
 
