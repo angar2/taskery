@@ -7,6 +7,10 @@
 
 ## [Unreleased]
 
+---
+
+## [0.1.1] - 2026-05-11
+
 ### 추가
 
 - `/project-init` 스킬 Step 7.5 — 빈 폴더 케이스 `git init` + root commit + dev 분기 가이드 (smoke test 후속, 첫 task 머지 시점 dev/main ref 누락 회피)
@@ -44,3 +48,4 @@
 | 2026-05-10 | `[Unreleased]` §수정 — README.md 전면 재작성 (첫 방문자 동선 보강 + 자기위안식 섹션 제목 제거 + plan/ 톤 정합 + 본문 수정 이력 섹션 폐지) |
 | 2026-05-11 | `[Unreleased]` §추가 + §수정 — `/refine` → `/log-friction` 대대적 개편 (호출 정책 *5 task 자동 호출* 폐기 / 분석·제안 후속 조치 전면 폐기 / PLAYBOOK ↔ 스킬 연동 해제 / spec 정합 정정 + 디렉토리 rename + `/task-close` 마찰 신호 자체 감지 Step 신규) |
 | 2026-05-11 | `[Unreleased]` §수정 — README.md `/log-friction` 동기 정정 (§Skills 표 + §워크플로우 예시 + §자동 발동 예시) |
+| 2026-05-11 | `[0.1.1] - 2026-05-11` 발행 — `[Unreleased]` 누적분(스킬 디렉토리 구조 / README 재작성 / `/log-friction` 개편 / `/task-close` 마찰 감지 / Step 7.5 / README 동기 정정) 묶음 |
