@@ -16,13 +16,13 @@
 | `/task-dev` | task | Phase 순서 구현 + self-check 게이트 | `planned`/`developing` → `developed` | task마다 |
 | `/task-test` | task | Task tool 격리 검증 (confirmation bias 회피) | `developed` → `tested` (또는 `developing`/`tested`+결함 명시) | task마다 |
 | `/task-close` | task | git 마무리 + 검증 명령 재실행 게이트 + dev `--no-ff` 병합 | `tested` → `closed` | task마다 |
-| `/refine` | **meta** | FRICTION_LOG 정독 + 반복 패턴 감지 + bottoms-up 보강 제안 | — | 5 task마다 또는 사용자 호출 |
+| `/log-friction` | **meta** | FRICTION_LOG.md에 사용자 불편 한 행 기록 | — | 사용자 호출 / 불만 발화 캐치 / task-close 자체 감지 |
 
 **위계 정신**:
 - `project` → 1회성 (프로젝트 셋업)
 - `plan` → plan 버전마다 (기획 문서 단위)
 - `task` → task마다 (5 스킬 흐름)
-- `meta` → 누적된 짜증 데이터 회고 (`/refine`)
+- `meta` → 사용자 불편 등록 (`/log-friction`)
 
 ---
 
@@ -34,7 +34,7 @@
 | `/plan-init` | 버전명 (예: v1.0, alpha) | 인자 없으면 사용자에게 질문. **분기 1**(신규): vX.X/ 생성 + 기획 문서별 질문 라운드. **분기 2**(이어가기): 최신 카피 → 새 vY.Y/ + 변경 인터뷰 + 변경된 문서만 갱신 + AGENT-GUIDE.md 활성 버전 갱신 |
 | `/task-init` | 주제/유형/규모/플랜 | 직전 맥락 명확하면 메인 제안 + confirm. 맥락 부족 시 인터뷰. **자동 추정 진행 X** |
 | `/task-plan` ~ `/task-close` | TASK-NNN 인자 또는 자동 | 인자 없으면 *상태에 맞는 가장 최근 task* 자동 선택 + confirm |
-| `/refine` | (없음) `--scope last-N` 옵션 | FRICTION_LOG 정독 → 패턴 감지 → 보강 제안 |
+| `/log-friction` | `<불편 내용>` 또는 무인자 호출 | 사용자 합의 → FRICTION_LOG.md 한 행 추가 |
 
 **자동 추정 진행 X 정신** — `/task-init`이 가장 강조. 메인이 *추정한 메타로* 파일 생성하지 X. 사용자 답 받기 전 작성 금지.
 
@@ -74,7 +74,7 @@ draft → planned → developing → developed → testing → tested → closed
 | `/task-dev` | [template/.claude/skills/task-dev/SKILL.md](../template/.claude/skills/task-dev/SKILL.md) | 8,035 B |
 | `/task-test` | [template/.claude/skills/task-test/SKILL.md](../template/.claude/skills/task-test/SKILL.md) | 9,038 B |
 | `/task-close` | [template/.claude/skills/task-close/SKILL.md](../template/.claude/skills/task-close/SKILL.md) | 9,077 B |
-| `/refine` | [template/.claude/skills/refine/SKILL.md](../template/.claude/skills/refine/SKILL.md) | 8,011 B |
+| `/log-friction` | [template/.claude/skills/log-friction/SKILL.md](../template/.claude/skills/log-friction/SKILL.md) | 3,617 B |
 
 **공통 형식** (각 SKILL.md):
 ```markdown
@@ -132,7 +132,7 @@ description: <한 줄 설명>
 | `/task-dev` | 직접 실행 | plan 컨텍스트 이어짐 필요 |
 | `/task-test` | **Task 격리 권장 (default)** | confirmation bias 회피 — 메인 plan/dev 가정이 결과 해석에 안 들어가야 |
 | `/task-close` | 직접 실행 | 짧고 명확 |
-| `/refine` | 직접 실행 | FRICTION_LOG 정독 + 패턴 감지 + 사용자 대화 |
+| `/log-friction` | 직접 실행 | FRICTION_LOG.md 한 행 Append + 사용자 합의 |
 
 **격리 메커니즘** — `/task-test` 1차 default:
 
@@ -156,26 +156,25 @@ description: <한 줄 설명>
 
 ---
 
-## 7. 회고 메타 — `/refine` + FRICTION_LOG
+## 7. 불편 등록 — `/log-friction` + FRICTION_LOG
 
-**짜증 데이터 수집 메커니즘** — 두 단계:
+**불편 데이터 수집 메커니즘** — 호출 트리거 3가지:
 
 | 방식 | 동작 |
 |------|------|
-| 평소 — `.project/FRICTION_LOG.md` | 사용자 *"이거 짜증나, 적어줘"* → 메인이 한 줄 추가. 또는 메인이 사용자 발화에서 짜증 감지 시 자동 추가 |
-| 주기적 — `/refine` 스킬 | 5 task마다 또는 사용자 호출. 메인이 *최근 짜증 정리 + 반복 패턴 감지 + bottoms-up 보강 제안* (PLAYBOOK 항목 부활 또는 새 룰). 사용자 OK 시 적용 |
+| 사용자 명시 호출 | `/log-friction "<불편 내용>"` 또는 무인자 호출. 무인자 시 메인이 사용자에게 *"어떤 점이 불편했는지?"* 질문 |
+| 사용자 불만 발화 캐치 | 메인이 사용자 발화에서 불편·짜증·답답함 신호 감지 시 *"FRICTION_LOG에 등록할까?"* 제안 → 사용자 OK 시 자동 발동 |
+| task-close 직후 자체 감지 | 메인이 작업 중 마찰 신호(동일 단계 재호출 / 실패 반복 / 사용자 부정 반응 누적) 감지 시 등록 제안 → 사용자 OK 시 발동. 감지 신호 없으면 호출 X |
 
-**`/refine` 동작 흐름**:
-1. FRICTION_LOG.md 정독 (인자 `--scope last-N` 옵션)
-2. 패턴 분류 + 빈도 카운트 (8 카테고리: 형식/컨텍스트/스킬/Test Plan/git/멀티리포/자동화/기타)
-3. 반복 패턴 감지 (≥ 3회 카테고리)
-4. PLAYBOOK 항목 매핑 (반복 패턴 ↔ §1~§9)
-5. bottoms-up 제안서 작성 + 사용자 합의
-6. FRICTION_LOG에 메타 행 추가 (다음 회고가 *이전 결과 참조*용)
+**`/log-friction` 동작 흐름**:
+1. 호출 경로 확인 (직접 호출 / 발화 캐치 / task-close 자체 감지 분기)
+2. 등록 본문 확정 (사용자 합의 — 1~3 문장 한 행)
+3. `.project/FRICTION_LOG.md` 마지막 행 다음에 신규 행 Append
+4. 결과 보고
 
-**핵심 정신**: *선제적 작성 금지 — 진짜 데이터(반복 패턴) 없이 PLAYBOOK 부활 절대 X*.
+**핵심 정신**: *기록 행위만* — 분석 / 패턴 감지 / PLAYBOOK 부활 검토 / 룰 제안 X. 사용자가 직접 FRICTION_LOG.md를 정독해 후속 조치 결정.
 
-본문 → [template/.claude/skills/refine/SKILL.md](../template/.claude/skills/refine/SKILL.md) 참조.
+본문 → [template/.claude/skills/log-friction/SKILL.md](../template/.claude/skills/log-friction/SKILL.md) 참조.
 
 ---
 
@@ -195,9 +194,9 @@ description: <한 줄 설명>
 10. /task-close TASK-001    # git 마무리 + dev 병합
 ```
 
-**5 task 후 회고**:
+**불편 발생 시**:
 ```
-11. /refine                 # FRICTION_LOG 정독 + 반복 패턴 감지 + 보강 제안
+11. /log-friction           # 사용자 불편 한 행 기록 (명시 호출 / 불만 발화 캐치 / task-close 자체 감지)
 ```
 
 ---
