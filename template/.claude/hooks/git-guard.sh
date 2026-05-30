@@ -43,7 +43,7 @@ fi
 
 # 2. git commit --no-verify 차단
 if echo "$CMD" | grep -qE 'git\s+commit\b.*--no-verify'; then
-  echo "git-guard: 'git commit --no-verify' 차단. pre-commit-verify hook 우회 금지. (.project/rules/GIT_RULE.md §금지 사항)" >&2
+  echo "git-guard: 'git commit --no-verify' 차단. commit hook 우회 금지. (.project/rules/GIT_RULE.md §금지 사항)" >&2
   exit 2
 fi
 

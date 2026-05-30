@@ -59,14 +59,14 @@
 
 `bin/init.js`는 *`template/` 디렉토리 안 모든 파일*을 사용자 cwd로 카피.
 
-**카피 대상 (코어 영역 — npx 갱신)** — 23 파일:
+**카피 대상 (코어 영역 — npx 갱신)** — 24 파일:
 | 카테고리 | 파일 |
 |---------|------|
 | 메인 instruction | `CLAUDE.md` |
 | 스킬 본문 (8) | `.claude/skills/{project-init,plan-init,task-init,task-plan,task-dev,task-test,task-close,log-friction}/SKILL.md` |
-| Hook (3) | `.claude/hooks/{git-guard,pre-commit-verify,closed-immutable}.sh` |
+| Hook (2) | `.claude/hooks/{git-guard,closed-immutable}.sh` |
 | Hook 등록 (1) | `.claude/settings.json` |
-| 룰 (2) | `.project/rules/{TASK_DOC_RULE,GIT_RULE}.md` |
+| 룰 (4) | `.project/rules/{TASK_DOC_RULE,GIT_RULE,CHANGELOG_RULE,MOCKUP_RULE}.md` |
 | 불편 누적 빈 템플릿 | `.project/FRICTION_LOG.md` |
 | 사용자 영역 빈 골격 (4) | `.project/{changelog,flows,plans,tasks}/.gitkeep` |
 | 멀티리포 골격 (2) | `.project/shared/{sent,received}/completed/.gitkeep` |
@@ -224,7 +224,7 @@ npm publish --tag beta       # beta tag로 publish
 
 **`files` 배열 — npm publish 포함 대상**:
 - `bin/` — 5 스크립트 모두
-- `template/` — 사용자 카피 대상 23 파일
+- `template/` — 사용자 카피 대상 24 파일
 - `README.md` — npm 첫 화면
 - `LICENSE` — MIT 라이선스
 
@@ -305,3 +305,4 @@ npm publish --tag beta       # beta tag로 publish
 | 2026-05-09 | publish 첫 버전이 0.1.0임을 반영 — `0.2.0` → `0.1.0` (manifest 예시 + §8 package.json 메타 예시), `npx taskery@0.2.5` → `0.1.5` (semver 예시). |
 | 2026-05-09 | npm 패키지명 `@angar2/taskery`로 변경 (이름 충돌 해소) — npx/npm 명령 표기 모두 갱신. §8 `package.json` 메타 예시도 동기화 (name + publishConfig 추가 + bin `./` prefix 제거 반영). 프로젝트 정체성 호칭은 *taskery* 그대로 유지. |
 | 2026-05-10 | 스킬 8종 구조 마이그레이션 반영 — §4 카피 대상 표 스킬 본문 행 + §5 manifest 예시 안 키 경로를 `<name>.md` → `<name>/SKILL.md`로 갱신. (Claude Code 표준 스킬 구조 적용, 카피 대상 23 파일 갯수 자체는 동일. 0.1.1 후보) |
+| 2026-05-30 | 정합 검증 후속 정정 (Phase 5) — §4 카피 대상 표 *23 파일* → *24 파일* 갱신: Hook (3) → (2) [pre-commit-verify.sh 삭제] + 룰 (2) → (4) [CHANGELOG_RULE / MOCKUP_RULE 신설]. §7 디렉토리 구조 본문도 동일 갱신. (stash FRICTION_LOG v0.2.0 정합 후속) |

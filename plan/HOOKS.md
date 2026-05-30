@@ -25,7 +25,7 @@
 | **git catastrophic** | 복구 불가능한 git 명령 | main/dev 직접 커밋 / force push / branch -D | **OK** (사고 차단) |
 | **완료 보호** | closed task.md 재수정 차단 | task.md 본 파일 수정 (spec-diffs/screenshots는 자유 — §6 단순화 결정) | **OK** (이력 보호) |
 
-practice 영역에 hook을 강제하면 *합리적 변형 차단 사고*가 발생한다. 본 hook 3종은 모두 process / git / 완료 보호 영역에 한정 (§3 정책표).
+practice 영역에 hook을 강제하면 *합리적 변형 차단 사고*가 발생한다. 본 hook 2종은 모두 git / 완료 보호 영역에 한정 (§3 정책표). v0.2.0에서 process 영역 hook(`pre-commit-verify`) 폐기 — task-close Step 2 게이트와 redundant.
 
 ---
 
@@ -76,7 +76,7 @@ practice 영역에 hook을 강제하면 *합리적 변형 차단 사고*가 발�
 |---|------|------|
 | 1 | `git commit` on `main` 또는 `dev` 브랜치 | *작업 브랜치({타입}/{개발자}_TASK-NNN_slug)에서 커밋* |
 | 2 | `git push --force` 또는 `-f` | *정상 흐름 사유 없음. 사용자 명시 승인 필요* |
-| 3 | `git commit --no-verify` | *pre-commit-verify hook 우회 금지* |
+| 3 | `git commit --no-verify` | *commit hook 우회 금지* |
 | 4 | `git branch -D` (강제 삭제) | *머지 안 된 브랜치 강제 삭제 사유 없음* |
 | 5 | `git reset --hard` | *작업 손실 위험* |
 | 6 | `git clean -fd` | *untracked 파일 + 디렉토리 강제 삭제 사유 없음* |
@@ -224,3 +224,4 @@ hook 영역에서 부활 가능한 미래 옵션:
 | 2026-05-09 | 표현 정제 — 인명 / 경박 표현 / 스킬 용어 / 이전 버전 비교 단락(§2 영역 차이 / §8 폐기된 hook) 정리. 폐기 hook 비교는 [DECISIONS.md](DECISIONS.md)로 위임. |
 | 2026-05-09 | npm 패키지명 `@angar2/taskery`로 변경 반영 — `npx taskery init` → `npx @angar2/taskery init` (settings.json 카피 안내). |
 | 2026-05-30 | `pre-commit-verify.sh` hook 폐기 — task-close Step 2 게이트 + git-guard로 충분 (redundant 검증 사이클 제거). §3 / §5 / §7 / §9 / §10 표 정합. CLAUDE.md `## 검증 명령` + `## 테스트 명령` 두 섹션 분리 명시 추가 (stash FRICTION_LOG #25 반영). |
+| 2026-05-30 | 정합 검증 후속 정정 (Phase 5) — §2 본문 *hook 3종* 잔존 표기 *2종*으로 갱신 + process 영역 한정 표현 제거 (pre-commit-verify 폐기 정합). §4 git-guard 표 메시지 *pre-commit-verify hook 우회 금지* → *commit hook 우회 금지* 일반화. |

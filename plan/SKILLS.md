@@ -156,7 +156,7 @@ CLAUDE.md `## 검증 명령` 단일 섹션이 *4 시점에 분산 실행* (self-
 
 ```
 /task-test 호출 → 메인이:
-1. task.md 정독 → Test Plan + Dev Plan 완료 기준 추출 (목업 있으면 mockup/<task>-mockup.html 도 정독)
+1. task.md 정독 → Test Plan + Dev Plan 완료 기준 추출 (목업 있으면 mockup/<task-doc-name>-mockup.html 도 정독)
 2. status를 testing으로 갱신 (격리 세션 호출 직전)
 3. Task tool 호출, 격리 prompt:
    - task.md 절대 경로 (격리 세션이 직접 정독 — 자기완결적)
@@ -233,3 +233,4 @@ CLAUDE.md `## 검증 명령` 단일 섹션이 *4 시점에 분산 실행* (self-
 | 2026-05-09 | npm 패키지명 `@angar2/taskery`로 변경 반영 — `npx taskery init` → `npx @angar2/taskery init`. |
 | 2026-05-10 | 스킬 8종 구조 마이그레이션 반영 — §4 표 + 라인 150/177 본문 링크 `<name>.md` → `<name>/SKILL.md` 갱신, frontmatter 공통 형식 예시에 `name` 필드 추가. (Claude Code가 npx init 후 스킬을 인식 못 하던 동작 버그 해결, 0.1.1 후보) |
 | 2026-05-30 | stash FRICTION_LOG 기반 v0.2.0 정합 — §5 `## 검증 명령` + `## 테스트 명령` 두 섹션 분리 (pre-commit-verify hook 폐기 정합) + §6 task-test 격리 prompt 흐름 갱신 ([AUTO]/[USER] 분류 / 목업 정독 / 신규 식별자 grep / USER 검수 흐름). 8 스킬 본문 변경은 각 SKILL.md 참조. |
+| 2026-05-30 | 정합 검증 후속 정정 (Phase 5) — §6 격리 prompt 흐름 본문의 mockup path 표기 `<task>-mockup.html` → `<task-doc-name>-mockup.html` 으로 통일 (MOCKUP_RULE 단일 진실 소스 정합). |

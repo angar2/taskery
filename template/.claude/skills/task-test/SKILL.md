@@ -53,7 +53,7 @@ Task tool로 sub-agent spawn. prompt는 *자기완결적* — task.md 경로 + �
 파일 경로: <ABSOLUTE_PATH_TO_TASK_MD>
 
 이 파일을 직접 Read 해서 ## Test Plan 섹션 + ## Dev Plan의 Phase별 완료 기준을 정독하세요. 다른 문서 참조 X — task.md 하나만 봅니다.
-(단 task.md가 `mockup/<task>-mockup.html` 참조하면 해당 목업 파일도 직접 Read — 시각 USER 시나리오의 *기준*으로 사용. 자동 비교 X.)
+(단 task.md가 `mockup/<task-doc-name>-mockup.html` 참조하면 해당 목업 파일도 직접 Read — 시각 USER 시나리오의 *기준*으로 사용. 자동 비교 X.)
 
 ## 수행 룰
 

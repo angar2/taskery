@@ -22,7 +22,7 @@
 **spec-diffs / screenshots / mockup 위치 — vX.X 공통 단일화**:
 - `.project/tasks/<vX.X>/spec-diffs/<NNN>_<slug>_spec-diff.md` — 단일 파일 task든 폴더 승격이든
 - `.project/tasks/<vX.X>/screenshots/<NNN>_*.png`
-- `.project/tasks/<vX.X>/mockup/<NNN>_<slug>-mockup.html` (UX/UI 구현 task 한정 — stash FRICTION_LOG #14+19 반영)
+- `.project/tasks/<vX.X>/mockup/<task-doc-name>-mockup.html` (UX/UI 구현 task 한정 — stash FRICTION_LOG #14+19 반영)
 - 폴더 승격 task도 *vX.X 공통* 사용 (task 폴더 안에 spec-diffs/screenshots/mockup 생성하지 않음)
 - 단일 진실 소스: [TASK_DOC_RULE.md §1.5](../template/.project/rules/TASK_DOC_RULE.md) + [MOCKUP_RULE.md](../template/.project/rules/MOCKUP_RULE.md)
 
@@ -143,7 +143,7 @@ draft → planned → developing → developed → testing → tested → closed
 - **카탈로그** (방식 선택 — 시나리오마다 1개 이상): 수동 검수 / 시나리오 스크립트 / API 호출 / 입출력 비교 / 사이드 이펙트 / 회귀 / E2E 자동화 도구
 - **UX/UI 영역 분리** (UX/UI task 한정):
   - 동작 영역 (클릭/호버/드래그/입력 → 결과): 자동화 가능 → `[AUTO]`, 불가 → `[USER]` 체크리스트
-  - 시각 영역 (레이아웃/색상/간격/호버 효과): 자동 비교 의미 X → `[USER]` 체크리스트 + 목업 기준 참조 (`mockup/<NNN>_<slug>-mockup.html`)
+  - 시각 영역 (레이아웃/색상/간격/호버 효과): 자동 비교 의미 X → `[USER]` 체크리스트 + 목업 기준 참조 (`mockup/<task-doc-name>-mockup.html`)
 - 시각 영역 시나리오 있으면 *fix 사이클 1~2회 예상* 사전 예고 명시
 
 가이드라인:
@@ -212,3 +212,4 @@ draft → planned → developing → developed → testing → tested → closed
 | 2026-05-08 | §1 위계에 spec-diffs/screenshots vX.X 공통 단일화 명시. 폴더 승격은 *추가 자료* 자리용으로 명확화. 단일 진실 소스 = TASK_DOC_RULE.md §1.5 |
 | 2026-05-09 | 표현 정제 — 인명 / 경박 표현 / 스킬 용어 / 이전 버전 비교 단락 정리. 폐기 항목 비교는 [DECISIONS.md](DECISIONS.md)로 위임. |
 | 2026-05-30 | Test Plan = 실질 동작 시나리오 본질 명시 + `[AUTO]`/`[USER]` 분류 강제 + 카탈로그 / UX/UI 영역 분리 매트릭스 / 목업 기준 참조 / 시각 fix 사이클 예고. §1 위계에 mockup/ 디렉토리 추가 (vX.X 공통). (stash FRICTION_LOG #14+19 / #25 반영) |
+| 2026-05-30 | 정합 검증 후속 정정 (Phase 5) — §1.5 mockup path 표기 `<NNN>_<slug>-mockup.html` → `<task-doc-name>-mockup.html` 으로 통일 (MOCKUP_RULE 단일 진실 소스 표기 정합 — 폴더 승격 케이스도 커버). |

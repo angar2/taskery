@@ -7,7 +7,7 @@
  *   1. cwd에 .taskery-manifest.json 이미 있으면 경고 + confirm
  *   2. template/ 안 *모든 파일* cwd로 카피 (디렉토리 자동 생성)
  *   3. *.local.md 사용자 오버라이드 충돌 검사 (덮어쓰지 X)
- *   4. .taskery-manifest.json 박음 (version + installed_at + files{path,hash,core,managed} 맵)
+ *   4. .taskery-manifest.json 작성 (version + installed_at + files{path,hash,core,managed} 맵)
  *   5. 결과 요약 출력 + 다음 단계 안내 (`/project-init`)
  */
 
@@ -93,7 +93,7 @@ async function main() {
     console.log(`  copy: ${rel}`);
   }
 
-  // 4. manifest 박음
+  // 4. manifest 작성
   const manifest = {
     version: getPackageVersion(),
     installed_at: new Date().toISOString(),

@@ -138,6 +138,10 @@ stash FRICTION_LOG #3 반영 — 프로젝트 도메인 용어를 *영문/한글
 
 빈 표만 작성. 본문은 plan/task 진행하면서 사용자가 채움.
 
+### Step 5 — `.project/LINKED-REPOS.md` 작성
+
+멀티리포 구성 명세. 단일 리포면 빈 템플릿만, 멀티 리포면 연결 리포 목록까지.
+
 ```markdown
 # LINKED-REPOS.md
 
@@ -221,7 +225,7 @@ git branch -a                                        # main(또는 master) + dev
 **결과 commit 흐름** (GIT_RULE 정합):
 - dev 직접 commit *금지* (git-guard.sh 차단). 두 가지 default 흐름:
   1. **첫 task에 묶기 (권장)**: `/plan-init` 끝나고 첫 `/task-init` (보통 TASK-001 부트스트랩 chore)으로 만든 작업 브랜치에서 init 산출물(PROJECT/AGENT-GUIDE/LINKED-REPOS/.env)도 함께 commit. task-close 단계의 "태스크 문서 커밋"에 자연스럽게 묶임.
-  2. **임시 docs 브랜치**: `git checkout -b docs/{개발자}_init-bootstrap` 후 commit → dev에 `--no-ff` 머지. 첫 task 생성 *전*에 init 결과를 깔끔히 박고 싶을 때.
+  2. **임시 docs 브랜치**: `git checkout -b docs/{개발자}_init-bootstrap` 후 commit → dev에 `--no-ff` 머지. 첫 task 생성 *전*에 init 결과를 깔끔히 기록하고 싶을 때.
 
 ## 도구 가이드
 
