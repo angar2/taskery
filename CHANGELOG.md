@@ -9,6 +9,14 @@
 
 ### 추가
 
+- **멀티세션 워크트리 메커니즘 신설 (0.1.2 후보)** — 한 프로젝트 같은 `.git`을 공유하는 여러 메인 세션이 독립 작업 폴더(worktree)로 병렬 task를 진행. 메인 워크트리는 `dev` 전용으로 유지, task는 `~/.taskery/worktrees/<projectId>/TASK-NNN_<출처>_<슬러그>/`에 분기. SSoT = git 브랜치 (`git branch --no-merged dev --list 'feature/*_TASK-*' ...`). race 차단 2층 — 결정적 슬러그(같은 항목 → 같은 브랜치명 → git 자동 거부) + SSoT BL/RM-NNN grep. 충돌 자체 해결 3단계 — 단순 자동 / 의미적 자료 분석 / 판단 불가 사용자 호출. 머지 락 직렬화(`proper-lockfile`, `~/.taskery/<projectId>.merge.lock`). task-close 후 워크트리 + 작업 브랜치 자동 정리(GIT_RULE 면제 조항, 보존 키워드 시 양쪽 보존).
+- `bin/lib.js` 멀티세션 유틸 — `getMainWorktreePath` / `getProjectId` / `getWorktreePath` / `withMergeLock` / `withMetaLock` / `getActiveTasks` / `getNextTaskNumber` / `assertMainWorktreeOnDev` / `assertDevExists` / `parseBranchName` / `generateProjectId` 등
+- `bin/status.js` 신설 — 진행중 태스크 (SSoT) + 워크트리 폴더 상태 + 마지막 커밋 시각 + 머지 락 상태 + stale 의심 항목 (케이스 A/B/C/D) + orphan 워크트리 출력 (`npx @angar2/taskery status`)
+- `bin/prune.js` 신설 — stale 워크트리 / 브랜치 대화형 정리 (`git worktree prune` 자동 + 의심 항목 사용자 선택 보존/삭제) (`npx @angar2/taskery prune`)
+- `.taskery-manifest.json` 필드 추가 — `projectId` (8자 hex, 워크트리 폴더 충돌 방지) / `stale_days` (기본 30) / `lock_timeout_ms` (기본 30000). `bin/init.js` 신규 manifest 자동 생성 + `bin/update.js` 누락 필드 자동 마이그레이션
+- `package.json` — `proper-lockfile` 의존성 + `engines.git: ">=2.31.0"` 명시 (`--path-format=absolute` 옵션 필요)
+- `template/.project/rules/GIT_RULE.md` 멀티세션 오버라이드 — 브랜치명에 출처(BL/RM/DR) 추가 (`{타입}/{개발자}_TASK-NNN_{출처}_{슬러그}`) / 케이스 2(TASK 없는 작업 브랜치) 시스템 외 명시 / `/task-close` 자동 삭제 + 워크트리 제거 면제 조항 / 멀티세션 워크트리 정책 섹션 신규 (메인=dev 전용 / SSoT 조회 / 머지 락 직렬화)
+- `template/CLAUDE.md` 메인 세션 최상위 룰 #3 워크트리 자가 진단 추가 + 멀티세션 워크트리 섹션 신규 (호출 위치 / 메타 접근 절대 경로 / 보조 명령 / git ≥ 2.31 요건)
 - `.project/rules/CHANGELOG_RULE.md` 신설 — CHANGELOG 위치 / 형식 / 필수 필드 / `/task-close` 정합 단일 진실 소스 (stash FRICTION_LOG #8+9)
 - `.project/rules/MOCKUP_RULE.md` 신설 — UX/UI task의 HTML 목업 위치 / 형식 / 두 시점 활용 / 시각 fix 예고 단일 진실 소스 (stash FRICTION_LOG #14+19)
 - `.project/GLOSSARY.md` 신설 단계 — `/project-init` Step 4.5 (4컬럼: 영문/한글/정의/출처). 도메인 용어 표기 일관성 (stash FRICTION_LOG #3)
@@ -21,6 +29,11 @@
 
 ### 수정
 
+- **`/task-init` 스킬 본문 전면 재정의 (멀티세션 0.1.2)** — 사전 검증 (메인 워크트리 검출 / dev 존재 / 메인=dev / stale 감지) + 다음 TASK-NNN 계산 (SSoT) + 출처 결정 (BL/RM/DR) + 결정적 슬러그 + SSoT 안전망 + 워크트리 생성 (`git worktree add`) + task 문서 `.gitignore` 케이스 분기 (등록 시 메인 워크트리 직접 작성, 미등록 시 워크트리 안)
+- **`/task-close` 스킬 본문 전면 재정의 (멀티세션 0.1.2)** — 사전 검증 (메인=dev / 워크트리 미커밋 X) + 호출 위치 분기 (워크트리 vs 메인) + 사전 rebase (락 외) + 충돌 자체 해결 3단계 에스컬레이션 + 충돌 해결 task 문서 기록 (`.gitignore` 케이스 분기) + 머지 락 + 락 안 재 rebase + Phase 커밋 시퀀스 + dev `--no-ff` 머지 + 워크트리 제거 + 작업 브랜치 자동 삭제 + 복구 안전망 출력
+- `/task-plan` / `/task-dev` / `/task-test` 본문에 *멀티세션 메타 위치* 단락 추가 — `.gitignore` 케이스 분기로 task 문서 위치 결정 (등록 시 `$MAIN_WT/.project/tasks/...` 단일 소스 + `withMetaLock`, 미등록 시 워크트리 안)
+- `plan/SKILLS.md` §1 스킬 표 갱신 (task-init/close 멀티세션 동작 + 워크트리 호출 위치 명시) + §3.5 멀티세션 워크트리 섹션 신규 (SSoT / 메인=dev 전용 / race 2층 / 충돌 3단계 / 머지 락 / 자동 정리 / 호출 위치 분기 / CLI 보조 명령 / `.gitignore` 케이스 분기)
+- `README.md` 해결하는 문제 표에 *단일 메인 세션 직렬 병목 → 멀티세션 병렬* 한 행 추가 / 멀티세션 (병렬 작업) 섹션 신규 / 빠른 시작에 `taskery status` / `taskery prune` 추가 / 요구 사항에 git ≥ 2.31 명시
 - catastrophic hook 안전망 3종 → 2종 — `pre-commit-verify.sh` 폐기 (`/task-close` Step 2 게이트 + `git-guard.sh`로 충분, redundant 검증 사이클 제거). `template/.claude/hooks/pre-commit-verify.sh` 삭제 + `settings.json` 등록 해제 (stash FRICTION_LOG #25)
 - `/task-plan` Step 5 Test Plan 본질 재정의 — *실질 동작 시나리오* (유닛 테스트 X) + 카탈로그 7방식 + UX/UI 영역 분리 매트릭스 + `[AUTO]` / `[USER]` 분류 강제 + 시각 fix 사이클 사전 예고 (stash FRICTION_LOG #14+19)
 - `/task-dev` Step 6 / 6.5 분리 — self-check = 코드 상태만(테스트 X) + 테스트 실행 단일 시점 + 추측 fix 반복 방지 룰 + 모호 발화 confirm + 신규 테스트 식별자 grep 등장 확인 + 디자인 산출 정독 의무 (stash FRICTION_LOG #15+16+18 / #19 / #21+22 / #25)
@@ -78,6 +91,7 @@
 | 2026-05-30 | `[Unreleased]` §추가 + §수정 — stash FRICTION_LOG 기반 정합 누적 (CHANGELOG_RULE / MOCKUP_RULE 신설 / GLOSSARY / BACKLOG / 메인 세션 최상위 룰 / 검증·테스트 명령 분리 / HTML 목업 프로세스 / Step 4-0 / `.gitignore` prompt / hook 3종 → 2종 폐기 / 8 스킬 본문 갱신 / README + package.json 정합) |
 | 2026-05-30 | `[Unreleased]` §수정 보강 — 3차 검증 후속 정정 누적 (TASK_DOC_RULE §1.5 mockup 행 추가 + §2.5 Test Plan 본질 재정의 + §4.5 / §5 완성 예시 3개 Test Plan 형식 갱신, closed-immutable.sh hook 주석 mockup 자유 수정 명시) |
 | 2026-05-30 | `[Unreleased]` §수정 보강 — 3차 검증 후속 정정 추가 누적 (`/task-init` / `/plan-init` / `/task-close` SKILL 본문 + plan/HOOKS.md §6에 mockup `vX.X 공통` 명시 확산 정합. 행위 변경 X, 본문 가독성 정합) |
+| 2026-05-31 | `[Unreleased]` §추가 + §수정 — 멀티세션 워크트리 메커니즘 신설 (0.1.2 후보). bin/lib.js 유틸 확장 + bin/status.js / bin/prune.js 신설 + manifest 신규 필드(projectId / stale_days / lock_timeout_ms) + proper-lockfile 의존성. GIT_RULE 멀티세션 오버라이드 + CLAUDE.md 가이드 갱신. 스킬 본문 task-init/close 전면 재정의 + task-plan/dev/test 메타 위치 분기 + plan/SKILLS.md §3.5 신규 + README §멀티세션 + §해결하는 문제 한 행 |
 | 2026-05-30 | `[Unreleased]` §수정 보강 — 3차 검증 추가 누적 (closed-immutable.sh 주석 / plan/HOOKS §2·§3·§6 / plan/DECISIONS §5 / template/CLAUDE.md Hook 표 본문에 *spec-diffs / screenshots / mockup* 표기 일관성 정합 — mockup 누락 6건 보강) |
 | 2026-05-30 | `[Unreleased]` §수정 보강 — 3차 검증 마지막 누적 (plan/DECISIONS §6 분산 원칙 표 — 스킬 path `<skill>.md` → `<skill>/SKILL.md` + CHANGELOG_RULE / MOCKUP_RULE 행 추가 + 테스트 명령 행 신설. plan/DISTRIBUTION §9 동기화 룰 예시 두 섹션 분리 정합. `/task-init` 블랙리스트 `Sources` 옛 표기 → `src / app / lib 등 프로젝트 소스 디렉토리` 언어/기술 중립 정합) |
 | 2026-05-30 | `[Unreleased]` §수정 보강 — README.md 디렉토리 구조 표시에 신설 룰 / 자료 반영 (rules/ 안 CHANGELOG_RULE / MOCKUP_RULE + .project/ 직속 GLOSSARY.md + tasks/ 옆 BACKLOG / mockup 명시) |

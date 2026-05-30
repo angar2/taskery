@@ -11,11 +11,11 @@
 |------|------|------|---------|----------|
 | `/project-init` | **project** | PROJECT.md / AGENT-GUIDE.md / LINKED-REPOS.md / .env / .project 골격 생성 | — | **1회성** (프로젝트 첫 셋업) |
 | `/plan-init` | **plan** | `.project/plans/<vX.X>/` 안 기획 문서 작성 | — | plan 버전마다 |
-| `/task-init` | **task** | task.md 6 섹션 placeholder + 헤더 status=draft | — → `draft` | task마다 |
-| `/task-plan` | task | Requirements / Scope / Dev Plan / Test Plan 채우기 | `draft` → `planned` | task마다 |
-| `/task-dev` | task | Phase 순서 구현 + self-check 게이트 | `planned`/`developing` → `developed` | task마다 |
-| `/task-test` | task | Task tool 격리 검증 (confirmation bias 회피) | `developed` → `tested` (또는 `developing`/`tested`+결함 명시) | task마다 |
-| `/task-close` | task | git 마무리 + 검증 명령 재실행 게이트 + dev `--no-ff` 병합 | `tested` → `closed` | task마다 |
+| `/task-init` | **task** | **워크트리 분기** + task.md 6 섹션 placeholder + 헤더 status=draft | — → `draft` | task마다 |
+| `/task-plan` | task | Requirements / Scope / Dev Plan / Test Plan 채우기 (워크트리 안 호출 — 메타는 메인 워크트리 절대 경로) | `draft` → `planned` | task마다 |
+| `/task-dev` | task | Phase 순서 구현 + self-check 게이트 (워크트리 안 호출) | `planned`/`developing` → `developed` | task마다 |
+| `/task-test` | task | Task tool 격리 검증 (confirmation bias 회피, 워크트리 안 호출) | `developed` → `tested` (또는 `developing`/`tested`+결함 명시) | task마다 |
+| `/task-close` | task | git 마무리 + 검증 명령 재실행 게이트 + **머지 락 직렬화** + dev `--no-ff` 병합 + **워크트리/브랜치 자동 정리** | `tested` → `closed` | task마다 |
 | `/log-friction` | **meta** | FRICTION_LOG.md에 사용자 불편 한 행 기록 | — | 사용자 호출 / 불만 발화 캐치 / task-close 자체 감지 |
 
 **위계 정신**:
@@ -58,6 +58,34 @@ draft → planned → developing → developed → testing → tested → closed
 ```
 
 상세 작성 주체 + FAIL/UNCERTAIN 분기는 → [TASK-DOC.md](TASK-DOC.md) §3~5 참조.
+
+---
+
+## 3.5 멀티세션 워크트리 (0.1.2+)
+
+한 프로젝트에서 *여러 메인 세션이 독립 태스크를 병렬*로 진행하는 운영. git worktree로 작업 폴더 격리, 머지 시 직렬화.
+
+**핵심 정신**:
+- **SSoT = git 브랜치** — 별도 상태 파일/락 운영 X. `git branch --no-merged dev --list 'feature/*_TASK-*' ...` 단일 진실 소스
+- **메인 워크트리 = dev 전용** — 모든 태스크 작업은 별도 워크트리에서 수행
+- **race 차단 2층** — 결정적 슬러그(같은 항목 → 같은 브랜치명, git 자동 거부) + SSoT BL/RM-NNN grep 검사
+- **충돌 자체 해결 3단계** — 단순 자동 / 의미적 자료 분석 / 판단 불가 사용자 호출
+- **머지 락 직렬화** — `proper-lockfile` 기반 머지 락 (`~/.taskery/<projectId>.merge.lock`), 락 외 사전 rebase + 락 안 재 rebase로 race 흡수
+- **자동 정리** — task-close 마지막에 워크트리 + 브랜치 자동 제거 (GIT_RULE.md 면제 조항). 보존 키워드 시 양쪽 보존
+
+**호출 위치 분기 (task-close)**:
+- 워크트리에서 호출 — *그 워크트리의 태스크* 자동 컨텍스트
+- 메인 워크트리에서 호출 — 진행중 태스크 목록 인터뷰 + 사용자 선택 → 해당 워크트리 컨텍스트 진입
+
+**관련 CLI 보조 명령**:
+- `npx @angar2/taskery status` — 진행중 태스크 + 워크트리 + 머지 락 + stale 의심 항목 출력
+- `npx @angar2/taskery prune` — stale 워크트리 / 브랜치 대화형 정리
+
+**.gitignore 케이스 분기 (task 문서 위치)**:
+- 등록 (퍼블릭 리포 default) — 메인 워크트리 절대 경로 (`$MAIN_WT/.project/tasks/...`) 단일 소스. 동시 쓰기 `proper-lockfile`로 직렬화
+- 미등록 — 워크트리 안 (`$WT_PATH/.project/tasks/...`), 워크트리 커밋 + 머지 시 dev 반영
+
+상세 흐름은 → [template/.claude/skills/task-init/SKILL.md](../template/.claude/skills/task-init/SKILL.md) / [template/.claude/skills/task-close/SKILL.md](../template/.claude/skills/task-close/SKILL.md) 참조.
 
 ---
 
@@ -234,3 +262,4 @@ CLAUDE.md `## 검증 명령` 단일 섹션이 *4 시점에 분산 실행* (self-
 | 2026-05-10 | 스킬 8종 구조 마이그레이션 반영 — §4 표 + 라인 150/177 본문 링크 `<name>.md` → `<name>/SKILL.md` 갱신, frontmatter 공통 형식 예시에 `name` 필드 추가. (Claude Code가 npx init 후 스킬을 인식 못 하던 동작 버그 해결, 0.1.1 후보) |
 | 2026-05-30 | stash FRICTION_LOG 기반 정합 — §5 `## 검증 명령` + `## 테스트 명령` 두 섹션 분리 (pre-commit-verify hook 폐기 정합) + §6 task-test 격리 prompt 흐름 갱신 ([AUTO]/[USER] 분류 / 목업 정독 / 신규 식별자 grep / USER 검수 흐름). 8 스킬 본문 변경은 각 SKILL.md 참조. |
 | 2026-05-30 | 정합 검증 후속 정정 (Phase 5) — §6 격리 prompt 흐름 본문의 mockup path 표기 `<task>-mockup.html` → `<task-doc-name>-mockup.html` 으로 통일 (MOCKUP_RULE 단일 진실 소스 정합). |
+| 2026-05-31 | 멀티세션 0.1.2 반영 — §1 스킬 표에 task-init/close 멀티세션 동작 + 워크트리 호출 위치 명시 / §3.5 멀티세션 워크트리 섹션 신규 (SSoT / 메인=dev 전용 / race 2층 / 충돌 3단계 / 머지 락 / 자동 정리 / 호출 위치 분기 / CLI 보조 명령 / .gitignore 케이스 분기) |

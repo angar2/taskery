@@ -15,6 +15,7 @@ AI 코딩 에이전트의 자율 개발을 위한 Task 기반의 가드레일 �
 | 작업 컨텍스트가 휘발되어 이전 결정·사유를 추적하기 어려움 | task 문서로 컨텍스트와 히스토리 기록 — 작업 중 참조 가능 |
 | 에이전트가 catastrophic 사고를 일으킬 수 있음 | 필수 hook으로 차단 — 정상 흐름에는 무간섭 |
 | 에이전트가 작성한 코드의 자가검증으로 인해 문제를 놓침 (confirmation bias) | 테스트 시 별도 격리 세션 호출(`/task-test`) — 메인 세션의 가정 없이 독립 검증 |
+| 단일 메인 세션 운영으로 인해 task를 직렬로 진행해야 하는 병목 | 같은 프로젝트에서 여러 메인 세션이 독립 작업 폴더(worktree)로 병렬 진행 — 머지 시점에 직렬화로 정합성 유지 |
 
 > catastrophic 사고 예시 — git 운영 정책 위반, 검증 우회, 완료된 task 문서 재수정 등
 
@@ -46,7 +47,7 @@ draft → planned → developing → developed → testing → tested → closed
 
 ## 빠른 시작
 
-> **요구 사항**: Node.js ≥ 18.
+> **요구 사항**: Node.js ≥ 18, git ≥ 2.31 (멀티세션 워크트리 기능 사용 시).
 
 ### npx
 
@@ -62,6 +63,10 @@ npx @angar2/taskery init
 
 # 최신 버전 머지 갱신
 npx @angar2/taskery update
+
+# 멀티세션 보조 명령
+npx @angar2/taskery status   # 진행중 태스크 / 워크트리 / 머지 락 현황
+npx @angar2/taskery prune    # stale 워크트리 / 브랜치 대화형 정리
 ```
 
 ### 글로벌 npm install
@@ -80,6 +85,10 @@ taskery init
 
 # 최신 버전 머지 갱신
 taskery update
+
+# 멀티세션 보조 명령
+taskery status
+taskery prune
 ```
 
 ---
@@ -118,6 +127,19 @@ my-app/
     │   └─ received/completed/
     └─ FRICTION_LOG.md                    # taskery 불편사항 누적 로그
 ```
+
+---
+
+## 멀티세션 (병렬 작업)
+
+같은 프로젝트에서 여러 메인 세션을 동시에 운영해 독립 task를 병렬로 진행한다.
+
+- 새 task를 시작하면(`/task-init`) 작업 폴더(`~/.taskery/worktrees/<projectId>/TASK-NNN_<출처>_<슬러그>/`)와 작업 브랜치를 함께 분기한다.
+- 사용자는 그 작업 폴더에서 새 메인 세션을 열어 task를 진행한다. 메인 워크트리(원본 폴더)는 `dev` 전용 상태로 유지된다.
+- task 완료(`/task-close`) 시 머지 락으로 직렬화한 후 dev에 `--no-ff` 병합한다. 다른 세션이 먼저 머지해 충돌이 발생하면 본 세션이 단순/의미적/판단 불가 3단계로 해결을 시도한다.
+- 머지 직후 작업 폴더와 작업 브랜치는 자동 정리된다(보존 키워드 사용 시 양쪽 유지). 안전망으로 복구 명령이 함께 출력된다.
+
+요건: git ≥ 2.31. 보조 명령 `npx @angar2/taskery status` / `prune`로 진행 현황과 stale 정리를 확인한다.
 
 ---
 
