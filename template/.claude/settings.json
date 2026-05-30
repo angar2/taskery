@@ -4,8 +4,7 @@
       {
         "matcher": "Bash",
         "hooks": [
-          { "type": "command", "command": ".claude/hooks/git-guard.sh" },
-          { "type": "command", "command": ".claude/hooks/pre-commit-verify.sh" }
+          { "type": "command", "command": ".claude/hooks/git-guard.sh" }
         ]
       },
       {
