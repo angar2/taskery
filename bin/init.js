@@ -24,6 +24,9 @@ const {
   readManifest,
   getPackageVersion,
   isLocalOverride,
+  generateProjectId,
+  DEFAULT_STALE_DAYS,
+  DEFAULT_LOCK_TIMEOUT_MS,
 } = require('./lib');
 
 async function confirm(msg) {
@@ -93,10 +96,13 @@ async function main() {
     console.log(`  copy: ${rel}`);
   }
 
-  // 4. manifest 작성
+  // 4. manifest 작성 — 멀티세션(0.1.2+): projectId / stale_days / lock_timeout_ms 포함
   const manifest = {
     version: getPackageVersion(),
     installed_at: new Date().toISOString(),
+    projectId: generateProjectId(),
+    stale_days: DEFAULT_STALE_DAYS,
+    lock_timeout_ms: DEFAULT_LOCK_TIMEOUT_MS,
     files: manifestFiles,
   };
   writeManifest(manifest, manifestPath);

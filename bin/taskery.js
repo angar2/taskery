@@ -28,6 +28,8 @@ function help() {
 사용법:
   npx @angar2/taskery init      현재 디렉토리에 taskery 자산 설치
   npx @angar2/taskery update    최신 버전 fetch + 머지 갱신
+  npx @angar2/taskery status    멀티세션 현황 (진행중 태스크 / 워크트리 / 머지 락)
+  npx @angar2/taskery prune     stale 워크트리 / 브랜치 대화형 정리
   npx @angar2/taskery help      도움말
 
 새 프로젝트 시작:
@@ -43,6 +45,12 @@ switch (sub) {
     break;
   case 'update':
     runScript('update.js');
+    break;
+  case 'status':
+    runScript('status.js');
+    break;
+  case 'prune':
+    runScript('prune.js');
     break;
   case 'help':
   case '--help':

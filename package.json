@@ -38,6 +38,10 @@
     "access": "public"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=18.0.0",
+    "git": ">=2.31.0"
+  },
+  "dependencies": {
+    "proper-lockfile": "^4.1.2"
   }
 }
