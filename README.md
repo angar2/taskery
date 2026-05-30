@@ -101,13 +101,16 @@ my-app/
     ├─ PROJECT.md                         # 프로젝트 개요
     ├─ AGENT-GUIDE.md                     # AI 에이전트 가이드
     ├─ LINKED-REPOS.md                    # 관계 리포지토리 정보
+    ├─ GLOSSARY.md                        # 도메인 용어집 (영문/한글 표기 일관성)
     ├─ .env                               # 사용자 설정 환경변수 (관계 리포지토리 환경변수 등)
     ├─ rules/
     │   ├─ TASK_DOC_RULE.md               # task 문서 작성 규칙
     │   ├─ GIT_RULE.md                    # 로컬 깃 운영 규칙
+    │   ├─ CHANGELOG_RULE.md              # CHANGELOG 작성 규칙
+    │   ├─ MOCKUP_RULE.md                 # UX/UI HTML 목업 규칙
     │   └─ *.local.md                     # 사용자 오버라이드 규칙 (패키지 업데이트 대상 제외)
     ├─ plans/                             # plan 문서
-    ├─ tasks/                             # task 문서
+    ├─ tasks/                             # task 문서 (vX.X/BACKLOG.md / spec-diffs / screenshots / mockup 포함)
     ├─ flows/                             # 서비스 로직 플로우 정보
     ├─ changelog/                         # 수정사항 정보
     ├─ shared/                            # 관계 리포지토리 소통 메세지함

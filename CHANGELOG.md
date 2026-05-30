@@ -80,3 +80,4 @@
 | 2026-05-30 | `[Unreleased]` §수정 보강 — 3차 검증 후속 정정 추가 누적 (`/task-init` / `/plan-init` / `/task-close` SKILL 본문 + plan/HOOKS.md §6에 mockup `vX.X 공통` 명시 확산 정합. 행위 변경 X, 본문 가독성 정합) |
 | 2026-05-30 | `[Unreleased]` §수정 보강 — 3차 검증 추가 누적 (closed-immutable.sh 주석 / plan/HOOKS §2·§3·§6 / plan/DECISIONS §5 / template/CLAUDE.md Hook 표 본문에 *spec-diffs / screenshots / mockup* 표기 일관성 정합 — mockup 누락 6건 보강) |
 | 2026-05-30 | `[Unreleased]` §수정 보강 — 3차 검증 마지막 누적 (plan/DECISIONS §6 분산 원칙 표 — 스킬 path `<skill>.md` → `<skill>/SKILL.md` + CHANGELOG_RULE / MOCKUP_RULE 행 추가 + 테스트 명령 행 신설. plan/DISTRIBUTION §9 동기화 룰 예시 두 섹션 분리 정합. `/task-init` 블랙리스트 `Sources` 옛 표기 → `src / app / lib 등 프로젝트 소스 디렉토리` 언어/기술 중립 정합) |
+| 2026-05-30 | `[Unreleased]` §수정 보강 — README.md 디렉토리 구조 표시에 신설 룰 / 자료 반영 (rules/ 안 CHANGELOG_RULE / MOCKUP_RULE + .project/ 직속 GLOSSARY.md + tasks/ 옆 BACKLOG / mockup 명시) |
