@@ -11,6 +11,23 @@ description: task 격리 세션 검증 — Task tool 격리 호출 + Test Plan �
 
 **왜 격리?** 메인 세션은 plan/dev 컨텍스트가 누적되어 *"잘 됐을 거야"* confirmation bias 작동. 격리 세션이 *코드와 동작만 신뢰*해서 가정 없이 검증.
 
+## 멀티세션 메타 위치 (0.1.2+)
+
+본 스킬은 워크트리에서 호출된다. 격리 세션 prompt에 넘기는 task 문서 + 검증/테스트 명령 출처:
+
+```sh
+MAIN_WT=$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")
+```
+
+`.gitignore` 케이스 분기:
+
+| 케이스 | task 문서 위치 | 격리 세션 작업 디렉토리 |
+|--------|--------------|---------------------|
+| 등록 (퍼블릭 리포 default) | `$MAIN_WT/.project/tasks/<vX.X>/...` | `$WT_PATH` (워크트리 — 코드 변경 위치) |
+| 미등록 | `$WT_PATH/.project/tasks/<vX.X>/...` (워크트리 안) | `$WT_PATH` (워크트리) |
+
+격리 세션은 *워크트리 안*에서 검증/테스트 명령 실행 (`$MAIN_WT/CLAUDE.md`의 `## 검증 명령` / `## 테스트 명령` 단일 진실 소스).
+
 ## 호출 시점
 
 - `/task-dev` 끝나고 self-check PASS 받은 직후.
