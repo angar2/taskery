@@ -40,14 +40,15 @@ description: task git 마무리 — 검증 명령 재실행 게이트 + 커밋 �
 
 ### Step 2 — 최종 검증 명령 재실행 (게이트)
 
-`CLAUDE.md`의 *검증 명령* 모두 재실행. **하나라도 FAIL이면 close 차단**:
+`CLAUDE.md`의 `## 검증 명령` (코드 상태 — 빌드/린트/타입체크) 만 재실행. **하나라도 FAIL이면 close 차단**:
 
 | 명령 | 결과 |
 |------|------|
 | 린트 | exit 0 + 에러 0 |
 | 타입체크 | exit 0 |
 | 빌드 | exit 0 |
-| 단위 테스트 | 모든 케이스 PASS |
+
+> 테스트 명령은 본 게이트에서 실행 X. 테스트는 `/task-dev` 구현 후 + `/task-test` 격리 세션에서만 단일 시점으로 실행 (stash FRICTION_LOG #25 반영 — 검증/테스트 명령 단일 진실 소스 분리).
 
 FAIL 시:
 - 사용자에게 보고 — *"검증 명령 X가 FAIL. 어떻게 할까?"*
@@ -75,6 +76,20 @@ PASS 시 Step 3으로.
 
 ### Step 4 — 커밋 (GIT_RULE 순서 준수)
 
+#### Step 4-0 — 내부 경로 gitignore 감지 (stash FRICTION_LOG #26 반영)
+
+공개 repo의 경우 `.project/`, `.claude/`, `CLAUDE.md` 등 taskery 내부 파일이 `.gitignore` 등록되어 있을 수 있음. 이 경우 Step 4-2 (flows) / 4-3 (태스크 문서) / 4-4 (CHANGELOG) 의 `git add` 시도가 stage 0 → 빈 commit 실패.
+
+**감지 명령**:
+```bash
+git check-ignore -q .project/dummy 2>/dev/null && echo "INTERNAL_GITIGNORED=true" || echo "INTERNAL_GITIGNORED=false"
+```
+
+- `INTERNAL_GITIGNORED=true` 시: Step 4-2 / 4-3 / 4-4 *파일 Edit/Write 는 평소대로 수행 + commit만 스킵* (이후 단계 보고에서 *"내부 경로 gitignored — commit 스킵"* 명시)
+- `INTERNAL_GITIGNORED=false` 시: 모든 단계 정상 진행
+- task 본 파일 status=`closed` Edit은 hook 영역과 무관 — 무조건 수행
+- Phase 기능 커밋 (Step 4-1) 은 코드 영역이라 gitignored 아님, 무조건 정상 진행
+
 **필수 순서**:
 
 1. **Phase별 기능 커밋** — Dev Plan의 각 Phase마다 1개 커밋.
@@ -95,27 +110,31 @@ PASS 시 Step 3으로.
    - <변경 요약>
    - 사유: <변경 이유>
    ```
+   - **Step 4-0 `INTERNAL_GITIGNORED=true` 시**: 파일 Edit은 평소대로 수행, commit 단계 스킵.
 3. **태스크 문서 커밋**:
    ```
    docs: [TASK-<NNN>] 태스크 문서 완료
    ```
    - 대상: `.project/tasks/<vX.X>/<NNN>_<slug>.md` (단일 파일) 또는 `.project/tasks/<vX.X>/TASK-<NNN>_<slug>/task.md` (폴더 승격) — *task 본 파일 + 해당 NNN의 vX.X 공통 spec-diffs/<NNN>_<slug>_spec-diff.md / screenshots/<NNN>_*.png* 묶음.
    - spec-diffs/screenshots는 *vX.X 공통* 위치 — 폴더 승격 시에도 task 폴더 안에 만들지 X (TASK_DOC_RULE §1.5 참조).
-4. **CHANGELOG 커밋 (해당 시)**:
-   - `.project/changelog/<YYYY-MM>.md` Edit (없으면 신규 Write):
+   - **Step 4-0 `INTERNAL_GITIGNORED=true` 시**: task 본 파일 status=`closed` Edit은 평소대로 수행, commit 단계 스킵.
+4. **CHANGELOG 커밋 (해당 시)** — `.project/rules/CHANGELOG_RULE.md` 정독 후 형식 / 위치 준수:
+   - `.project/changelog/<YYYY-MM>.md` Edit (없으면 신규 Write). 최신 항목이 *맨 위*에 오도록 기존 첫 `##` 항목 *바로 위*에 삽입 (CHANGELOG_RULE §3 참조):
      ```markdown
-     # <YYYY-MM>
+     ## [TASK-<NNN>] <한 줄 요약>
 
-     ## TASK-<NNN> — <제목>
-     - <Phase 1 요약>
-     - <Phase 2 요약>
-     - ...
+     - **날짜**: YYYY-MM-DD
+     - **타입**: <태그>
+     - **변경 요약**: <2-3 줄>
+     - **영향 파일**: <목록>
+     - **사유**: <변경 이유>
      ```
    - 커밋:
      ```
      docs: [TASK-<NNN>] CHANGELOG 업데이트
      ```
    - 본 task에서 변경분 없으면 본 단계 *완전히 스킵* (빈 commit 금지).
+   - **Step 4-0 `INTERNAL_GITIGNORED=true` 시**: 파일 Edit/Write는 평소대로 수행, commit 단계 스킵.
 
 ### Step 5 — dev 병합
 
@@ -175,7 +194,8 @@ PASS 시 Step 3으로.
 
 ## 주의사항
 
-- **검증 명령 재실행 게이트** — `/task-dev` self-check / `/task-test` 격리 세션 PASS와 *별개로* 본 단계에서 한 번 더 실행. 환경 변화 / 부분 작업 / 메인 가정 등 잡는 안전망. 무리하게 게이트 우회 X.
+- **사용자 명시 호출 외 자체 진입 영구 금지 (stash FRICTION_LOG #6+10/#20 반영)** — task-close는 git 영역 (브랜치 / 커밋 / 머지). 사용자가 *"X부터 Y까지"* 범위 명시했는데 Y가 close 이전 단계면 close 자체 진입 영구 X. *"task-test PASS 받고 close 진행해도 돼?"* 명시 확인 후만 호출.
+- **검증 명령 재실행 게이트** — `/task-dev` self-check PASS와 *별개로* 본 단계에서 한 번 더 실행. 환경 변화 / 부분 작업 / 메인 가정 등 잡는 안전망. 무리하게 게이트 우회 X. (테스트 명령은 본 게이트에서 실행 X — `/task-test` 격리 세션이 단일 시점)
 - **dev 직접 커밋 절대 X** — 작업 브랜치에서만. dev 브랜치에서 `git commit` 시도하면 git-guard.sh hook이 차단. hook이 0회 작동하도록 정상 흐름 준수.
 - **`--no-ff` 강제** — 머지 커밋 없으면 작업 브랜치 분기 정보 영구 손실. fast-forward 시도 절대 X.
 - **destructive 명령 사용자 승인 필수** — `git reset --hard` / `git push --force` / `git branch -D` / `git clean -fd` 사용자 명시 승인 없이 절대 실행 X. 충돌/오류 시 사용자에게 보고 + 승인 요청 의무.

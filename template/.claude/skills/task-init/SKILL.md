@@ -130,6 +130,10 @@ description: task 시작 — 6 섹션 빈 골격 + 헤더 5컬럼 (status=draft)
 ## 주의사항
 
 - **본문 채우기 금지** — 본 스킬은 *빈 골격 생성만*. Requirements / Scope / Dev Plan / Test Plan 본문은 *반드시* `/task-plan`에서. 미리 채우면 task 의도가 흐트러져 다음 단계 인터뷰 흐름이 깨짐.
+- **단계 경계 — 허용/금지 명시 (stash FRICTION_LOG #11 반영)**:
+  - **허용 (화이트리스트)**: `.project/plans/<활성버전>/ROADMAP.md` §4(다음 작업 영역) 확인 / `ls .project/tasks/<vX.X>/` (다음 NNN 결정) / 빈 골격 Write
+  - **금지 (블랙리스트)**: ARCHITECTURE.md / API-SPEC.md / FEATURES.md 등 9 기획 문서 본문 Read / 도메인 코드 (Sources / src 등) Read · Grep / 기존 task 본문 Read
+  - 본문 정보 수집은 *다음 단계 `/task-plan` Step 2~3*에서 수행. 본 스킬에서 미리 수집하면 단계 경계가 무너지고 다음 단계 인터뷰 흐름이 깨짐.
 - **자동 추정 진행 X** — 직전 맥락 명확해도 *제안 + 사용자 OK* 거친 후 파일 생성. 맥락 부족 시 인터뷰. 빠뜨린 메타(유형/규모) 채로 작성 금지.
 - **상태는 `draft` 고정** — `/task-init` 끝의 상태는 `draft` 외 작성 금지. 다음 상태(`planned`)는 `/task-plan` 끝에 갱신.
 - **NNN 충돌 회피** — `ls` 결과 정확히 파싱. 파일/폴더 둘 다 검사 (폴더 승격 task의 NNN도 같은 시퀀스).
