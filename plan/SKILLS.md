@@ -96,7 +96,7 @@ description: <한 줄 설명>
 
 ---
 
-## 5. 검증 명령 / 테스트 명령 — 두 섹션 단일 진실 소스 (v0.2.0 정합 — stash FRICTION_LOG #25 반영)
+## 5. 검증 명령 / 테스트 명령 — 두 섹션 단일 진실 소스 (stash FRICTION_LOG #25 반영)
 
 CLAUDE.md `## 검증 명령` 단일 섹션이 *4 시점에 분산 실행* (self-check / 격리 / 최종 게이트 / hook) 마찰 → 두 섹션 분리 + pre-commit-verify hook 폐기로 *단일 시점 실행* 흐름 정합.
 
@@ -131,7 +131,7 @@ CLAUDE.md `## 검증 명령` 단일 섹션이 *4 시점에 분산 실행* (self-
 - 백틱(`...`) 안 명령 그대로 실행
 - 언어/프레임워크 따라 변경 (cargo / poetry / go 등)
 - 두 섹션 분리 — 한 곳만 수정해도 *해당 영역의 스킬* 만 영향 (cross-contamination 회피)
-- *테스트 실행은 task-test 단일 시점*에 집중 (task-close / hook 영역 중복 제거 — pre-commit-verify v0.2.0 폐기 정합)
+- *테스트 실행은 task-test 단일 시점*에 집중 (task-close / hook 영역 중복 제거 — pre-commit-verify 폐기 정합)
 
 본 리포 자체는 검증/테스트 명령 없음 (template + plan + bin 자산 — 사용자 프로젝트 명령은 사용자 책임).
 
@@ -152,7 +152,7 @@ CLAUDE.md `## 검증 명령` 단일 섹션이 *4 시점에 분산 실행* (self-
 | `/task-close` | 직접 실행 | 짧고 명확 |
 | `/log-friction` | 직접 실행 | FRICTION_LOG.md 한 행 Append + 사용자 합의 |
 
-**격리 메커니즘** — `/task-test` 1차 default (v0.2.0 정합 — stash FRICTION_LOG #14+19 / #25 반영):
+**격리 메커니즘** — `/task-test` 1차 default (stash FRICTION_LOG #14+19 / #25 반영):
 
 ```
 /task-test 호출 → 메인이:
@@ -232,5 +232,5 @@ CLAUDE.md `## 검증 명령` 단일 섹션이 *4 시점에 분산 실행* (self-
 | 2026-05-09 | 파일명 변경: `SLASH-COMMANDS.md` → `SKILLS.md`. 표현 정제 — 인명 / 경박 표현 / 스킬 용어 / 이전 버전 언급 정리 |
 | 2026-05-09 | npm 패키지명 `@angar2/taskery`로 변경 반영 — `npx taskery init` → `npx @angar2/taskery init`. |
 | 2026-05-10 | 스킬 8종 구조 마이그레이션 반영 — §4 표 + 라인 150/177 본문 링크 `<name>.md` → `<name>/SKILL.md` 갱신, frontmatter 공통 형식 예시에 `name` 필드 추가. (Claude Code가 npx init 후 스킬을 인식 못 하던 동작 버그 해결, 0.1.1 후보) |
-| 2026-05-30 | stash FRICTION_LOG 기반 v0.2.0 정합 — §5 `## 검증 명령` + `## 테스트 명령` 두 섹션 분리 (pre-commit-verify hook 폐기 정합) + §6 task-test 격리 prompt 흐름 갱신 ([AUTO]/[USER] 분류 / 목업 정독 / 신규 식별자 grep / USER 검수 흐름). 8 스킬 본문 변경은 각 SKILL.md 참조. |
+| 2026-05-30 | stash FRICTION_LOG 기반 정합 — §5 `## 검증 명령` + `## 테스트 명령` 두 섹션 분리 (pre-commit-verify hook 폐기 정합) + §6 task-test 격리 prompt 흐름 갱신 ([AUTO]/[USER] 분류 / 목업 정독 / 신규 식별자 grep / USER 검수 흐름). 8 스킬 본문 변경은 각 SKILL.md 참조. |
 | 2026-05-30 | 정합 검증 후속 정정 (Phase 5) — §6 격리 prompt 흐름 본문의 mockup path 표기 `<task>-mockup.html` → `<task-doc-name>-mockup.html` 으로 통일 (MOCKUP_RULE 단일 진실 소스 정합). |

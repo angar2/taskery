@@ -2,7 +2,7 @@
 
 > 본 리포 *hook 정신의 단일 진실 소스*. 2 catastrophic hook 정책 + 영역 분리 + 우회 절차.
 > hook 본문은 `template/.claude/hooks/<hook>.sh`에 위치 — 본 문서는 *왜 이 hook인지* + *영역 분리 정신*.
-> v0.2.0에서 `pre-commit-verify.sh` 폐기 — §5 참조.
+> `pre-commit-verify.sh` 폐기 — §5 참조.
 
 ---
 
@@ -23,9 +23,9 @@
 | **practice** | 합리적 변형 있는 영역 | 검토 본문 형식 / 상태 전이 흐름 / 자기 행 작성 등 | **X** (instruction + 대화로) |
 | **process** | 결정적 영역 — exit code 0 또는 != 0 | 린트 / 타입체크 / 빌드 / 단위 테스트 | **OK** (정당) |
 | **git catastrophic** | 복구 불가능한 git 명령 | main/dev 직접 커밋 / force push / branch -D | **OK** (사고 차단) |
-| **완료 보호** | closed task.md 재수정 차단 | task.md 본 파일 수정 (spec-diffs/screenshots는 자유 — §6 단순화 결정) | **OK** (이력 보호) |
+| **완료 보호** | closed task.md 재수정 차단 | task.md 본 파일 수정 (spec-diffs / screenshots / mockup은 자유 — §6 단순화 결정) | **OK** (이력 보호) |
 
-practice 영역에 hook을 강제하면 *합리적 변형 차단 사고*가 발생한다. 본 hook 2종은 모두 git / 완료 보호 영역에 한정 (§3 정책표). v0.2.0에서 process 영역 hook(`pre-commit-verify`) 폐기 — task-close Step 2 게이트와 redundant.
+practice 영역에 hook을 강제하면 *합리적 변형 차단 사고*가 발생한다. 본 hook 2종은 모두 git / 완료 보호 영역에 한정 (§3 정책표). process 영역 hook(`pre-commit-verify`)은 폐기 — task-close Step 2 게이트와 redundant (stash FRICTION_LOG #25).
 
 ---
 
@@ -34,7 +34,7 @@ practice 영역에 hook을 강제하면 *합리적 변형 차단 사고*가 발�
 | Hook | 영역 | 잡는 것 | PreToolUse 대상 |
 |------|------|--------|---------------|
 | `git-guard.sh` | git catastrophic | main/dev 직접 커밋 / `--force` / `--no-verify` / `branch -D` / `reset --hard` / `clean -fd` | Bash |
-| `closed-immutable.sh` | 완료 보호 catastrophic | closed task.md 본 파일 재수정 차단 (spec-diffs/screenshots는 자유 — §6 참조) | Write \| Edit |
+| `closed-immutable.sh` | 완료 보호 catastrophic | closed task.md 본 파일 재수정 차단 (spec-diffs / screenshots / mockup은 자유 — §6 참조) | Write \| Edit |
 
 **hook 위치** (사용자 프로젝트):
 - `.claude/hooks/git-guard.sh`
@@ -91,7 +91,7 @@ practice 영역에 hook을 강제하면 *합리적 변형 차단 사고*가 발�
 
 ---
 
-## 5. `pre-commit-verify.sh` — v0.2.0 폐기됨
+## 5. `pre-commit-verify.sh` — 폐기됨
 
 **폐기 사유** (stash FRICTION_LOG #25 반영):
 
@@ -124,12 +124,13 @@ practice 영역에 hook을 강제하면 *합리적 변형 차단 사고*가 발�
 **차단 안 함** (의도적):
 - `.project/tasks/v*/spec-diffs/*.md` — 역사적 자료, 자유 수정
 - `.project/tasks/v*/screenshots/*` — 자유 수정
-- 폴더 승격 task의 *추가 자료* (서브 문서, mockup 등) — 자유
+- `.project/tasks/v*/mockup/*.html` — UX/UI 목업, 자유 수정 (vX.X 공통)
+- 폴더 승격 task의 *추가 자료* (서브 문서 등) — 자유. mockup은 vX.X 공통이라 폴더 안 X
 - closed task의 *관련 코드* 영역 — 새 task로 처리가 정상 흐름
 
 **왜 단순화**:
 - 이전 spec은 *폴더 승격 task의 spec-diffs/만* 보호하고 *vX.X 공통 spec-diffs는 미커버* — 비대칭
-- spec-diffs/screenshots 위치는 vX.X 공통으로 통일 (TASK_DOC_RULE §1.5 단일 진실 소스)
+- spec-diffs / screenshots / mockup 위치는 vX.X 공통으로 통일 (TASK_DOC_RULE §1.5 단일 진실 소스)
 - vX.X 공통 spec-diffs를 보호하려면 *NNN prefix로 부모 task.md 추적 로직* 필요 → 정규식 복잡 + 에러 위험
 - 단순화: spec-diffs는 *역사적 자료*로 자유 수정. closed task의 spec-diff *재해석*은 자연스럽고 차단 없는 게 정상
 
@@ -225,3 +226,4 @@ hook 영역에서 부활 가능한 미래 옵션:
 | 2026-05-09 | npm 패키지명 `@angar2/taskery`로 변경 반영 — `npx taskery init` → `npx @angar2/taskery init` (settings.json 카피 안내). |
 | 2026-05-30 | `pre-commit-verify.sh` hook 폐기 — task-close Step 2 게이트 + git-guard로 충분 (redundant 검증 사이클 제거). §3 / §5 / §7 / §9 / §10 표 정합. CLAUDE.md `## 검증 명령` + `## 테스트 명령` 두 섹션 분리 명시 추가 (stash FRICTION_LOG #25 반영). |
 | 2026-05-30 | 정합 검증 후속 정정 (Phase 5) — §2 본문 *hook 3종* 잔존 표기 *2종*으로 갱신 + process 영역 한정 표현 제거 (pre-commit-verify 폐기 정합). §4 git-guard 표 메시지 *pre-commit-verify hook 우회 금지* → *commit hook 우회 금지* 일반화. |
+| 2026-05-30 | 정합 검증 후속 정정 (3차) — §6 *차단 안 함 (의도적)* 본문에 `.project/tasks/v*/mockup/*.html` 행 추가 (vX.X 공통, 자유 수정) + 폴더 승격 추가 자료에서 *mockup* 제거 (vX.X 공통이라 폴더 안 X). closed-immutable.sh hook 동작 정합 (mockup은 task.md 매칭 X로 자동 보호 범위 외 — 본 정정은 가독성 정합). |

@@ -66,9 +66,9 @@ description: task 시작 — 6 섹션 빈 골격 + 헤더 5컬럼 (status=draft)
 
 1. 파일 vs 폴더 분기:
    - **파일 default**: 단일 `NNN_<slug>.md` (예: `008_login-feature.md`).
-   - **폴더 승격 조건**: (a) 규모 `large`, 또는 (b) 사용자 명시 *"폴더로 만들어줘"*, 또는 (c) task에 *추가 자료*(서브 문서 / mockup / 디자인) 다수 예상.
+   - **폴더 승격 조건**: (a) 규모 `large`, 또는 (b) 사용자 명시 *"폴더로 만들어줘"*, 또는 (c) task에 *추가 자료*(서브 문서 / 디자인 자료 등) 다수 예상. mockup은 vX.X 공통이라 폴더 승격 사유 X.
      → `TASK-NNN_<slug>/task.md` 생성. 추가 자료는 *task 폴더 안에 자유롭게* 위치.
-   - **`spec-diffs/` + `screenshots/`는 *vX.X 공통* 사용**: 단일 파일이든 폴더 승격이든 `.project/tasks/<vX.X>/{spec-diffs,screenshots}/`에 위치 (파일명에 NNN prefix로 task 식별 — `<NNN>_<slug>_spec-diff.md`). task 폴더 안에 spec-diffs/screenshots 생성하지 않음.
+   - **`spec-diffs/` + `screenshots/` + `mockup/`은 *vX.X 공통* 사용**: 단일 파일이든 폴더 승격이든 `.project/tasks/<vX.X>/{spec-diffs,screenshots,mockup}/`에 위치 (파일명에 NNN prefix 또는 task 문서 파일명으로 task 식별). task 폴더 안에 spec-diffs / screenshots / mockup 생성하지 않음.
    - 위 디렉토리는 `/plan-init` Step 5가 vX.X 만들 때 함께 mkdir됨. `/task-init`은 디렉토리 가정만, 직접 생성 X.
 2. slug 변환 — 한국어 → 영어 kebab-case:
    - 짧고 명확하게 (3 단어 이내 권장).
@@ -109,7 +109,7 @@ description: task 시작 — 6 섹션 빈 골격 + 헤더 5컬럼 (status=draft)
 ```
 
 - 6 섹션 placeholder는 *빈 헤딩 + 한 줄 안내*. 구체 내용 X.
-- 폴더 승격 시 `TASK-<NNN>_<slug>/task.md`로 동일 본문 작성. spec-diffs/screenshots는 vX.X 공통(`.project/tasks/<vX.X>/{spec-diffs,screenshots}/` — `/plan-init` Step 5가 mkdir)을 그대로 사용. task 폴더 안에 spec-diffs/screenshots 별도 생성 X.
+- 폴더 승격 시 `TASK-<NNN>_<slug>/task.md`로 동일 본문 작성. spec-diffs / screenshots / mockup은 vX.X 공통(`.project/tasks/<vX.X>/{spec-diffs,screenshots,mockup}/` — `/plan-init` Step 5가 mkdir)을 그대로 사용. task 폴더 안에 spec-diffs / screenshots / mockup 별도 생성 X.
 
 ### Step 6 — 결과 보고
 
@@ -123,7 +123,7 @@ description: task 시작 — 6 섹션 빈 골격 + 헤더 5컬럼 (status=draft)
 ## 도구 가이드
 
 - **Read**: `.project/AGENT-GUIDE.md` (활성 버전 확인)
-- **Bash**: `ls .project/tasks/<vX.X>/` (NNN 결정), `mkdir -p .project/tasks/<vX.X>/TASK-<NNN>_<slug>` (폴더 승격 시 — task 폴더 자체만, spec-diffs/screenshots는 vX.X 공통 사용)
+- **Bash**: `ls .project/tasks/<vX.X>/` (NNN 결정), `mkdir -p .project/tasks/<vX.X>/TASK-<NNN>_<slug>` (폴더 승격 시 — task 폴더 자체만, spec-diffs / screenshots / mockup은 vX.X 공통 사용)
 - **Write**: 새 task.md 생성
 - **AskUserQuestion**: 분기 2 인터뷰 (한 번에 한 질문)
 
@@ -132,7 +132,7 @@ description: task 시작 — 6 섹션 빈 골격 + 헤더 5컬럼 (status=draft)
 - **본문 채우기 금지** — 본 스킬은 *빈 골격 생성만*. Requirements / Scope / Dev Plan / Test Plan 본문은 *반드시* `/task-plan`에서. 미리 채우면 task 의도가 흐트러져 다음 단계 인터뷰 흐름이 깨짐.
 - **단계 경계 — 허용/금지 명시 (stash FRICTION_LOG #11 반영)**:
   - **허용 (화이트리스트)**: `.project/plans/<활성버전>/ROADMAP.md` §4(다음 작업 영역) 확인 / `ls .project/tasks/<vX.X>/` (다음 NNN 결정) / 빈 골격 Write
-  - **금지 (블랙리스트)**: ARCHITECTURE.md / API-SPEC.md / FEATURES.md 등 9 기획 문서 본문 Read / 도메인 코드 (Sources / src 등) Read · Grep / 기존 task 본문 Read
+  - **금지 (블랙리스트)**: ARCHITECTURE.md / API-SPEC.md / FEATURES.md 등 9 기획 문서 본문 Read / 도메인 코드 (`src/` / `app/` / `lib/` 등 프로젝트 소스 디렉토리) Read · Grep / 기존 task 본문 Read
   - 본문 정보 수집은 *다음 단계 `/task-plan` Step 2~3*에서 수행. 본 스킬에서 미리 수집하면 단계 경계가 무너지고 다음 단계 인터뷰 흐름이 깨짐.
 - **자동 추정 진행 X** — 직전 맥락 명확해도 *제안 + 사용자 OK* 거친 후 파일 생성. 맥락 부족 시 인터뷰. 빠뜨린 메타(유형/규모) 채로 작성 금지.
 - **상태는 `draft` 고정** — `/task-init` 끝의 상태는 `draft` 외 작성 금지. 다음 상태(`planned`)는 `/task-plan` 끝에 갱신.

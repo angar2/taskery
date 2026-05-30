@@ -97,14 +97,15 @@ draft → planned → developing → developed → testing → tested → closed
 | 폴더 승격 task | `.project/tasks/<vX.X>/TASK-<NNN>_<slug>/task.md` | `/task-init` (규모 large 또는 사용자 명시 또는 추가 자료 다수) |
 | spec-diffs (변경된 plan 문서 추적) | `.project/tasks/<vX.X>/spec-diffs/<NNN>_<slug>_spec-diff.md` (**vX.X 공통** — 단일/폴더 모두) | `/task-plan` Step 6 (Phase 0 변경 시) |
 | screenshots (UI 작업 자료) | `.project/tasks/<vX.X>/screenshots/<NNN>_*.png` (**vX.X 공통**) | `/task-test` 격리 세션 또는 메인 |
-| 폴더 승격 task의 추가 자료 (서브 문서, mockup 등) | `TASK-<NNN>_<slug>/` 안 자유 | 메인 / `/task-dev` |
+| mockup (UX/UI HTML 목업) | `.project/tasks/<vX.X>/mockup/<task-doc-name>-mockup.html` (**vX.X 공통** — 단일/폴더 모두) | `/task-plan` Step 4.5 (UX/UI task 한정) — 단일 진실 소스 `MOCKUP_RULE.md` |
+| 폴더 승격 task의 추가 자료 (서브 문서 등) | `TASK-<NNN>_<slug>/` 안 자유 | 메인 / `/task-dev` |
 
 **원칙**:
-- spec-diffs / screenshots는 *vX.X 공통* — 파일명 NNN prefix로 task 식별. 폴더 승격 task도 동일 (별도 spec-diffs/screenshots 만들지 X).
+- spec-diffs / screenshots / mockup은 *vX.X 공통* — 파일명 NNN prefix 또는 task 문서 파일명으로 task 식별. 폴더 승격 task도 동일 (별도 spec-diffs/screenshots/mockup 만들지 X).
 - vX.X 공통 디렉토리는 `/plan-init` Step 5가 mkdir.
-- 폴더 승격은 *task의 추가 자료*용 (서브 문서, mockup, 디자인 자료 등) — *spec-diffs/screenshots 위치 X*.
+- 폴더 승격은 *task의 추가 자료*용 (서브 문서 / 디자인 자료 등) — *spec-diffs / screenshots / mockup 위치 X*.
 
-**closed-immutable hook 보호 범위** — task.md 본 파일만 (단일 파일 또는 폴더 승격 task.md). spec-diffs / screenshots / 폴더 승격 추가 자료는 *역사적 자료*로 자유 수정.
+**closed-immutable hook 보호 범위** — task.md 본 파일만 (단일 파일 또는 폴더 승격 task.md). spec-diffs / screenshots / mockup / 폴더 승격 추가 자료는 *역사적 자료*로 자유 수정.
 
 ---
 
@@ -157,28 +158,56 @@ draft → planned → developing → developed → testing → tested → closed
 
 ### 2.5 Test Plan 작성 (`/task-plan` 4단계)
 
-양식 강제 X — *작업에 맞게 자유롭게* 채움. 다만 가이드라인 따름:
+**본질** — Test Plan = *본 task에서 구현한 요구사항이 정상 동작하는지* 검증 시나리오. **유닛 테스트 X** (유닛 테스트는 `/task-dev` Step 6.5에서 단일 시점 실행 — 코드 정상성 영역, Test Plan과 직교).
 
-- **자기완결적**: `/task-test` 격리 세션이 *task.md만 보고도* 수행 가능. 메인의 plan/dev 컨텍스트 없이.
-- **명령/기대값 포함**: 무엇을 실행하고 무엇이 기대되는지 명확.
-- **메인 가정 X**: 격리 세션이 *코드와 동작만 신뢰*. *"잘 될 거야"* 같은 가정 금지.
+**검증 대상**:
+- 기능 동작: 사용자 입력 → 기대 결과 / API 호출 → 응답 / 데이터 처리 → 상태 변화
+- UX/UI 동작: 클릭 → 결과 / 호버 → 상태 / 드래그 → 위치 변경
+- UX/UI 시각: 레이아웃 / 색상 / 간격 / 호버 효과 (목업 기준)
+- 백엔드 동작: 시스템 호출 → 외부 응답 / 사이드 이펙트 / 에러 처리
 
-자유 형식 (체크리스트 / 시나리오 / 명령 나열 등):
+**시나리오 형식**:
 
 ```markdown
 ## Test Plan
 
-1. `npm run dev` 실행 → 로그인 페이지(/login) 접속.
-2. 빈 값 제출 → 에러 메시지 *"이메일 입력 필요"* 표시 확인.
-3. 잘못된 이메일 형식 → *"올바른 이메일 형식이 아닙니다"* 확인.
-4. DB에 미등록 계정 → 401 + *"계정 없음"* 확인.
-5. 정상 로그인 → 홈(/)으로 리다이렉트 + 세션 쿠키 확인.
-
-검증 명령:
-- `npm run lint` PASS
-- `npm run typecheck` PASS
-- `npm run build` PASS
+| # | 시나리오 | 분류 | 방식 | PASS 기준 |
+|---|---------|------|------|----------|
+| 1 | <한 줄 설명> | [AUTO] / [USER] | <카탈로그 방식> | <명확한 기대값> |
+| 2 | ... | ... | ... | ... |
 ```
+
+**분류 강제**:
+- `[AUTO]` — 자동화 가능. 격리 세션이 *실제 명령 실행 + 결과 로그* 확보.
+- `[USER]` — 자동화 불가 (UI 인터랙션 / 시각 디자인 / 사용자 입력). 격리 세션은 UNCERTAIN 분류 + *사용자 직접 검수 항목*으로 리턴.
+
+**방식 카탈로그** (시나리오마다 1개 이상):
+
+| 방식 | 적용 영역 |
+|------|----------|
+| 수동 검수 | UI / UX / 인터랙션 |
+| 시나리오 스크립트 실행 | 백엔드 / 통합 흐름 (end-to-end script — bash / node 등) |
+| API/엔드포인트 호출 | 백엔드 / 외부 인터페이스 (실제 호출 + 응답·상태 코드 확인) |
+| 입출력 비교 | 함수 / 변환 / 처리 (snapshot / golden file) |
+| 사이드 이펙트 확인 | DB / 파일 / 로그 |
+| 회귀 시나리오 | 기존 기능 영향 (직전 동작하던 시나리오 재실행) |
+| E2E 자동화 도구 | UI 자동화 (Playwright / Cypress / XCTest UI Test 등) |
+
+**UX/UI 영역 분리** (UX/UI 구현 task 한정):
+
+| 영역 | 자동화 가능 | 자동화 불가 |
+|------|------------|------------|
+| 동작 (클릭 / 호버 / 드래그 / 입력 → 결과) | `[AUTO]` E2E 자동화 스크립트 | `[USER]` 체크리스트 |
+| 시각 (레이아웃 / 색상 / 간격 / 호버 효과) | (자동 비교 의미 X — 픽셀 단위 + 주관 판단 영역) | `[USER]` 체크리스트 + 목업 기준 (`mockup/<task-doc-name>-mockup.html`) |
+
+**시각 영역 fix 사이클 사전 예고** — 시각 시나리오 있으면 Test Plan 끝에 *"시각 영역 항목 N개 — fix 사이클 1~2회 예상"* 명시 (사용자 기대치 사전 정렬).
+
+**검증 / 테스트 명령 참조** — `CLAUDE.md`의 `## 검증 명령` (코드 상태: 빌드 / 린트 / 타입체크) + `## 테스트 명령` (테스트 실행: 단위 / 통합 / E2E) 두 섹션을 격리 세션이 자동 참조. Test Plan 본문에 재인용 불필요.
+
+**가이드라인**:
+- **자기완결적**: `/task-test` 격리 세션이 *task.md만 보고도* 수행 가능. 메인의 plan/dev 컨텍스트 없이.
+- **명령 / 기대값 포함**: 무엇을 실행하고 무엇이 기대되는지 명확.
+- **메인 가정 X**: 격리 세션이 *코드와 동작만 신뢰*. *"잘 될 거야"* 같은 가정 금지.
 
 ### 2.6 Result 기록 (`/task-dev`, `/task-test` 끝)
 
@@ -310,24 +339,16 @@ draft → planned → developing → developed → testing → tested → closed
 ```markdown
 ## Test Plan
 
-1. `npm run dev` 실행 → http://localhost:3000/login 접속.
-2. 빈 이메일 + 비밀번호 제출:
-   - 기대: *"이메일 입력 필요"* + *"비밀번호 입력 필요"* 표시. API 호출 X.
-3. 잘못된 이메일 형식 (예: "abc"):
-   - 기대: *"올바른 이메일 형식 아님"* 표시. API 호출 X.
-4. 짧은 비밀번호 (예: "123"):
-   - 기대: *"비밀번호 8자 이상 필요"* 표시. API 호출 X.
-5. 정상값 제출:
-   - 기대: API 호출 → 정상 응답 시 / 리다이렉트.
-6. 한국어 ↔ 영어 전환:
-   - 기대: 메시지 언어 따라 변경.
-
-검증 명령:
-- `npm run lint` PASS
-- `npm run typecheck` PASS
-- `npm run build` PASS
-- `npm test src/utils/validation.test.ts` PASS
+| # | 시나리오 | 분류 | 방식 | PASS 기준 |
+|---|---------|------|------|----------|
+| 1 | 빈 이메일 + 비밀번호 제출 | [USER] | 수동 검수 | "이메일 입력 필요" + "비밀번호 입력 필요" 표시, API 호출 X |
+| 2 | 잘못된 이메일 형식 ("abc") | [USER] | 수동 검수 | "올바른 이메일 형식 아님" 표시, API 호출 X |
+| 3 | 짧은 비밀번호 ("123") | [USER] | 수동 검수 | "비밀번호 8자 이상 필요" 표시, API 호출 X |
+| 4 | 정상값 제출 | [USER] | 수동 검수 | API 호출 → 정상 응답 시 / 리다이렉트 |
+| 5 | 한국어 ↔ 영어 전환 | [USER] | 수동 검수 | 메시지 언어 따라 변경 |
 ```
+
+> 검증 명령 / 테스트 명령은 `CLAUDE.md` 두 섹션을 격리 세션이 자동 참조 — Test Plan 본문 재인용 X.
 
 ### 4.6 Result
 
@@ -379,8 +400,11 @@ draft → planned → developing → developed → testing → tested → closed
 - 진행: [x]
 
 ## Test Plan
-- `grep -n "Instalation" README.md` → 결과 0행.
-- `grep -n "Installation" README.md` → 1행 이상.
+
+| # | 시나리오 | 분류 | 방식 | PASS 기준 |
+|---|---------|------|------|----------|
+| 1 | README.md 안 오타 검색 | [AUTO] | 시나리오 스크립트 실행 | `grep -n "Instalation" README.md` 결과 0건 |
+| 2 | README.md 안 정정 표기 검색 | [AUTO] | 시나리오 스크립트 실행 | `grep -n "Installation" README.md` 결과 1건 이상 |
 
 ## Result
 
@@ -479,32 +503,16 @@ draft → planned → developing → developed → testing → tested → closed
 
 ## Test Plan
 
-1. `npm run dev` 실행 → API 서버 :3000.
-2. 정상 로그인:
-   - POST /api/auth/login { email: "test@x.com", password: "Password123!" }
-   - 기대: 200, body { token: "eyJ..." }, Set-Cookie: refreshToken=...
-3. 잘못된 비밀번호:
-   - POST /api/auth/login { email: "test@x.com", password: "wrong" }
-   - 기대: 401, body { error: "이메일 또는 비밀번호가 올바르지 않습니다" }
-4. 미등록 이메일:
-   - 기대: 401, **동일 메시지** (enumeration 방어)
-5. 빈 입력 / 형식 오류:
-   - 기대: 400, validation 에러
-6. JWT 검증:
-   - GET /api/protected with Authorization: Bearer <token>
-   - 기대: 200 (유효 토큰) / 401 (만료, 무효)
-7. Rate limit:
-   - 11회 연속 요청
-   - 기대: 11번째 요청 429
-8. Refresh token:
-   - GET /api/auth/refresh with cookie
-   - 기대: 200, 새 token 발급
-
-검증 명령:
-- `npm run lint` PASS
-- `npm run typecheck` PASS
-- `npm run build` PASS
-- `npm test src/api/auth.test.ts` PASS
+| # | 시나리오 | 분류 | 방식 | PASS 기준 |
+|---|---------|------|------|----------|
+| 1 | 정상 로그인 | [AUTO] | API/엔드포인트 호출 | POST /api/auth/login {email, password} → 200, body {token}, Set-Cookie: refreshToken |
+| 2 | 잘못된 비밀번호 | [AUTO] | API/엔드포인트 호출 | 401, body {error: "이메일 또는 비밀번호가 올바르지 않습니다"} |
+| 3 | 미등록 이메일 (enumeration 방어) | [AUTO] | API/엔드포인트 호출 | 401, body 메시지 #2와 동일 |
+| 4 | 빈 입력 / 형식 오류 | [AUTO] | API/엔드포인트 호출 | 400, validation 에러 |
+| 5 | JWT 검증 — 유효 토큰 | [AUTO] | API/엔드포인트 호출 | GET /api/protected with Authorization → 200 |
+| 6 | JWT 검증 — 만료 / 무효 | [AUTO] | API/엔드포인트 호출 | 401 |
+| 7 | Rate limit (11회 연속) | [AUTO] | 시나리오 스크립트 실행 | 11번째 요청 429, 헤더 X-RateLimit-Remaining: 0 |
+| 8 | Refresh token | [AUTO] | API/엔드포인트 호출 | GET /api/auth/refresh with cookie → 200, 새 token 발급 |
 
 ## Result
 
@@ -573,18 +581,11 @@ draft → planned → developing → developed → testing → tested → closed
 
 ## Test Plan
 
-1. `npm run dev` 실행 → iOS Safari로 http://localhost:3000/search 접속.
-2. 검색어 입력 후 검색 버튼 클릭:
-   - 기대: 페이지 URL의 search query만 갱신, 새로고침 X (네트워크 탭에서 document 요청 X 확인).
-3. 데스크톱 Chrome 동일 동작:
-   - 기대: 회귀 X (기존 정상 동작 유지).
-4. 단위 테스트:
-   - `npm test src/components/SearchForm.test.tsx` PASS.
-
-검증 명령:
-- `npm run lint` PASS
-- `npm run typecheck` PASS
-- `npm run build` PASS
+| # | 시나리오 | 분류 | 방식 | PASS 기준 |
+|---|---------|------|------|----------|
+| 1 | iOS Safari 검색어 입력 후 검색 버튼 클릭 | [USER] | 수동 검수 | 페이지 URL의 search query만 갱신, 새로고침 X (네트워크 탭 document 요청 X) |
+| 2 | 데스크톱 Chrome 동일 동작 (회귀) | [USER] | 수동 검수 | 회귀 X (기존 정상 동작 유지) |
+| 3 | onSubmit handler preventDefault 회귀 테스트 | [AUTO] | 입출력 비교 | fireEvent.submit + expect(preventDefault) 호출 확인 |
 
 ## Result
 
@@ -612,3 +613,4 @@ draft → planned → developing → developed → testing → tested → closed
 | 2026-05-08 | 초안 — 5컬럼 헤더 / 7상태 / 6섹션 / 4단 layer 가이드 / 완성 예시 3개 |
 | 2026-05-08 | §1.5 추가 — task 파일/폴더/부속 자료 위치 단일 진실 소스. spec-diffs/screenshots는 vX.X 공통 통일. closed-immutable hook 보호 범위는 task.md 본 파일만 (스킬 본문 간 위치 모순 통일) |
 | 2026-05-09 | 표현 정제 — 인명 / 경박 표현 / 스킬 용어 / 이전 버전 비교 단락 정리 |
+| 2026-05-30 | stash FRICTION_LOG 기반 정합 — §1.5 mockup 행 추가 (vX.X 공통, 단일 진실 소스 MOCKUP_RULE) + §2.5 Test Plan 본질 재정의 (실질 동작 시나리오 + `[AUTO]` / `[USER]` 분류 강제 + 카탈로그 7방식 + UX/UI 영역 분리 매트릭스 + 시각 fix 사이클 사전 예고 + 검증 / 테스트 명령 두 섹션 참조) + §4.5 / §5 완성 예시 3개 Test Plan 형식 갱신 (분류 표 + PASS 기준 명시. 기존 번호 매김 시나리오 + 검증 명령 나열은 옛 형식). (stash FRICTION_LOG #14+19 / #25 정합) |

@@ -3,7 +3,7 @@
  * bin/update.js
  * `npx @angar2/taskery update` — template/ 최신 자산과 사용자 측 비교 + 머지 갱신.
  *
- * 머지 로직 (§9-1):
+ * 머지 로직 (DISTRIBUTION.md §6):
  *   1. .taskery-manifest.json (cwd) 읽기 — 없으면 에러 ('init' 먼저)
  *   2. template/ 정독 → 새 해시 맵
  *   3. 각 파일 분기:

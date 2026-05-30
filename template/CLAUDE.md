@@ -88,11 +88,11 @@
 | Hook | 영역 | 잡는 것 |
 |------|------|--------|
 | `git-guard.sh` | PreToolUse(Bash) | main/dev 직접 커밋 / `--force` / `--no-verify` / `branch -D` / `reset --hard` / `clean -fd` |
-| `closed-immutable.sh` | PreToolUse(Write\|Edit) | `closed` 상태 task.md 본 파일 재수정 차단 (정상 흐름은 새 task로). spec-diffs/screenshots는 자유 수정 (역사적 자료) |
+| `closed-immutable.sh` | PreToolUse(Write\|Edit) | `closed` 상태 task.md 본 파일 재수정 차단 (정상 흐름은 새 task로). spec-diffs / screenshots / mockup은 자유 수정 (역사적 자료) |
 
 **잘 지키면 hook 작동 0회 (무해). catastrophic만 차단.**
 
-> 이전 `pre-commit-verify.sh` hook은 v0.2.0에서 폐기 — task-close Step 2 게이트 + git-guard 안전망으로 충분 (redundant 검증 사이클 제거). 폐기 사유는 [plan/HOOKS.md](../plan/HOOKS.md) §5 참조.
+> 이전 `pre-commit-verify.sh` hook은 폐기 — task-close Step 2 게이트 + git-guard 안전망으로 충분 (redundant 검증 사이클 제거). 폐기 사유는 [plan/HOOKS.md](../plan/HOOKS.md) §5 참조.
 
 ---
 

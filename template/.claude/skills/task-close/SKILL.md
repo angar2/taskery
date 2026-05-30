@@ -115,8 +115,8 @@ git check-ignore -q .project/dummy 2>/dev/null && echo "INTERNAL_GITIGNORED=true
    ```
    docs: [TASK-<NNN>] 태스크 문서 완료
    ```
-   - 대상: `.project/tasks/<vX.X>/<NNN>_<slug>.md` (단일 파일) 또는 `.project/tasks/<vX.X>/TASK-<NNN>_<slug>/task.md` (폴더 승격) — *task 본 파일 + 해당 NNN의 vX.X 공통 spec-diffs/<NNN>_<slug>_spec-diff.md / screenshots/<NNN>_*.png* 묶음.
-   - spec-diffs/screenshots는 *vX.X 공통* 위치 — 폴더 승격 시에도 task 폴더 안에 만들지 X (TASK_DOC_RULE §1.5 참조).
+   - 대상: `.project/tasks/<vX.X>/<NNN>_<slug>.md` (단일 파일) 또는 `.project/tasks/<vX.X>/TASK-<NNN>_<slug>/task.md` (폴더 승격) — *task 본 파일 + 해당 NNN의 vX.X 공통 spec-diffs/<NNN>_<slug>_spec-diff.md / screenshots/<NNN>_*.png / mockup/<task-doc-name>-mockup.html (UX/UI task 한정)* 묶음.
+   - spec-diffs / screenshots / mockup은 *vX.X 공통* 위치 — 폴더 승격 시에도 task 폴더 안에 만들지 X (TASK_DOC_RULE §1.5 참조).
    - **Step 4-0 `INTERNAL_GITIGNORED=true` 시**: task 본 파일 status=`closed` Edit은 평소대로 수행, commit 단계 스킵.
 4. **CHANGELOG 커밋 (해당 시)** — `.project/rules/CHANGELOG_RULE.md` 정독 후 형식 / 위치 준수:
    - `.project/changelog/<YYYY-MM>.md` Edit (없으면 신규 Write). 최신 항목이 *맨 위*에 오도록 기존 첫 `##` 항목 *바로 위*에 삽입 (CHANGELOG_RULE §3 참조):

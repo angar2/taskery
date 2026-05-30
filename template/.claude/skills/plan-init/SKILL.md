@@ -147,7 +147,7 @@ plan 버전(vX.X)마다 호출. `.project/plans/<vX.X>/` 안에 9 기획 문서 
 ## 도구 가이드
 
 - **Read**: PROJECT.md / 기존 plans/vY.Y/ 정독
-- **Bash**: `ls .project/plans/`, `cp -r plans/vY.Y plans/vX.X`, `mkdir -p plans/<vX.X> tasks/<vX.X>/{spec-diffs,screenshots}`
+- **Bash**: `ls .project/plans/`, `cp -r plans/vY.Y plans/vX.X`, `mkdir -p plans/<vX.X> tasks/<vX.X>/{spec-diffs,screenshots,mockup}`
 - **Write/Edit**: 9 기획 문서 작성/갱신
 - **AskUserQuestion**: 9 문서별 핵심 질문 + 변경 인터뷰
 

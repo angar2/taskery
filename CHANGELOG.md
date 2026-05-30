@@ -7,6 +7,32 @@
 
 ## [Unreleased]
 
+### 추가
+
+- `.project/rules/CHANGELOG_RULE.md` 신설 — CHANGELOG 위치 / 형식 / 필수 필드 / `/task-close` 정합 단일 진실 소스 (stash FRICTION_LOG #8+9)
+- `.project/rules/MOCKUP_RULE.md` 신설 — UX/UI task의 HTML 목업 위치 / 형식 / 두 시점 활용 / 시각 fix 예고 단일 진실 소스 (stash FRICTION_LOG #14+19)
+- `.project/GLOSSARY.md` 신설 단계 — `/project-init` Step 4.5 (4컬럼: 영문/한글/정의/출처). 도메인 용어 표기 일관성 (stash FRICTION_LOG #3)
+- `.project/tasks/<vX.X>/BACKLOG.md` 자동 Write — `/plan-init` Step 5 (현재 plan 진행 중 후속 task 후보 누적용, 글로벌 BACKLOG와 별개. stash FRICTION_LOG #17)
+- `CLAUDE.md` 메인 세션 최상위 룰 신설 — *범위 준수* + *Skill 정식 발동* 두 줄 (stash FRICTION_LOG #6+10/#20)
+- `CLAUDE.md` `## 검증 명령` + `## 테스트 명령` 두 섹션 분리 — self-check 게이트 = 코드 상태만, 테스트 = `/task-dev` 구현 후 + `/task-test` 격리 세션 단일 시점 (stash FRICTION_LOG #25)
+- `/task-plan` Step 4.5 HTML 목업 프로세스 신설 — UX/UI task 한정, task 1개 = 목업 1개. `.project/tasks/<vX.X>/mockup/<task-doc-name>-mockup.html`
+- `/task-close` Step 4-0 — 내부 경로 gitignored 감지 + 4-2/4-3/4-4 조건부 commit 스킵 (공개 repo에서 taskery 내부 영역 gitignore 등록 시 빈 commit 실패 회피. stash FRICTION_LOG #26)
+- `bin/init.js` scaffolding 후 `.gitignore` 인터랙티브 prompt — taskery 내부 영역(`/.project/`, `/.claude/`, `CLAUDE.md`, `.taskery-manifest.json`) 자동 등록 (사용자 OK 시. stash FRICTION_LOG #26)
+
+### 수정
+
+- catastrophic hook 안전망 3종 → 2종 — `pre-commit-verify.sh` 폐기 (`/task-close` Step 2 게이트 + `git-guard.sh`로 충분, redundant 검증 사이클 제거). `template/.claude/hooks/pre-commit-verify.sh` 삭제 + `settings.json` 등록 해제 (stash FRICTION_LOG #25)
+- `/task-plan` Step 5 Test Plan 본질 재정의 — *실질 동작 시나리오* (유닛 테스트 X) + 카탈로그 7방식 + UX/UI 영역 분리 매트릭스 + `[AUTO]` / `[USER]` 분류 강제 + 시각 fix 사이클 사전 예고 (stash FRICTION_LOG #14+19)
+- `/task-dev` Step 6 / 6.5 분리 — self-check = 코드 상태만(테스트 X) + 테스트 실행 단일 시점 + 추측 fix 반복 방지 룰 + 모호 발화 confirm + 신규 테스트 식별자 grep 등장 확인 + 디자인 산출 정독 의무 (stash FRICTION_LOG #15+16+18 / #19 / #21+22 / #25)
+- `/task-test` 격리 prompt 본질 재정의 — Test Plan 시나리오 기반 + `[AUTO]` / `[USER]` 분류 그대로 + UNCERTAIN 분기 USER 검수 체크리스트 + 시각 fix 사이클 사전 예고 (stash FRICTION_LOG #7 / #14+19 / #25)
+- `/task-close` Step 2 게이트 — *코드 상태 검증만* (테스트 X) + CHANGELOG_RULE 참조 + 사용자 명시 호출 외 자체 진입 영구 금지 강조 (stash FRICTION_LOG #4 / #8+9 / #25 / #6+10)
+- `/task-init` 단계 경계 — 허용 화이트리스트 + 금지 블랙리스트 명시 (단계 경계 무너짐 방지. stash FRICTION_LOG #11)
+- `/plan-init` Step 3 ROADMAP 작성 4룰 inline — 현재 버전 한정 / Stage 단위 / 작업 단위 명시 / 상태 컬럼만 (stash FRICTION_LOG #1)
+- `/project-init` `.project/AGENT-GUIDE.md` 매 세션 읽기 항목에 GLOSSARY / BACKLOG 추가
+- `.project/rules/GIT_RULE.md` — task 진행 중 ROADMAP/플랜 갱신은 별도 `docs/*` 브랜치 분리 금지 명시 (작업 브랜치 안에서 + dev `--no-ff`. stash FRICTION_LOG #4)
+- `README.md` / `package.json` description — hook 3종 → 2종 표기 정합 (Hook 표에서 폐기된 `pre-commit-verify.sh` 행 제거 포함)
+- `.project/rules/TASK_DOC_RULE.md` §1.5 mockup 행 추가 (vX.X 공통, 단일 진실 소스 MOCKUP_RULE) + §2.5 Test Plan 본질 재정의 (실질 동작 시나리오 + `[AUTO]` / `[USER]` 분류 강제 + 카탈로그 7방식 + UX/UI 영역 분리 매트릭스 + 시각 fix 사이클 사전 예고 + 검증/테스트 명령 두 섹션 참조) + §4.5 / §5 완성 예시 3개 Test Plan 형식 갱신 (기존 번호 매김 시나리오 + 검증 명령 나열은 옛 형식). `closed-immutable.sh` hook 주석에 mockup 자유 수정 명시 추가 (행위 변경 X, 가독성 정합)
+
 ---
 
 ## [0.1.1] - 2026-05-11
@@ -49,3 +75,8 @@
 | 2026-05-11 | `[Unreleased]` §추가 + §수정 — `/refine` → `/log-friction` 대대적 개편 (호출 정책 *5 task 자동 호출* 폐기 / 분석·제안 후속 조치 전면 폐기 / PLAYBOOK ↔ 스킬 연동 해제 / spec 정합 정정 + 디렉토리 rename + `/task-close` 마찰 신호 자체 감지 Step 신규) |
 | 2026-05-11 | `[Unreleased]` §수정 — README.md `/log-friction` 동기 정정 (§Skills 표 + §워크플로우 예시 + §자동 발동 예시) |
 | 2026-05-11 | `[0.1.1] - 2026-05-11` 발행 — `[Unreleased]` 누적분(스킬 디렉토리 구조 / README 재작성 / `/log-friction` 개편 / `/task-close` 마찰 감지 / Step 7.5 / README 동기 정정) 묶음 |
+| 2026-05-30 | `[Unreleased]` §추가 + §수정 — stash FRICTION_LOG 기반 정합 누적 (CHANGELOG_RULE / MOCKUP_RULE 신설 / GLOSSARY / BACKLOG / 메인 세션 최상위 룰 / 검증·테스트 명령 분리 / HTML 목업 프로세스 / Step 4-0 / `.gitignore` prompt / hook 3종 → 2종 폐기 / 8 스킬 본문 갱신 / README + package.json 정합) |
+| 2026-05-30 | `[Unreleased]` §수정 보강 — 3차 검증 후속 정정 누적 (TASK_DOC_RULE §1.5 mockup 행 추가 + §2.5 Test Plan 본질 재정의 + §4.5 / §5 완성 예시 3개 Test Plan 형식 갱신, closed-immutable.sh hook 주석 mockup 자유 수정 명시) |
+| 2026-05-30 | `[Unreleased]` §수정 보강 — 3차 검증 후속 정정 추가 누적 (`/task-init` / `/plan-init` / `/task-close` SKILL 본문 + plan/HOOKS.md §6에 mockup `vX.X 공통` 명시 확산 정합. 행위 변경 X, 본문 가독성 정합) |
+| 2026-05-30 | `[Unreleased]` §수정 보강 — 3차 검증 추가 누적 (closed-immutable.sh 주석 / plan/HOOKS §2·§3·§6 / plan/DECISIONS §5 / template/CLAUDE.md Hook 표 본문에 *spec-diffs / screenshots / mockup* 표기 일관성 정합 — mockup 누락 6건 보강) |
+| 2026-05-30 | `[Unreleased]` §수정 보강 — 3차 검증 마지막 누적 (plan/DECISIONS §6 분산 원칙 표 — 스킬 path `<skill>.md` → `<skill>/SKILL.md` + CHANGELOG_RULE / MOCKUP_RULE 행 추가 + 테스트 명령 행 신설. plan/DISTRIBUTION §9 동기화 룰 예시 두 섹션 분리 정합. `/task-init` 블랙리스트 `Sources` 옛 표기 → `src / app / lib 등 프로젝트 소스 디렉토리` 언어/기술 중립 정합) |
