@@ -8,7 +8,7 @@
  *   - sha256(path): 파일 해시
  *   - mkdirp(path): mkdir -p
  *   - copyFile(src, dst): 파일 카피 + 디렉토리 자동 생성
- *   - writeManifest(manifest, dst): manifest JSON 박음
+ *   - writeManifest(manifest, dst): manifest JSON 기록
  *   - readManifest(path): 기존 manifest Read (없으면 null)
  *   - LOCAL_SUFFIX: '.local.md' suffix 검사 (npx 미터치 룰)
  */

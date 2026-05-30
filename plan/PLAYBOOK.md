@@ -87,7 +87,7 @@
 - **상황**: 큰 묶음 작업(예: 인증 시스템 전체) 빈발 + plans/*/ROADMAP.md 수동 관리 부담
 - **요소**: 9번째 스킬. plan 단위 task 묶음 자동 생성 + ROADMAP.md 갱신
 - **방법**:
-  1. `template/.claude/skills/plan-roadmap.md` 작성
+  1. `template/.claude/skills/plan-roadmap/SKILL.md` 작성
   2. 인자 = plan 버전. plan 하위 task 후보 추출 → ROADMAP.md 체크리스트 갱신
   3. 사용자 confirm 후 task.md 일괄 생성 (선택 적용)
 - **얻는 것**: 묶음 작업 자동화. ROADMAP 자동 동기화

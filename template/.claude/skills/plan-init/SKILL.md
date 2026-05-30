@@ -66,7 +66,11 @@ plan 버전(vX.X)마다 호출. `.project/plans/<vX.X>/` 안에 9 기획 문서 
    - **ARCHITECTURE.md**: 시스템 구조 (멀티 리포 / 레이어드 / 마이크로서비스 등)
    - **DATA-MODEL.md** (해당 시): 주요 엔티티 + 관계
    - **API-SPEC.md**: 엔드포인트 목록 + 인증 방식
-   - **ROADMAP.md**: 마일스톤 + 시기 + 우선순위
+   - **ROADMAP.md**: 마일스톤 + 시기 + 우선순위. *ROADMAP 작성 4룰* (stash FRICTION_LOG #1 반영):
+     1. ROADMAP은 *현재 버전 한정* — 미래 버전 후보는 별도 `BACKLOG.md` (글로벌) 분리
+     2. 진행 순서에 task 번호(TASK-NNN) 강제 금지 — *Stage(영역) 단위*로만 명시 (예측 불가 task 합류 시 번호 어긋남 방지)
+     3. Stage 안 *작업 단위 명시* 필요 (한 task 분량 권장 — 다음 task 진행 시 메인 세션이 ROADMAP 보고 작업 범위 판단 가능)
+     4. 작업 단위에 task 번호 컬럼 추가 X / *상태 컬럼만* (⏳ 대기 / 🔧 진행 중 / ✅ 완료 / ❌ 폐기) — Living document
 4. 받은 답 기반으로 각 문서 작성.
 5. 마지막에 **PLAN.md** 작성 — 9 문서 인덱스 + 체크리스트.
 6. **`.project/AGENT-GUIDE.md`의 활성 plan 버전 vX.X로 갱신** (신규도 동일 — 분기 2와 일관).
@@ -84,7 +88,26 @@ plan 버전(vX.X)마다 호출. `.project/plans/<vX.X>/` 안에 9 기획 문서 
 ### Step 5 — `tasks/<vX.X>/` 디렉토리 준비
 
 1. `.project/tasks/<vX.X>/` 디렉토리 생성 (빈 폴더).
-2. `.project/tasks/<vX.X>/spec-diffs/`, `.project/tasks/<vX.X>/screenshots/` 빈 폴더 미리 생성.
+2. `.project/tasks/<vX.X>/spec-diffs/`, `.project/tasks/<vX.X>/screenshots/`, `.project/tasks/<vX.X>/mockup/` 빈 폴더 미리 생성.
+3. `.project/tasks/<vX.X>/BACKLOG.md` 빈 골격 Write (stash FRICTION_LOG #17 반영) — *버전별 task 후보 누적용*, 글로벌 `.project/BACKLOG.md`와 별개:
+
+```markdown
+# BACKLOG — <vX.X>
+
+> 본 파일은 *<vX.X> plan 진행 중 누적되는 후속 task 후보* 추적용.
+> 글로벌 `.project/BACKLOG.md` (plan 기획 후보 카탈로그) 와 별개.
+
+| 위치 | 영역 | 역할 |
+|------|------|------|
+| `.project/BACKLOG.md` (글로벌) | plan 기획 후보 카탈로그 (다음 plan 버전에서 검토) | Living document |
+| `.project/tasks/<vX.X>/BACKLOG.md` (본 파일) | 현재 plan 진행 중 누적된 후속 task 후보 | 한 버전 내 task close 직후 후보 누적 |
+
+## 후속 task 후보
+
+(사용자 발화 또는 task-close 직후 메인 감지로 한 행씩 추가. 빈 상태 default.)
+```
+
+빈 골격만 작성. 본문은 task 진행하면서 사용자 발화 또는 메인 감지로 누적.
 
 ### Step 6 — `PLAN.md` 작성/갱신
 
@@ -119,12 +142,12 @@ plan 버전(vX.X)마다 호출. `.project/plans/<vX.X>/` 안에 9 기획 문서 
 **결과 commit 흐름** (GIT_RULE 정합):
 - dev 직접 commit *금지* (git-guard.sh 차단). 두 가지 default 흐름:
   1. **첫 task에 묶기 (권장)**: 분기 1(신규)에서 `/project-init` 직후 본 스킬 호출이면 `/project-init` 산출물과 같은 작업 브랜치(보통 TASK-001 부트스트랩 chore)에 함께 commit. 분기 2(이어가기)면 새 task 브랜치 또는 임시 docs 브랜치에서.
-  2. **임시 docs 브랜치**: `git checkout -b docs/{개발자}_plan-{vX.X}` 후 commit → dev에 `--no-ff` 머지. 다음 task 생성 *전*에 plan 산출물을 깔끔히 박고 싶을 때.
+  2. **임시 docs 브랜치**: `git checkout -b docs/{개발자}_plan-{vX.X}` 후 commit → dev에 `--no-ff` 머지. 다음 task 생성 *전*에 plan 산출물을 깔끔히 기록하고 싶을 때.
 
 ## 도구 가이드
 
 - **Read**: PROJECT.md / 기존 plans/vY.Y/ 정독
-- **Bash**: `ls .project/plans/`, `cp -r plans/vY.Y plans/vX.X`, `mkdir -p plans/<vX.X> tasks/<vX.X>/{spec-diffs,screenshots}`
+- **Bash**: `ls .project/plans/`, `cp -r plans/vY.Y plans/vX.X`, `mkdir -p plans/<vX.X> tasks/<vX.X>/{spec-diffs,screenshots,mockup}`
 - **Write/Edit**: 9 기획 문서 작성/갱신
 - **AskUserQuestion**: 9 문서별 핵심 질문 + 변경 인터뷰
 

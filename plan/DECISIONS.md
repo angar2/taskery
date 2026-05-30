@@ -101,12 +101,13 @@ draft → planned → developing → developed → testing → tested → closed
 | `validate-task-state.sh` | 합리적 변형 차단 사고의 핵심 | `taskery-prototype/.taskestra/hooks/` |
 | `post-state-sync.sh` | 자기 행 검증 + 검토 결과 검증 — practice 영역 | `taskery-prototype/.taskestra/hooks/` |
 
-**채택 taskery hook 3종**:
+**채택 taskery hook 2종 (§12 변경 이력 참조)**:
 | Hook | 영역 | 잡는 것 |
 |------|------|--------|
 | `git-guard.sh` | git catastrophic | main/dev 직접 커밋, force, no-verify, branch -D, reset --hard, clean -fd |
-| `pre-commit-verify.sh` | process catastrophic | git commit 시 CLAUDE.md `## 검증 명령` 모두 PASS 게이트 |
-| `closed-immutable.sh` | 완료 보호 catastrophic | closed task.md 본 파일 재수정 차단 (spec-diffs/screenshots는 자유) |
+| `closed-immutable.sh` | 완료 보호 catastrophic | closed task.md 본 파일 재수정 차단 (spec-diffs / screenshots / mockup은 자유) |
+
+> `pre-commit-verify.sh` 폐기 — task-close Step 2 게이트와 *동일 검증 명령 / 동일 working tree* 결정론적 redundant. 5 커밋 task 풀 검증 8회 (의도 2 + redundant 6) 시간 낭비 누적. 상세: §12 변경 이력.
 
 **채택 기준**: *잘 지키면 hook 작동 0회 (무해). 안 지키면 차단 (catastrophic 막음)*. hook이 *작동하면* = 사고 직전.
 
@@ -126,11 +127,14 @@ draft → planned → developing → developed → testing → tested → closed
 **분산 원칙** (각 정보는 *한 곳에만* 위치):
 | 정보 | 단일 진실 소스 |
 |------|--------------|
-| 스킬 본문 (Step 1~N) | `template/.claude/skills/<skill>.md` |
+| 스킬 본문 (Step 1~N) | `template/.claude/skills/<skill>/SKILL.md` |
 | Hook 본문 | `template/.claude/hooks/<hook>.sh` |
 | 태스크 양식 spec + 4단 layer + 완성 예시 | `template/.project/rules/TASK_DOC_RULE.md` |
 | git 룰 (브랜치/커밋/머지) | `template/.project/rules/GIT_RULE.md` (프로젝트별) → `~/.claude/rules/GIT_RULE.md` (글로벌) |
-| 검증 명령 (사용자 프로젝트) | 사용자 프로젝트 `CLAUDE.md` `## 검증 명령` |
+| CHANGELOG 작성 룰 | `template/.project/rules/CHANGELOG_RULE.md` |
+| UX/UI HTML 목업 룰 | `template/.project/rules/MOCKUP_RULE.md` |
+| 검증 명령 (사용자 프로젝트 — 코드 상태) | 사용자 프로젝트 `CLAUDE.md` `## 검증 명령` (빌드/린트/타입체크) |
+| 테스트 명령 (사용자 프로젝트 — 테스트 실행) | 사용자 프로젝트 `CLAUDE.md` `## 테스트 명령` (단위/통합/E2E) |
 | manifest 구조 | `bin/lib.js` + `bin/init.js` |
 | 미래 옵션 9 항목 | `plan/PLAYBOOK.md` |
 | 결정 사유 (본 문서) | `plan/DECISIONS.md` |
@@ -279,12 +283,57 @@ FRICTION_LOG 누적 → 사용자 직접 정독 → PLAYBOOK 항목 §방법 그
 
 ## 12. 변경 이력
 
-결정이 *진짜 데이터*로 부분 뒤집어진 경우 추가. 현재 없음.
+결정이 *진짜 데이터*로 부분 뒤집어진 경우 추가.
 
-사이드 프로젝트 적용을 굴린 후 짜증/한계 데이터 누적 시 본 섹션에 추가:
-- 어느 결정이 뒤집혔는지
-- 어떤 데이터가 트리거됐는지
-- 새 결정의 사유
+---
+
+### 12.1. stash FRICTION_LOG 기반 정합 (2026-05-30)
+
+**트리거 데이터**: 사이드 프로젝트 `stash` (macOS 데스크톱 앱, v1.0 풀스택 — 80+ task 진행) `.project/FRICTION_LOG.md` 17건 누적. 그 중 일부는 stash 자체에서 정합 완료, 본체 적용 보류 상태였음.
+
+**채택 결정 14건** (FRICTION_LOG # 번호):
+
+| # | 결정 | 영역 | 마찰 사례 / 채택 사유 |
+|---|------|------|---------------------|
+| 1 | ROADMAP 작성 4룰 inline | plan-init SKILL | 사용자가 ROADMAP 작성 방식 매번 정정. 4룰(현재 버전 한정 / Stage 단위 / 작업 단위 / 상태 컬럼만) inline 명시로 정정 불필요화 |
+| 3 | GLOSSARY.md 신설 단계 | project-init SKILL | 도메인 용어(~40개) 한글 표기 갈림 마찰. `.project/GLOSSARY.md` (4컬럼: 영문/한글/정의/출처) 부트스트랩 자동 생성 |
+| 4 | docs/* 브랜치 + ff-only 금지 명시 | GIT_RULE + task-close SKILL | task 진행 중 ROADMAP/플랜 갱신을 별도 docs/* 브랜치 + ff-only로 처리 → 분기 정보 손실. 작업 브랜치 안에서 + dev `--no-ff` 강제 명시 |
+| 5 | FRICTION_LOG 마지막 행 삽입 명시 | log-friction SKILL | 테이블 중간 삽입 실수 누적 → 마지막 행 다음 삽입 명시 (이미 정합) |
+| 6+10 | CLAUDE.md 메인 세션 최상위 룰 신설 | CLAUDE.md | (6) 사용자 명시 범위 초과 (close 자체 진입 등) 마찰 + (10) 컴팩트 세션에서 Skill 도구 우회 마찰 → *범위 준수* + *Skill 정식 발동* 두 줄 최상위 룰 신설 |
+| 7 | testing 전환 시점 명시 | task-test SKILL | testing 상태를 검증 완료 후 박는 패턴 마찰. 격리 세션 호출 *직전* 전환 명시 (이미 정합) |
+| 8+9 | CHANGELOG_RULE.md 신설 | rules/CHANGELOG_RULE.md (신설) + task-close SKILL | CHANGELOG 위치/형식 미정의로 매번 메인 즉흥 결정. 룰 단일 진실 소스 신설 + task-close가 참조 |
+| 11 | task-init 단계 경계 화이트/블랙리스트 | task-init SKILL | 빈 골격 단계에서 ARCHITECTURE / API-SPEC / 도메인 코드 미리 정독 → 단계 경계 무너짐. 허용 화이트리스트(ROADMAP §4 + ls tasks/ + 빈 골격 Write) + 금지 블랙리스트 명시 |
+| 14+19 | task-test 본질 재설계 + HTML 목업 프로세스 | task-plan / dev / test / TASK-DOC / TASK_DOC_RULE / MOCKUP_RULE (신설) | 격리 세션이 단위 테스트 통째 PASS로 *가짜 PASS* → UI 시각 깨진 채 검수. Test Plan = 실질 동작 시나리오 (유닛 X) / `[AUTO]`/`[USER]` 분류 / HTML 목업 프로세스 (UX/UI task) / USER 검수 체크리스트 / 시각 fix 사이클 예고 / 신규 테스트 식별자 grep 확인 |
+| 15+16+18 | 추측 fix 반복 방지 룰 | task-dev SKILL | 코드 fix를 추측으로 다회 시도 (4~16회 반복) → 시간 낭비 + 사용자 부정 반응 누적. 1회 실패 시 디버그 로그 / 동일 신고 재발 시 grep + blame + 진단 / 동명 property 의심 명시 |
+| 17 | BACKLOG.md 자동 생성 | plan-init SKILL + AGENT-GUIDE | 버전별 후속 task 후보 누적 누락 마찰. `.project/tasks/<vX.X>/BACKLOG.md` 자동 생성 + AGENT-GUIDE 매 세션 읽기 항목 추가 (글로벌 BACKLOG와 별개) |
+| 21+22 | 모호 발화 confirm 룰 | task-dev SKILL | 사용자 한 단어 발화가 복수 영역 매칭 시 자율 추정 강행 → 광범위 변경 후 rollback. *메인 자체 안 1개 + OK? 한 줄* confirm. 옵션 4개 늘어놓기 금지 |
+| 25 | 검증/테스트 명령 섹션 분리 + pre-commit-verify hook 폐기 | CLAUDE.md + settings.json + hooks/ + 4 SKILL + HOOKS.md | 5 커밋 task 풀 검증 8회 (의도 2 + redundant 6) 시간 낭비. `## 검증 명령` (코드 상태) + `## 테스트 명령` (테스트 실행) 두 섹션 분리 + hook 폐기 + 4 스킬 정합. 테스트는 task-test 단일 시점 |
+| 26 | .gitignore prompt + task-close gitignore commit 스킵 | bin/init.js + task-close SKILL | 공개 repo 정리 후 taskery 내부 파일(.project/.claude/CLAUDE.md) gitignore 등록 시 task-close가 빈 commit 실패. (A) bin/init.js scaffolding 후 인터랙티브 prompt (B) task-close Step 4-0 gitignore 감지 + 조건부 commit 스킵 |
+
+**원리 변경 정리**:
+
+- §5 결정 (3 hook catastrophic only → 2 hook): `pre-commit-verify` 폐기. 사유: task-close Step 2 게이트가 *동일 검증 명령 / 동일 working tree* 결정론적 redundant. *합리적 변형 차단 사고 회피* 원칙은 그대로 — process 영역도 *중복 시점이 catastrophic 가치 ε* 이면 폐기 정당.
+- §9 결정 (task-test 격리): 격리 prompt가 *Test Plan 시나리오 기반* 으로 본질 재정의. 단위 테스트 카운트 자체 PASS 단정 X — *task 요구사항 실질 동작 검증*이 본질. confirmation bias 회피 정신 유지.
+
+**대안 검토** (왜 부분 보강이 아닌 14건 묶음 정합인가):
+
+| 대안 | 채택 X 이유 |
+|------|-----------|
+| 부분 보강 (#25 만 / #14+19 만) | cross-document 영향 큰 항목 (검증/테스트 명령 / task-test 본질) 단독 변경 시 다른 결정과 정합 깨짐 |
+| 14건 모두 별도 task | task 14개 + 검수 14 사이클 = 시간 낭비. 의존성 작은 항목은 묶어 한 사이클 충분 |
+| 14건 묶음 정합 (채택) | Phase 1~4 단위로 묶어 4 사이클 (룰 → 스킬 → hook/bin → 설계 지침). 검증 1 사이클 |
+
+**채택 기준 정신** (기존 3 원칙 정합):
+
+- 원칙 1 *Practice 자유 + 사용자 판단 신뢰*: USER 검수 흐름 도입 — 시각 영역은 자동 비교 X, 사용자 직접 검수
+- 원칙 2 *Catastrophic만 hook*: pre-commit-verify 폐기 — catastrophic 가치 ε이면 폐기 정당
+- 원칙 3 *Bottoms-up — 진짜 데이터 모이면 추가*: stash 17건 FRICTION_LOG 누적이 *진짜 데이터*. 사용자 직접 정독 후 14건 채택
+
+**결과 위치**: 8 스킬 SKILL.md + plan/SKILLS.md + plan/TASK-DOC.md + plan/HOOKS.md + plan/OVERVIEW.md + CLAUDE.md + settings.json + bin/init.js + rules/CHANGELOG_RULE.md + rules/MOCKUP_RULE.md + rules/TASK_DOC_RULE.md + GIT_RULE.md
+
+---
+
+사이드 프로젝트 적용을 굴린 후 추가 짜증/한계 데이터 누적 시 본 섹션에 추가.
 
 ---
 
@@ -296,3 +345,6 @@ FRICTION_LOG 누적 → 사용자 직접 정독 → PLAYBOOK 항목 §방법 그
 | 2026-05-09 | 표현 정제 — 인명 / 경박 표현 / 스킬 용어 / 외부 부재 문서(RETROSPECTIVE.md) 참조 정리. 이전 버전 비교 본문은 결정 사유 설명 목적이므로 유지. |
 | 2026-05-09 | §8 채택 명령 표 + WHY의 npx 명령 표기를 `@angar2/taskery`로 갱신 (npm 이름 충돌 해소). |
 | 2026-05-10 | 스킬 8종 구조 마이그레이션 반영 — §9 task-test 결과 위치 + §11 5사이클 참조 부수 처리 라인의 `<name>.md`/`*.md` → `<name>/SKILL.md`/`*/SKILL.md` 갱신. (Claude Code 표준 스킬 구조 적용, 0.1.1 후보) |
+| 2026-05-30 | stash FRICTION_LOG 기반 정합 — §5 결정 본문에 *2 hook 갱신* 명시 (pre-commit-verify 폐기) + §12 변경 이력에 *정합 결정 모음* 14건 신규 §12.1 추가. |
+| 2026-05-30 | 정합 검증 후속 정정 (3차) — §12.1 #14+19 영향 표 + 결과 위치 본문에 `TASK_DOC_RULE.md` 누락분 추가 (양식 spec 단일 진실 소스 정합). |
+| 2026-05-30 | 정합 검증 후속 정정 (3차 추가) — §6 분산 원칙 표 보강: 스킬 본문 path `<skill>.md` → `<skill>/SKILL.md` (디렉토리 구조 마이그레이션 정합) + CHANGELOG_RULE / MOCKUP_RULE 행 추가 (신설 룰 정합) + 검증 명령 행 옆에 *테스트 명령* 행 신설 (두 섹션 분리 정합). |

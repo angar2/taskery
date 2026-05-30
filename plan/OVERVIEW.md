@@ -8,7 +8,7 @@
 ## 1. taskery 한 줄
 
 Claude Code 메인 세션을 위한 *가벼운 task 시스템*.
-**1 메인 세션 + 스킬 8종 + catastrophic hook 3종 + npx 배포**로 구성. *practice 영역(SW 개발)을 process로 강제하지 않는다*는 한 가지 원칙으로 다듬어진 시스템.
+**1 메인 세션 + 스킬 8종 + catastrophic hook 2종 + npx 배포**로 구성. *practice 영역(SW 개발)을 process로 강제하지 않는다*는 한 가지 원칙으로 다듬어진 시스템.
 
 ---
 
@@ -30,7 +30,7 @@ Claude Code 메인 세션을 위한 *가벼운 task 시스템*.
 |------|------|------|
 | **세션 모델** | 1 메인 세션 = 사용자 = 오케스트레이터 + 실행자 | 메인 세션 직접 호출 (서브에이전트는 옵션) |
 | **흐름 표지** | 스킬 8종 — project > plan > task 위계 + 불편 등록 메타 | `/project-init` ~ `/log-friction` |
-| **안전망** | catastrophic only hook 3종 — process / git / 완료 보호 | `pre-commit-verify.sh` / `git-guard.sh` / `closed-immutable.sh` |
+| **안전망** | catastrophic only hook 2종 — git / 완료 보호 (process hook `pre-commit-verify` 폐기 — stash FRICTION_LOG #25) | `git-guard.sh` / `closed-immutable.sh` |
 | **배포** | 단일 default = npx | `npx @angar2/taskery init` / `update` / `create-taskery` |
 
 ---
@@ -48,7 +48,7 @@ taskery/                                  ← 본 리포 (시스템 자체)
 │   ├─ OVERVIEW.md                       ← 본 문서 (진입점)
 │   ├─ SKILLS.md                         ← 스킬 8종 명세 + 흐름
 │   ├─ TASK-DOC.md                       ← 태스크 위계 + 양식 + 7 상태
-│   ├─ HOOKS.md                          ← 3 catastrophic hook 정책
+│   ├─ HOOKS.md                          ← 2 catastrophic hook 정책
 │   ├─ DISTRIBUTION.md                   ← npx 배포 + bin/ + manifest
 │   ├─ DECISIONS.md                      ← 핵심 의사결정 (단일 진실 소스)
 │   └─ PLAYBOOK.md                       ← 미래 옵션 카탈로그
@@ -60,13 +60,13 @@ taskery/                                  ← 본 리포 (시스템 자체)
 │   ├─ create.js                         ← npx -p @angar2/taskery create-taskery
 │   └─ update.js                         ← npx @angar2/taskery update
 │
-└─ template/                              ← 사용자 프로젝트로 카피되는 자산 (코어 23 파일)
+└─ template/                              ← 사용자 프로젝트로 카피되는 자산 (코어 24 파일)
     ├─ CLAUDE.md                         ← 사용자 프로젝트 메인 진입점
     ├─ .gitignore                        ← .project/.env 등 포함
     ├─ .claude/
     │   ├─ settings.json                 ← Claude Code hook 등록 (PreToolUse 매칭)
     │   ├─ skills/                       ← 8 스킬 본문
-    │   └─ hooks/                        ← 3 catastrophic 안전망
+    │   └─ hooks/                        ← 2 catastrophic 안전망
     └─ .project/
         ├─ FRICTION_LOG.md               ← 불편 누적 빈 템플릿
         ├─ rules/                        ← 코어 룰 (TASK_DOC_RULE / GIT_RULE)
@@ -92,7 +92,7 @@ my-app/                                   ← 사용자 프로젝트
 ├─ .claude/                               ← 코어 (npx 갱신)
 │   ├─ settings.json                     ← hook 등록 (PreToolUse 매칭)
 │   ├─ skills/ (8)
-│   └─ hooks/ (3)
+│   └─ hooks/ (2)
 │
 ├─ .project/                              ← 사용자 영역
 │   ├─ PROJECT.md                        ← /project-init 생성
@@ -142,11 +142,14 @@ my-app/                                   ← 사용자 프로젝트
 | 정보 | 단일 진실 소스 |
 |------|--------------|
 | 스킬 본문 (Step 1~N) | [template/.claude/skills/<skill>/SKILL.md](../template/.claude/skills/) (8 디렉토리) |
-| Hook 본문 + 정규식 | [template/.claude/hooks/<hook>.sh](../template/.claude/hooks/) (3 파일) |
+| Hook 본문 + 정규식 | [template/.claude/hooks/<hook>.sh](../template/.claude/hooks/) (2 파일 — `git-guard.sh` / `closed-immutable.sh`. `pre-commit-verify.sh` 폐기) |
 | Hook 등록 (Claude Code PreToolUse 매칭) | [template/.claude/settings.json](../template/.claude/settings.json) |
 | 태스크 양식 + 4단 layer + 완성 예시 3개 | [template/.project/rules/TASK_DOC_RULE.md](../template/.project/rules/TASK_DOC_RULE.md) |
 | 프로젝트별 git 룰 | [template/.project/rules/GIT_RULE.md](../template/.project/rules/GIT_RULE.md) → `~/.claude/rules/GIT_RULE.md` (글로벌 fallback) |
-| 검증 명령 (사용자 프로젝트) | 사용자 프로젝트 `CLAUDE.md` `## 검증 명령` |
+| CHANGELOG 작성 룰 | [template/.project/rules/CHANGELOG_RULE.md](../template/.project/rules/CHANGELOG_RULE.md) |
+| UX/UI HTML 목업 룰 | [template/.project/rules/MOCKUP_RULE.md](../template/.project/rules/MOCKUP_RULE.md) |
+| 검증 명령 (사용자 프로젝트 — 코드 상태) | 사용자 프로젝트 `CLAUDE.md` `## 검증 명령` (빌드/린트/타입체크) |
+| 테스트 명령 (사용자 프로젝트 — 테스트 실행) | 사용자 프로젝트 `CLAUDE.md` `## 테스트 명령` (단위/통합/E2E) |
 | manifest 구조 + 머지 로직 | [bin/lib.js](../bin/lib.js) + [bin/init.js](../bin/init.js) + [bin/update.js](../bin/update.js) |
 | 미래 옵션 카탈로그 | [plan/PLAYBOOK.md](PLAYBOOK.md) |
 | 핵심 의사결정 사유 | [plan/DECISIONS.md](DECISIONS.md) |
@@ -165,7 +168,7 @@ my-app/                                   ← 사용자 프로젝트
 | [DECISIONS.md](DECISIONS.md) | 핵심 의사결정 + 변경 이력 (단일 진실 소스) | *왜 이렇게 결정?* 궁금할 때 |
 | [SKILLS.md](SKILLS.md) | 스킬 8종 명세 + 흐름 + 컨텍스트 관리 | 작업 시작 / 스킬 동작 의문 시 |
 | [TASK-DOC.md](TASK-DOC.md) | 태스크 위계 + 양식 + 7 상태 + 4단 layer 가이드 | task 작성 / 상태 전이 의문 시 |
-| [HOOKS.md](HOOKS.md) | 3 catastrophic hook 정책 + 우회 절차 | hook 차단 발생 시 / 우회 필요 시 |
+| [HOOKS.md](HOOKS.md) | 2 catastrophic hook 정책 + 우회 절차 | hook 차단 발생 시 / 우회 필요 시 |
 | [DISTRIBUTION.md](DISTRIBUTION.md) | npx 배포 + bin/ + manifest 머지 로직 | 사용자 프로젝트 셋업 / npx update / publish 시 |
 | [PLAYBOOK.md](PLAYBOOK.md) | 미래 옵션 카탈로그 (bottoms-up 부활 카탈로그) | 사용자 직접 정독 시 |
 
@@ -208,7 +211,7 @@ my-app/                                   ← 사용자 프로젝트
 ## 9. 현재 상태 + 남은 작업
 
 **완료**:
-- ✅ 부트스트랩 — plan/ 7 문서 + bin/ 5 스크립트 + template/ 23 파일
+- ✅ 부트스트랩 — plan/ 7 문서 + bin/ 5 스크립트 + template/ 24 파일
 - ✅ spec 정합성 audit 안정화
 - ✅ smoke test 1회 — notepad-todo 10 task / 47 commit / test 31/31 PASS
 - ✅ smoke test follow-up fix 4건 (catastrophic 1 + 가이드 명확화 3)
@@ -234,3 +237,5 @@ my-app/                                   ← 사용자 프로젝트
 | 2026-05-09 | 표현 정제 — 인명 / 경박 표현 / 스킬 용어 정정 (DECISIONS.md 외) |
 | 2026-05-09 | npm 패키지명 `@angar2/taskery`로 변경 (이름 충돌 해소) — npx/npm 명령 표기 갱신. 프로젝트 정체성 호칭은 *taskery* 그대로 유지. |
 | 2026-05-10 | 스킬 8종 구조 마이그레이션 반영 — §6 단일 진실 소스 표 + §7 사용자 프로젝트 자산 표 + §8 정독 순서 라인 `<skill>.md` → `<skill>/SKILL.md` 갱신. (Claude Code가 npx init 후 스킬을 인식 못 하던 동작 버그 해결, 0.1.1 후보) |
+| 2026-05-30 | stash FRICTION_LOG 기반 정합 — §3 안전망 hook 3종 → 2종 (`pre-commit-verify` 폐기) + §6 단일 진실 소스 표에 CHANGELOG_RULE / MOCKUP_RULE 추가 + 검증/테스트 명령 두 섹션 분리 명시. |
+| 2026-05-30 | 정합 검증 후속 정정 (Phase 5) — §1 / §3 / §4 / §7 본문·도식에 잔존한 *hook 3종* / *catastrophic 3* 표기를 2종으로 갱신 + §4 / §10 *코어 23 파일* → *24 파일* (CHANGELOG_RULE / MOCKUP_RULE 신설 반영, pre-commit-verify.sh 삭제). |

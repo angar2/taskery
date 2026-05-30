@@ -15,15 +15,16 @@
 | **phase** | task.md Dev Plan 안 sub-섹션 | task.md `## Dev Plan` 안 `### Phase 1`, `### Phase 2`, ... |
 
 **원칙**:
-- task가 너무 크면 → 폴더 승격 (`TASK-<NNN>_<slug>/task.md` — *추가 자료 보관* 용도, 서브 문서/mockup/디자인 등)
+- task가 너무 크면 → 폴더 승격 (`TASK-<NNN>_<slug>/task.md` — *추가 자료 보관* 용도, 서브 문서 / 디자인 자료 등. mockup은 vX.X 공통이라 폴더 안 X — §1.5 참조)
 - 더 크면 → plan으로 승격 (별도 plan 버전 또는 plan 안 묶음)
 - waterfall phase 선제적 작성 금지 — *진행하면서 점진적 추가*
 
-**spec-diffs / screenshots 위치 — vX.X 공통 단일화**:
+**spec-diffs / screenshots / mockup 위치 — vX.X 공통 단일화**:
 - `.project/tasks/<vX.X>/spec-diffs/<NNN>_<slug>_spec-diff.md` — 단일 파일 task든 폴더 승격이든
 - `.project/tasks/<vX.X>/screenshots/<NNN>_*.png`
-- 폴더 승격 task도 *vX.X 공통* 사용 (task 폴더 안에 spec-diffs/screenshots 생성하지 않음)
-- 단일 진실 소스: [TASK_DOC_RULE.md §1.5](../template/.project/rules/TASK_DOC_RULE.md)
+- `.project/tasks/<vX.X>/mockup/<task-doc-name>-mockup.html` (UX/UI 구현 task 한정 — stash FRICTION_LOG #14+19 반영)
+- 폴더 승격 task도 *vX.X 공통* 사용 (task 폴더 안에 spec-diffs/screenshots/mockup 생성하지 않음)
+- 단일 진실 소스: [TASK_DOC_RULE.md §1.5](../template/.project/rules/TASK_DOC_RULE.md) + [MOCKUP_RULE.md](../template/.project/rules/MOCKUP_RULE.md)
 
 → [DECISIONS.md §6](DECISIONS.md)
 
@@ -125,7 +126,7 @@ draft → planned → developing → developed → testing → tested → closed
 | **Requirements** | `/task-plan` Step 2 (사용자 인터뷰 + 메인 증폭) | `draft` → `planned` |
 | **Scope** | `/task-plan` Step 3 (코드 서치) | `draft` → `planned` |
 | **Dev Plan** | `/task-plan` Step 4 (Phase 분할 — 점진 추가 OK) | `draft` → `planned` (Phase 점진) |
-| **Test Plan** | `/task-plan` Step 5 (자유 형식 — 자기완결성 가이드라인) | `draft` → `planned` |
+| **Test Plan** | `/task-plan` Step 5 (실질 동작 시나리오 + `[AUTO]` / `[USER]` 분류 강제) | `draft` → `planned` |
 | **Result** (진행 부) | `/task-dev` Step 7 | `developed` |
 | **Result** (테스트 부) | `/task-test` Step 4 | `tested` |
 
@@ -133,12 +134,24 @@ draft → planned → developing → developed → testing → tested → closed
 
 **Phase는 Dev Plan 안 sub-섹션** — 별도 파일 X. 진행하면서 점진 추가. *waterfall 선제적 작성 함정 회피*.
 
-**Test Plan 자유 형식** — 양식 강제 X. 가이드라인만:
+**Test Plan = 실질 동작 시나리오 (stash FRICTION_LOG #14+19 / #25 반영)**:
+
+- 본질: *본 task에서 구현한 요구사항이 정상 동작하는지* 검증 시나리오
+- **유닛 테스트 X** — 유닛 테스트는 `/task-dev` Step 6.5에서 단일 시점 실행 (코드 정상성 영역, Test Plan과 직교)
+- 각 시나리오 = (한 줄 설명, 분류, 방식, PASS 기준)
+- **분류 강제**: `[AUTO]` (자동화 가능) / `[USER]` (자동화 불가, 사용자 검수)
+- **카탈로그** (방식 선택 — 시나리오마다 1개 이상): 수동 검수 / 시나리오 스크립트 / API 호출 / 입출력 비교 / 사이드 이펙트 / 회귀 / E2E 자동화 도구
+- **UX/UI 영역 분리** (UX/UI task 한정):
+  - 동작 영역 (클릭/호버/드래그/입력 → 결과): 자동화 가능 → `[AUTO]`, 불가 → `[USER]` 체크리스트
+  - 시각 영역 (레이아웃/색상/간격/호버 효과): 자동 비교 의미 X → `[USER]` 체크리스트 + 목업 기준 참조 (`mockup/<task-doc-name>-mockup.html`)
+- 시각 영역 시나리오 있으면 *fix 사이클 1~2회 예상* 사전 예고 명시
+
+가이드라인:
 - **자기완결적**: `/task-test` 격리 세션이 *task.md만 보고도* 수행 가능
 - **명령/기대값 포함**: 무엇을 실행하고 무엇이 기대되는지 명확
 - **메인 가정 X**: *"잘 될 거야"* / *"문제 없을 듯"* 같은 가정 금지
 
-→ 양식 강제 = practice를 process로 강제. 강제 X.
+상세 양식 + 카탈로그 + 매트릭스 → [task-plan SKILL.md](../template/.claude/skills/task-plan/SKILL.md) Step 5 + [TASK_DOC_RULE.md](../template/.project/rules/TASK_DOC_RULE.md) §2.5 참조.
 
 ---
 
@@ -198,3 +211,6 @@ draft → planned → developing → developed → testing → tested → closed
 | 2026-05-08 | 신규 작성 — 위계(project/plan/task/phase) + 헤더 5컬럼 + 7 상태 + 6 섹션 + FAIL/UNCERTAIN 분기 + 4단 layer 가이드 + PLAYBOOK 부활 트리거 |
 | 2026-05-08 | §1 위계에 spec-diffs/screenshots vX.X 공통 단일화 명시. 폴더 승격은 *추가 자료* 자리용으로 명확화. 단일 진실 소스 = TASK_DOC_RULE.md §1.5 |
 | 2026-05-09 | 표현 정제 — 인명 / 경박 표현 / 스킬 용어 / 이전 버전 비교 단락 정리. 폐기 항목 비교는 [DECISIONS.md](DECISIONS.md)로 위임. |
+| 2026-05-30 | Test Plan = 실질 동작 시나리오 본질 명시 + `[AUTO]`/`[USER]` 분류 강제 + 카탈로그 / UX/UI 영역 분리 매트릭스 / 목업 기준 참조 / 시각 fix 사이클 예고. §1 위계에 mockup/ 디렉토리 추가 (vX.X 공통). (stash FRICTION_LOG #14+19 / #25 반영) |
+| 2026-05-30 | 정합 검증 후속 정정 (Phase 5) — §1.5 mockup path 표기 `<NNN>_<slug>-mockup.html` → `<task-doc-name>-mockup.html` 으로 통일 (MOCKUP_RULE 단일 진실 소스 표기 정합 — 폴더 승격 케이스도 커버). |
+| 2026-05-30 | 정합 검증 후속 정정 (3차) — §5 작성 주체 표의 Test Plan 표기 *자유 형식 — 자기완결성 가이드라인* → *실질 동작 시나리오 + `[AUTO]` / `[USER]` 분류 강제* 정합 (TASK_DOC_RULE §2.5 본질 재정의 정합). |

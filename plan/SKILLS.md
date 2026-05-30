@@ -96,26 +96,44 @@ description: <한 줄 설명>
 
 ---
 
-## 5. 검증 명령 — 단일 진실 소스
+## 5. 검증 명령 / 테스트 명령 — 두 섹션 단일 진실 소스 (stash FRICTION_LOG #25 반영)
 
-`/task-dev` self-check, `/task-test` 격리 게이트, `/task-close` 최종 게이트, `pre-commit-verify.sh` hook이 *모두* 사용자 프로젝트 루트 `CLAUDE.md`의 `## 검증 명령` 섹션을 참조.
+CLAUDE.md `## 검증 명령` 단일 섹션이 *4 시점에 분산 실행* (self-check / 격리 / 최종 게이트 / hook) 마찰 → 두 섹션 분리 + pre-commit-verify hook 폐기로 *단일 시점 실행* 흐름 정합.
 
-**형식** (사용자 프로젝트 `CLAUDE.md`):
+### 5.1. `## 검증 명령` (코드 상태 — 빌드/린트/타입체크)
+
+`/task-dev` self-check (Step 6) + `/task-close` 최종 게이트 (Step 2) 가 *이 섹션을 단일 진실 소스로 참조*.
+
+**형식**:
 ```markdown
 ## 검증 명령
 
 - 린트: `npm run lint`
 - 타입체크: `npm run typecheck`
 - 빌드: `npm run build`
-- 단위테스트: `npm test`
 ```
 
-**원칙**:
+### 5.2. `## 테스트 명령` (테스트 실행 — 단위/통합/E2E)
+
+`/task-dev` 구현 후 테스트 실행 (Step 6.5) + `/task-test` 격리 세션이 *이 섹션을 단일 진실 소스로 참조*.
+
+**형식**:
+```markdown
+## 테스트 명령
+
+- 단위 테스트: `npm test`
+- 통합 테스트: `npm run test:integration` (있을 시)
+- E2E 테스트: `npx playwright test` (있을 시)
+```
+
+### 5.3. 원칙
+
 - 백틱(`...`) 안 명령 그대로 실행
 - 언어/프레임워크 따라 변경 (cargo / poetry / go 등)
-- 한 곳만 수정하면 스킬 + hook 모두 따름
+- 두 섹션 분리 — 한 곳만 수정해도 *해당 영역의 스킬* 만 영향 (cross-contamination 회피)
+- *테스트 실행은 task-test 단일 시점*에 집중 (task-close / hook 영역 중복 제거 — pre-commit-verify 폐기 정합)
 
-본 리포 자체는 검증 명령 없음 (template + plan + bin 자산 — 사용자 프로젝트 검증 명령은 사용자 책임).
+본 리포 자체는 검증/테스트 명령 없음 (template + plan + bin 자산 — 사용자 프로젝트 명령은 사용자 책임).
 
 ---
 
@@ -134,18 +152,23 @@ description: <한 줄 설명>
 | `/task-close` | 직접 실행 | 짧고 명확 |
 | `/log-friction` | 직접 실행 | FRICTION_LOG.md 한 행 Append + 사용자 합의 |
 
-**격리 메커니즘** — `/task-test` 1차 default:
+**격리 메커니즘** — `/task-test` 1차 default (stash FRICTION_LOG #14+19 / #25 반영):
 
 ```
 /task-test 호출 → 메인이:
-1. task.md 정독 → Test Plan + Dev Plan 완료 기준 추출
-2. status를 testing으로 갱신
+1. task.md 정독 → Test Plan + Dev Plan 완료 기준 추출 (목업 있으면 mockup/<task-doc-name>-mockup.html 도 정독)
+2. status를 testing으로 갱신 (격리 세션 호출 직전)
 3. Task tool 호출, 격리 prompt:
    - task.md 절대 경로 (격리 세션이 직접 정독 — 자기완결적)
-   - 수행 룰 (메인 가정 X, 코드/동작만 신뢰, PASS/FAIL/UNCERTAIN 결과 + 근거)
+   - 본질 — Test Plan 시나리오 기반 *실질 동작 검증* (유닛 테스트 카운트 단정 X)
+   - [AUTO] / [USER] 분류 그대로 따름 — [USER]는 격리 검증 X, 사용자 검수 항목으로 리턴
+   - CLAUDE.md `## 검증 명령` + `## 테스트 명령` 둘 다 참조
+   - 신규 테스트 식별자 grep 직접 등장 확인
+   - PASS / FAIL / UNCERTAIN + 근거
 4. 결과 리턴받아 task.md Result 섹션 기록
-5. PASS → status=tested → 사용자에게 close 신호
-6. FAIL/UNCERTAIN → 사용자 보고 → "고쳐" or "OK 마무리" 분기
+5. UNCERTAIN ([USER] 시나리오) → 메인이 체크리스트 형식으로 사용자 직접 검수 요청 (목업 경로 명시 + 시각 fix 사이클 사전 예고)
+6. 사용자 검수 모두 ✓ → status=tested → 사용자에게 close 신호
+7. FAIL 또는 ✗ → 사용자 보고 → "고쳐" or "OK 마무리" 분기
 ```
 
 격리 prompt 정확한 본문은 → [template/.claude/skills/task-test/SKILL.md](../template/.claude/skills/task-test/SKILL.md) Step 3 참조.
@@ -209,3 +232,5 @@ description: <한 줄 설명>
 | 2026-05-09 | 파일명 변경: `SLASH-COMMANDS.md` → `SKILLS.md`. 표현 정제 — 인명 / 경박 표현 / 스킬 용어 / 이전 버전 언급 정리 |
 | 2026-05-09 | npm 패키지명 `@angar2/taskery`로 변경 반영 — `npx taskery init` → `npx @angar2/taskery init`. |
 | 2026-05-10 | 스킬 8종 구조 마이그레이션 반영 — §4 표 + 라인 150/177 본문 링크 `<name>.md` → `<name>/SKILL.md` 갱신, frontmatter 공통 형식 예시에 `name` 필드 추가. (Claude Code가 npx init 후 스킬을 인식 못 하던 동작 버그 해결, 0.1.1 후보) |
+| 2026-05-30 | stash FRICTION_LOG 기반 정합 — §5 `## 검증 명령` + `## 테스트 명령` 두 섹션 분리 (pre-commit-verify hook 폐기 정합) + §6 task-test 격리 prompt 흐름 갱신 ([AUTO]/[USER] 분류 / 목업 정독 / 신규 식별자 grep / USER 검수 흐름). 8 스킬 본문 변경은 각 SKILL.md 참조. |
+| 2026-05-30 | 정합 검증 후속 정정 (Phase 5) — §6 격리 prompt 흐름 본문의 mockup path 표기 `<task>-mockup.html` → `<task-doc-name>-mockup.html` 으로 통일 (MOCKUP_RULE 단일 진실 소스 정합). |

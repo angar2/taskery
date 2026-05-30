@@ -92,7 +92,9 @@ taskery 도입 직후 **1회성**으로 호출. 사용자 또는 동료가 새 �
 1. `CLAUDE.md` — 프로젝트 메타 + 검증 명령 + 룰 참조
 2. `.project/PROJECT.md` — 프로젝트 개요
 3. `.project/plans/<활성버전>/PLAN.md` — 활성 plan 진입 (이게 9 기획 문서 인덱스)
-4. `.project/AGENT-GUIDE.md` — 본 파일 (그대로)
+4. `.project/GLOSSARY.md` — 도메인 용어집 (영문/한글 표기 일관성 단일 진실 소스)
+5. `.project/tasks/<활성버전>/BACKLOG.md` — 현재 plan 진행 중 누적된 후속 task 후보 (사용자 발화 *"이건 다음 task로"* / task-close 직후 메인 감지로 추가)
+6. `.project/AGENT-GUIDE.md` — 본 파일 (그대로)
 
 ## 작업 흐름
 - task 시작: `/task-init` 또는 `/task-plan`
@@ -113,7 +115,32 @@ taskery 도입 직후 **1회성**으로 호출. 사용자 또는 동료가 새 �
 멀티 리포면 "LINKED-REPOS.md 참조">
 ```
 
+### Step 4.5 — `.project/GLOSSARY.md` 작성 (도메인 용어집)
+
+stash FRICTION_LOG #3 반영 — 프로젝트 도메인 용어를 *영문/한글 표기 일관성* 단일 진실 소스로 모음. 코드 메서드명·변수명 / 대화·문서 한글 표기 통일.
+
+```markdown
+# GLOSSARY — <프로젝트명>
+
+> 본 프로젝트에서 사용하는 도메인 용어집. 코드 식별자 / 문서 / 대화 모두 본 표 기준.
+> 새 용어 추가 시 영문 알파벳 순 정렬 유지.
+
+| 영문 | 한글 | 정의 | 출처 |
+|------|------|------|------|
+| | | | |
+
+## 운용 룰
+
+- 영문 알파벳 순 정렬
+- 출처: 본 용어가 도입된 task/plan 문서 경로 (예: `plans/v1.0/FEATURES.md`)
+- 동의어 / 변형 표기 발견 시 본 표 기준으로 정합
+```
+
+빈 표만 작성. 본문은 plan/task 진행하면서 사용자가 채움.
+
 ### Step 5 — `.project/LINKED-REPOS.md` 작성
+
+멀티리포 구성 명세. 단일 리포면 빈 템플릿만, 멀티 리포면 연결 리포 목록까지.
 
 ```markdown
 # LINKED-REPOS.md
@@ -193,12 +220,12 @@ git branch -a                                        # main(또는 master) + dev
 ### Step 8 — 결과 보고
 
 작성된 파일 목록 + 다음 단계 안내:
-- *"PROJECT.md / AGENT-GUIDE.md / LINKED-REPOS.md / .env 생성. (FRICTION_LOG.md / 빈 골격 폴더는 npx init이 이미 카피한 것 그대로). **빈 폴더 케이스라 git init + dev 분기까지 완료** (이미 git 리포면 건너뜀). 다음은 `/plan-init <버전명>`으로 9 기획 문서 작성."*
+- *"PROJECT.md / AGENT-GUIDE.md / LINKED-REPOS.md / GLOSSARY.md / .env 생성. (FRICTION_LOG.md / 빈 골격 폴더는 npx init이 이미 카피한 것 그대로). **빈 폴더 케이스라 git init + dev 분기까지 완료** (이미 git 리포면 건너뜀). 다음은 `/plan-init <버전명>`으로 9 기획 문서 작성."*
 
 **결과 commit 흐름** (GIT_RULE 정합):
 - dev 직접 commit *금지* (git-guard.sh 차단). 두 가지 default 흐름:
   1. **첫 task에 묶기 (권장)**: `/plan-init` 끝나고 첫 `/task-init` (보통 TASK-001 부트스트랩 chore)으로 만든 작업 브랜치에서 init 산출물(PROJECT/AGENT-GUIDE/LINKED-REPOS/.env)도 함께 commit. task-close 단계의 "태스크 문서 커밋"에 자연스럽게 묶임.
-  2. **임시 docs 브랜치**: `git checkout -b docs/{개발자}_init-bootstrap` 후 commit → dev에 `--no-ff` 머지. 첫 task 생성 *전*에 init 결과를 깔끔히 박고 싶을 때.
+  2. **임시 docs 브랜치**: `git checkout -b docs/{개발자}_init-bootstrap` 후 commit → dev에 `--no-ff` 머지. 첫 task 생성 *전*에 init 결과를 깔끔히 기록하고 싶을 때.
 
 ## 도구 가이드
 

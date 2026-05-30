@@ -95,19 +95,22 @@ my-app/
 ├─ .gitignore
 ├─ .claude/
 │   ├─ settings.json                      # hook 등록 (PreToolUse 매칭)
-│   ├─ skills/<skil-name>/SKILL.md        # 8 skill
-│   └─ hooks/<hook-name>.sh               # 3 hook
+│   ├─ skills/<skill-name>/SKILL.md       # 8 skill
+│   └─ hooks/<hook-name>.sh               # 2 hook
 └─ .project/
     ├─ PROJECT.md                         # 프로젝트 개요
     ├─ AGENT-GUIDE.md                     # AI 에이전트 가이드
     ├─ LINKED-REPOS.md                    # 관계 리포지토리 정보
+    ├─ GLOSSARY.md                        # 도메인 용어집 (영문/한글 표기 일관성)
     ├─ .env                               # 사용자 설정 환경변수 (관계 리포지토리 환경변수 등)
     ├─ rules/
     │   ├─ TASK_DOC_RULE.md               # task 문서 작성 규칙
     │   ├─ GIT_RULE.md                    # 로컬 깃 운영 규칙
+    │   ├─ CHANGELOG_RULE.md              # CHANGELOG 작성 규칙
+    │   ├─ MOCKUP_RULE.md                 # UX/UI HTML 목업 규칙
     │   └─ *.local.md                     # 사용자 오버라이드 규칙 (패키지 업데이트 대상 제외)
     ├─ plans/                             # plan 문서
-    ├─ tasks/                             # task 문서
+    ├─ tasks/                             # task 문서 (vX.X/BACKLOG.md / spec-diffs / screenshots / mockup 포함)
     ├─ flows/                             # 서비스 로직 플로우 정보
     ├─ changelog/                         # 수정사항 정보
     ├─ shared/                            # 관계 리포지토리 소통 메세지함
@@ -157,7 +160,6 @@ my-app/
 | Hook | 작동 시점 | 차단 대상 |
 |------|---------|---------|
 | `git-guard.sh` | git 명령 실행 직전 | 주력 브랜치 직접 커밋 / `--force` / `--no-verify` / 강제 브랜치 삭제 / `reset --hard` / `clean -fd` |
-| `pre-commit-verify.sh` | `git commit` 실행 직전 | 검증 명령(린트·타입체크·빌드·테스트) 통과 실패 commit |
 | `closed-immutable.sh` | 파일 수정 직전 | 완료(`closed`)된 task.md 본 파일 재수정 (관련 spec-diff·스크린샷은 자유) |
 
 hook은 catastrophic 사고만 차단한다. 정상 흐름에는 간섭하지 않는다.
@@ -210,7 +212,7 @@ spec 문서는 GitHub에서 참고할 수 있다.
 - [OVERVIEW.md](https://github.com/angar2/taskery/blob/main/plan/OVERVIEW.md) — 시스템 진입 가이드와 전체 구조 개요.
 - [SKILLS.md](https://github.com/angar2/taskery/blob/main/plan/SKILLS.md) — 스킬 8종의 상세 명세와 호출 흐름.
 - [TASK-DOC.md](https://github.com/angar2/taskery/blob/main/plan/TASK-DOC.md) — task 문서의 작성 양식과 7 상태 머신의 동작 정의.
-- [HOOKS.md](https://github.com/angar2/taskery/blob/main/plan/HOOKS.md) — catastrophic hook 3종의 정책과 예외 처리 절차.
+- [HOOKS.md](https://github.com/angar2/taskery/blob/main/plan/HOOKS.md) — catastrophic hook 2종의 정책과 예외 처리 절차.
 - [DISTRIBUTION.md](https://github.com/angar2/taskery/blob/main/plan/DISTRIBUTION.md) — npx 배포 메커니즘과 자산 갱신 로직.
 - [DECISIONS.md](https://github.com/angar2/taskery/blob/main/plan/DECISIONS.md) — 시스템 설계의 핵심 의사결정과 변경 이력.
 - [PLAYBOOK.md](https://github.com/angar2/taskery/blob/main/plan/PLAYBOOK.md) — 향후 도입 가능한 기능 후보 목록.

@@ -17,17 +17,40 @@
 
 ---
 
+## 메인 세션 최상위 룰
+
+> 본 룰은 *모든 스킬 호출 / 사용자 발화 처리 / 작업 진행*에 적용. 위반 시 사용자 마찰 직결.
+
+1. **범위 준수** — 사용자가 명시한 범위/행동만 수행. 명시 외 자체 진입 영구 금지. 예: 사용자가 *"X부터 Y까지"* 지시 → Y 끝에서 정지 + 상태 보고 + 다음 단계 명시 호출 대기.
+2. **Skill 정식 발동** — task 단계는 반드시 Skill 도구로 정식 호출. 가이드 본문을 머릿속 절차로 대체 금지 (컴팩트 세션 / 시스템 리마인더 인지 상태에서도 동일).
+
+---
+
 ## 검증 명령
 
-> `/task-dev` self-check / `/task-test` 격리 게이트 / `/task-close` 최종 게이트 / `pre-commit-verify.sh` hook이 *모두 이 섹션을 단일 진실 소스로 참조*.
+> *코드 상태 검증* (빌드 / 린트 / 타입체크). 테스트 실행은 본 섹션 X — `## 테스트 명령` 참조.
+> `/task-dev` self-check / `/task-close` 최종 게이트가 *이 섹션을 단일 진실 소스로 참조*.
 > 백틱(`...`) 안 명령 그대로 실행됨. 언어/프레임워크 따라 변경.
 
 - 린트: `<예: npm run lint>`
 - 타입체크: `<예: npm run typecheck>` (TypeScript / Flow / mypy 등 — 해당 시)
 - 빌드: `<예: npm run build>`
-- 단위 테스트: `<예: npm test>`
 
-> 위 4 항목 중 *프로젝트에 해당 없는 것*은 행 자체 삭제. 빈 백틱(\`\`)은 사용 금지.
+> 위 항목 중 *프로젝트에 해당 없는 것*은 행 자체 삭제. 빈 백틱(\`\`)은 사용 금지.
+
+---
+
+## 테스트 명령
+
+> *테스트 실행* (단위 / 통합 / E2E 등). 코드 상태 검증은 `## 검증 명령` 참조.
+> `/task-dev` 구현 후 테스트 + `/task-test` 격리 세션이 *이 섹션을 단일 진실 소스로 참조*.
+> 백틱(`...`) 안 명령 그대로 실행됨. 언어/프레임워크 따라 변경.
+
+- 단위 테스트: `<예: npm test>`
+- 통합 테스트: `<예: npm run test:integration>` (있을 시)
+- E2E 테스트: `<예: npx playwright test>` (있을 시)
+
+> 위 항목 중 *프로젝트에 해당 없는 것*은 행 자체 삭제. 빈 백틱(\`\`)은 사용 금지.
 
 ---
 
@@ -37,6 +60,8 @@
 |----|------|------|
 | TASK_DOC_RULE | `.project/rules/TASK_DOC_RULE.md` | task 문서 양식 (헤더 5컬럼 / 6 섹션 / 7 상태) |
 | GIT_RULE | `.project/rules/GIT_RULE.md` (있으면) → 글로벌 `~/.claude/rules/GIT_RULE.md` (fallback) | git 정책 (브랜치 / 커밋 / 머지) |
+| CHANGELOG_RULE | `.project/rules/CHANGELOG_RULE.md` | CHANGELOG 작성 정책 (위치 / 형식 / 필수 필드) |
+| MOCKUP_RULE | `.project/rules/MOCKUP_RULE.md` | UX/UI task의 HTML 목업 위치 / 형식 / 네이밍 |
 | `*.local.md` | `.project/rules/` | (옵션) 사용자 오버라이드 — `*.local.md` suffix는 npx 미터치 |
 
 ---
@@ -58,15 +83,16 @@
 
 ---
 
-## Hook 안전망 — Catastrophic 3종
+## Hook 안전망 — Catastrophic 2종
 
 | Hook | 영역 | 잡는 것 |
 |------|------|--------|
 | `git-guard.sh` | PreToolUse(Bash) | main/dev 직접 커밋 / `--force` / `--no-verify` / `branch -D` / `reset --hard` / `clean -fd` |
-| `pre-commit-verify.sh` | PreToolUse(Bash) | `git commit` 시 위 *검증 명령* 모두 PASS 게이트. 하나라도 fail → 차단 |
-| `closed-immutable.sh` | PreToolUse(Write\|Edit) | `closed` 상태 task.md 본 파일 재수정 차단 (정상 흐름은 새 task로). spec-diffs/screenshots는 자유 수정 (역사적 자료) |
+| `closed-immutable.sh` | PreToolUse(Write\|Edit) | `closed` 상태 task.md 본 파일 재수정 차단 (정상 흐름은 새 task로). spec-diffs / screenshots / mockup은 자유 수정 (역사적 자료) |
 
 **잘 지키면 hook 작동 0회 (무해). catastrophic만 차단.**
+
+> 이전 `pre-commit-verify.sh` hook은 폐기 — task-close Step 2 게이트 + git-guard 안전망으로 충분 (redundant 검증 사이클 제거). 폐기 사유는 [plan/HOOKS.md](../plan/HOOKS.md) §5 참조.
 
 ---
 

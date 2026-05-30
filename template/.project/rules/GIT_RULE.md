@@ -118,7 +118,8 @@ docs: [TASK-{NNN}] CHANGELOG 업데이트
 - 머지 커밋 메시지는 git 기본 메시지 사용
 - `-m` 옵션으로 커밋 메시지 지정 금지
 - **`--no-ff` 강제 (일반 타입)**: feature/bug/improvement/refactor 등 일반 작업 브랜치 → dev 병합 시 `git merge --no-ff {브랜치명}` 사용. fast-forward 병합 절대 금지. 머지 커밋이 없으면 작업 브랜치 삭제 후 분기 정보 영구 손실(90일 reflog GC 후 추적 불가).
-- **plan/roadmap 임시 docs 브랜치 예외**: 단일 커밋이라 `--ff-only` 가능.
+- **plan/roadmap 임시 docs 브랜치 예외**: plan-init 단계의 단일 커밋(plan 신규/카피)에 한정 `--ff-only` 가능.
+- **task 진행 중 ROADMAP/플랜 문서 갱신은 별도 `docs/*` 브랜치 분리 절대 금지**: 해당 task의 작업 브랜치 (`feature/*` / `improve/*` 등) 안에서 수정 + 다른 구현 커밋과 함께 `--no-ff` 머지로 dev 병합 (분기 정보 손실 방지).
 
 ---
 
@@ -167,3 +168,4 @@ docs: [TASK-{NNN}] CHANGELOG 업데이트
 | 2026-05-07 | `--no-ff` 강제 + 작업 브랜치 삭제 정책 + destructive 명령 사용자 승인 필수 룰 추가 |
 | 2026-05-08 | git 작업은 메인 세션이 `/task-close` 스킬 또는 직접 수행으로 단일화. git-guard.sh hook 안전망 명시 추가 |
 | 2026-05-09 | 표현 정제 — 인명 / 경박 표현 / 스킬 용어 / 이전 버전 비교 단락 정리 |
+| 2026-05-30 | docs/* 브랜치 ff-only 예외 명시 — plan-init 단일 커밋 한정. task 진행 중 ROADMAP/플랜 갱신은 작업 브랜치 + --no-ff 명시 추가 (stash FRICTION_LOG #4 반영) |
