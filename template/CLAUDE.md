@@ -51,6 +51,19 @@
 
 ---
 
+## 백로그 (0.1.2+)
+
+> `.project/tasks/<vX.X>/BACKLOG.md` = *버전별 task 후보 누적*. 사용자 발화로 1건씩 얕은 분석(개요 / 대상 영역) 곁들여 추가.
+
+- **`/add-backlog`**: 사용자 *"~ 백로그에 추가"* 발화 → 얕은 분석(코드 탐색 X, 추정 수준) → BL-NNN 채번 → BACKLOG.md append (`[ ]` 대기).
+- **`/task-init` 연동**: 사용자 *"백로그의 BL-NNN 진행"* 발화 → 해당 항목 *확인 마킹*. `[ ]` → `[x]` + `- TASK: TASK-NNN` 추가 (다회 진행 시 콤마).
+- **체크박스 의미**: `[ ]` = 미확인 (task로 옮기지 않은 메모) / `[x]` = 확인 완료 (task로 옮김). **dev 머지 완료 의미 X** — 완료 여부는 `git log dev --grep 'BL-NNN'` + 브랜치명 추적 + `taskery status`.
+- **글로벌 `.project/BACKLOG.md`** (plan 기획 후보 카탈로그) 는 본 흐름 무관 — `/plan-init` 영역.
+
+상세: `.claude/skills/add-backlog/SKILL.md`.
+
+---
+
 ## 검증 명령
 
 > *코드 상태 검증* (빌드 / 린트 / 타입체크). 테스트 실행은 본 섹션 X — `## 테스트 명령` 참조.
@@ -91,7 +104,7 @@
 
 ---
 
-## 스킬 8종 — project > plan > task 위계 + 회고
+## 스킬 9종 — project > plan > task 위계 + 회고
 
 | 스킬 | 레벨 | 역할 |
 |------|------|------|
@@ -102,6 +115,7 @@
 | `/task-dev` | task | Phase 순서 구현 + self-check (planned → developed) |
 | `/task-test` | task | Task tool 격리 검증 (developed → tested) |
 | `/task-close` | task | 검증 명령 게이트 + 커밋 + dev 병합 (tested → closed) |
+| `/add-backlog` | meta | 사용자 발화로 버전별 BACKLOG.md에 항목 1건 추가 (얕은 분석 + BL-NNN 채번 — 0.1.2+) |
 | `/log-friction` | meta | FRICTION_LOG.md에 사용자 불편 한 행 기록 |
 
 본문은 `.claude/skills/<스킬>/SKILL.md` 참조.

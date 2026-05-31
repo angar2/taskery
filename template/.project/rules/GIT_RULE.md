@@ -50,7 +50,7 @@
 
 | 출처 | 의미 | 채번 주체 |
 |------|------|---------|
-| `BL-NNN` | 백로그 항목 | `/backlog-add` 스킬 (0.1.2 본 기능 직후 추가) |
+| `BL-NNN` | 백로그 항목 | `/add-backlog` 스킬 (0.1.2). 버전별 `.project/tasks/<vX.X>/BACKLOG.md`에 누적 |
 | `RM-NNN` | 로드맵 항목 | `/plan-init` (RM-NNN 채번 자동화는 후속 — 1차는 사용자 수동 명시) |
 | `DR` | 직접 요구사항 (별도 ID 없음) | 사용자 발화 → `/task-init` |
 
@@ -277,3 +277,4 @@ git -C "$MAIN_WT" branch --no-merged dev --list \
 | 2026-05-09 | 표현 정제 — 인명 / 경박 표현 / 스킬 용어 / 이전 버전 비교 단락 정리 |
 | 2026-05-30 | docs/* 브랜치 ff-only 예외 명시 — plan-init 단일 커밋 한정. task 진행 중 ROADMAP/플랜 갱신은 작업 브랜치 + --no-ff 명시 추가 (stash FRICTION_LOG #4 반영) |
 | 2026-05-31 | 멀티세션 0.1.2 오버라이드 — 브랜치명에 출처(BL/RM/DR) 추가 / 케이스 2(TASK 없는 브랜치) 시스템 외 명시 / `/task-close` 자동 삭제 + 워크트리 제거 면제 조항 / 멀티세션 워크트리 정책 섹션 신규 (메인=dev 전용 / SSoT 조회 / 머지 락 직렬화) |
+| 2026-05-31 | 0.1.2 백로그 스킬 추가 정합 — 출처 표 `BL-NNN` 채번 주체 `/backlog-add` → `/add-backlog`로 갱신 + 버전별 경로(`.project/tasks/<vX.X>/BACKLOG.md`) 명시 |
