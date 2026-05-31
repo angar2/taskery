@@ -48,7 +48,7 @@
 | 스크립트 | 역할 | 분량 |
 |---------|------|------|
 | [bin/lib.js](../bin/lib.js) | 공통 유틸 — 기본 7종(`walkTemplate` / `sha256` / `mkdirp` / `copyFile` / `writeManifest` / `readManifest` / `isLocalOverride`) + 멀티세션 (0.1.2+) 유틸 (`getMainWorktreePath` / `getProjectId` / `getWorktreePath` / `withMergeLock` / `withMetaLock` / `getActiveTasks` / `getNextTaskNumber` / `assertMainWorktreeOnDev` / `assertDevExists` / `parseBranchName` / `generateProjectId` 등) + 백로그 (0.1.2+) 유틸 (`getActiveVersion` / `getBacklogPath` / `appendBacklogItem` / `parseBacklogItem` / `markBacklogChecked` + `BACKLOG_PLACEHOLDER` 상수) | 16,570 B |
-| [bin/taskery.js](../bin/taskery.js) | 진입점 dispatcher — `init` / `update` / `status` / `prune` / `help` 서브커맨드 분기 | 1,694 B |
+| [bin/taskery.js](../bin/taskery.js) | 진입점 dispatcher — `init` / `update` / `status` / `prune` / `help` 서브커맨드 분기 | 1,870 B |
 | [bin/init.js](../bin/init.js) | `npx @angar2/taskery init` 본체 — template/ → cwd 카피 + manifest 동적 생성 + .gitignore 인터랙티브 prompt | 5,608 B |
 | [bin/create.js](../bin/create.js) | `npx -p @angar2/taskery create-taskery <name>` — mkdir + cd + init 호출 | 1,638 B |
 | [bin/update.js](../bin/update.js) | `npx @angar2/taskery update` — 4 분기 머지 로직 + manifest 마이그레이션 (`projectId` / `stale_days` / `lock_timeout_ms` 누락 필드 자동 추가) | 6,749 B |
@@ -217,7 +217,7 @@ npm publish --tag beta       # beta tag로 publish
 ```json
 {
   "name": "@angar2/taskery",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "bin": {
     "taskery": "bin/taskery.js",
     "create-taskery": "bin/create.js"
@@ -229,7 +229,8 @@ npm publish --tag beta       # beta tag로 publish
   "homepage": "https://github.com/angar2/taskery#readme",
   "bugs": { "url": "https://github.com/angar2/taskery/issues" },
   "publishConfig": { "access": "public" },
-  "engines": { "node": ">=18.0.0" }
+  "engines": { "node": ">=18.0.0", "git": ">=2.31.0" },
+  "dependencies": { "proper-lockfile": "^4.1.2" }
 }
 ```
 
@@ -325,3 +326,4 @@ npm publish --tag beta       # beta tag로 publish
 | 2026-05-30 | 정합 검증 후속 정정 (3차) — §9 자동 빌드 미채택 본문 사용자 프로젝트 CLAUDE.md 동기화 룰 예시에서 `검증 명령 (위)` → `## 검증 명령 / ## 테스트 명령 (두 섹션)` 정합 (CLAUDE.md 두 섹션 분리 정합). |
 | 2026-05-31 | 0.1.2 멀티세션 + 백로그 정합 누락 일괄 정정 (정합 순회 1차) — §1행 캡션 *bin/ 5 스크립트* → *7 스크립트* / §2 명령 표 `status` / `prune` 행 추가 / §3 헤더 *5 스크립트* → *7 스크립트* + 본문 lib.js 분량 3,089B → 16,570B + 멀티세션/백로그 함수 목록 명시 / taskery.js 1,350B → 1,694B + `status` / `prune` 서브커맨드 명시 / init.js 3,765B → 5,608B + .gitignore prompt 명시 / create.js 1,592B → 1,638B / update.js 5,764B → 6,749B + manifest 마이그레이션 명시 / status.js / prune.js 행 신규 / 의존성 본문 *외부 npm 의존 0* → *proper-lockfile 1종* 갱신 / §4 카피 대상 *24 파일 + 스킬 (8)* → *25 파일 + 스킬 (9, add-backlog 포함)* / §5 manifest 예시 *18 파일* → *25 파일* 주석 + `projectId` / `stale_days` / `lock_timeout_ms` 필드 명시 / §5 필드 본문에 0.1.2+ 3 필드 추가 / §8 files 배열 본문 *5 스크립트 + 24 파일* → *7 스크립트 + 25 파일* / §11 동작 검증 표 갱신 (7 스크립트 + 25 파일 카피 / 25 unchanged + 0.1.1 → 0.1.2 마이그레이션 + status.js / prune.js 동작 + appendBacklogItem 동시 직렬화 + markBacklogChecked 중복 방지). 단순 수치 정합, 행위 변경 X |
 | 2026-05-31 | 정합 순회 2차 후속 정정 — §5 manifest 예시 필드 순서를 실제 `bin/init.js:100~107` / `bin/update.js:164~172` 출력 순서(version → installed_at → updated_at → projectId → stale_days → lock_timeout_ms → files)와 일치시킴 (1차 정정 시 `projectId` 등을 `files` 뒤에 박았던 표기 정합 X 정정) + version 예시 0.1.0 → 0.1.2 갱신 / §11 동작 검증 표 *appendBacklogItem 동시 직렬화* / *markBacklogChecked 중복 방지* 행 본 세션 미실행 검증 결과 수치(P2 BL-001 6ms 등) 인용 제거 → 단순 *통과 ✅* 표기로 변경 (이전 세션 보고 수치를 본 세션이 직접 재현하지 않았으므로 수치 명시 부적절) |
+| 2026-05-31 | 정합 순회 5차 후속 정정 — §3 표 `bin/taskery.js` 분량 *1,694 B* → *1,870 B* (2차 commit에서 헤더 주석에 `status` / `prune` 서브커맨드 2행 추가했으나 분량 표 갱신 누락분 정합) + §8 `package.json` 메타 예시: `"version": "0.1.0"` → *0.1.2* / `"engines"`에 `"git": ">=2.31.0"` 추가 / `"dependencies": { "proper-lockfile": "^4.1.2" }` 신규 추가 (실제 package.json 0.1.2 본문과 일치). 단순 수치/필드 정합, 행위 변경 X |
