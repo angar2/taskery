@@ -26,6 +26,12 @@
 - `/task-plan` Step 4.5 HTML 목업 프로세스 신설 — UX/UI task 한정, task 1개 = 목업 1개. `.project/tasks/<vX.X>/mockup/<task-doc-name>-mockup.html`
 - `/task-close` Step 4-0 — 내부 경로 gitignored 감지 + 4-2/4-3/4-4 조건부 commit 스킵 (공개 repo에서 taskery 내부 영역 gitignore 등록 시 빈 commit 실패 회피. stash FRICTION_LOG #26)
 - `bin/init.js` scaffolding 후 `.gitignore` 인터랙티브 prompt — taskery 내부 영역(`/.project/`, `/.claude/`, `CLAUDE.md`, `.taskery-manifest.json`) 자동 등록 (사용자 OK 시. stash FRICTION_LOG #26)
+- **`/add-backlog` 스킬 신설 (0.1.2)** — 사용자 발화로 *버전별* `.project/tasks/<vX.X>/BACKLOG.md`에 task 후보 1건씩 누적. 흐름: 메인 워크트리/dev 검증 + 활성 버전(`AGENT-GUIDE.md` 파싱) 검출 + 얕은 분석(LLM, 코드 탐색 X — 유형/제목/개요/대상 영역) + 결정적 슬러그(한국어 → 영어 의미 변환 → kebab-case 3 단어 이내) + BL-NNN 채번(기존 max + 1) + `withMetaLock` append (plan-init placeholder 치환 우선). `[ ]` 대기 default. 글로벌 `.project/BACKLOG.md` (plan 기획 후보 카탈로그) 와는 별 차원
+- `bin/lib.js` 백로그 유틸 — `getActiveVersion` / `getBacklogPath` / `parseBacklogItem` / `appendBacklogItem` / `markBacklogChecked` + private helper(`computeNextBLNumber` / `formatBacklogBlock`) + `BACKLOG_PLACEHOLDER` 상수. 멀티세션 인프라 `withMetaLock` 재사용 (proper-lockfile 직렬화)
+- `template/.claude/skills/task-init/SKILL.md` §7.5 BL 체크 마킹 단계 신설 — 워크트리 생성 직후 `withMetaLock` 안에서 `- [ ] **BL-NNN**` → `- [x] **BL-NNN**` 4번째 글자 치환 + 같은 블록 끝에 `  - TASK: TASK-NNN` append (이미 있으면 콤마). 출처 분기: BL일 때만 실행, RM/DR은 skip. §4.2.5 신규 — 이미 `[x]` BL 재진행 요청 시 사용자 호출 + 콤마 추가/중단 분기
+- `template/CLAUDE.md` "백로그 (0.1.2+)" 섹션 신설 — 흐름 / 체크박스 의미(`[ ]`=미확인, `[x]`=확인(task로 옮김), dev 머지 완료 의미 X) / 글로벌 vs 버전별 분리 명시. 스킬 8종 → 9종 표에 `/add-backlog` (meta) 행 추가
+- `template/.project/BACKLOG.md` 신규 — `/add-backlog` 스킬 결과를 누적할 *버전별* 백로그 경로는 plan-init이 생성 (별도 카피 불필요)
+- `package.json` 0.1.1 → 0.1.2
 
 ### 수정
 
@@ -45,6 +51,11 @@
 - `.project/rules/GIT_RULE.md` — task 진행 중 ROADMAP/플랜 갱신은 별도 `docs/*` 브랜치 분리 금지 명시 (작업 브랜치 안에서 + dev `--no-ff`. stash FRICTION_LOG #4)
 - `README.md` / `package.json` description — hook 3종 → 2종 표기 정합 (Hook 표에서 폐기된 `pre-commit-verify.sh` 행 제거 포함)
 - `.project/rules/TASK_DOC_RULE.md` §1.5 mockup 행 추가 (vX.X 공통, 단일 진실 소스 MOCKUP_RULE) + §2.5 Test Plan 본질 재정의 (실질 동작 시나리오 + `[AUTO]` / `[USER]` 분류 강제 + 카탈로그 7방식 + UX/UI 영역 분리 매트릭스 + 시각 fix 사이클 사전 예고 + 검증/테스트 명령 두 섹션 참조) + §4.5 / §5 완성 예시 3개 Test Plan 형식 갱신 (기존 번호 매김 시나리오 + 검증 명령 나열은 옛 형식). `closed-immutable.sh` hook 주석에 mockup 자유 수정 명시 추가 (행위 변경 X, 가독성 정합)
+- **`/task-init` 스킬 본문 §4.2/§도구 가이드 BACKLOG.md 경로 정정 (멀티세션 0.1.2 commit 결함 fix)** — *글로벌* `$MAIN_WT/.project/BACKLOG.md` (잘못) → *버전별* `$MAIN_WT/.project/tasks/<활성버전>/BACKLOG.md` (정확)로 통일. 활성 버전 검출 = `AGENT-GUIDE.md` 파싱. 사유: README §디렉토리 구조 122줄 + `plan-init/SKILL.md` 92~102줄에서 명시한 *두 종류 백로그* 정의(글로벌 = plan 기획 후보 카탈로그 / 버전별 = task 후보 누적)와 이전 멀티세션 commit이 어긋남
+- `template/.claude/skills/task-close/SKILL.md` "백로그 무관" 명시 한 줄 추가 — `[x]` = task로 옮김 의미라 close 시점 마킹 X. 완료 추적은 `git log dev --grep 'BL-NNN'` + 브랜치명 + `taskery status`
+- `template/.project/rules/GIT_RULE.md` 출처 표 — BL-NNN 채번 주체 `/backlog-add` → `/add-backlog` + *버전별* `.project/tasks/<vX.X>/BACKLOG.md` 경로 명시
+- `plan/SKILLS.md` 8종 → 9종 — §1 스킬 표 `/add-backlog` (meta) 행 / `task-init` BL 출처 진행 시 BACKLOG.md 확인 마킹 + `task-close` BACKLOG.md 무관 명시 / 위계 정신 meta 그룹 *백로그 누적* 추가 / §2 입력 처리 패턴 행 / §3.6 백로그 (0.1.2+) 섹션 신규 (흐름 / 체크박스 의미 / `/task-init` 연동 / `/task-close` 무관) / §4 스킬 본문 표 행 추가 (분량은 Phase 5 작성 후 측정)
+- `README.md` — 멀티세션 섹션 다음에 *백로그 메모* 단락 신설 (외부 평이체, jargon 풀이) + Skills 표 `/add-backlog` (meta) 행 / 패키지 디렉토리 구조 `8 skill` → `9 skill` 정합
 
 ---
 
@@ -95,3 +106,4 @@
 | 2026-05-30 | `[Unreleased]` §수정 보강 — 3차 검증 추가 누적 (closed-immutable.sh 주석 / plan/HOOKS §2·§3·§6 / plan/DECISIONS §5 / template/CLAUDE.md Hook 표 본문에 *spec-diffs / screenshots / mockup* 표기 일관성 정합 — mockup 누락 6건 보강) |
 | 2026-05-30 | `[Unreleased]` §수정 보강 — 3차 검증 마지막 누적 (plan/DECISIONS §6 분산 원칙 표 — 스킬 path `<skill>.md` → `<skill>/SKILL.md` + CHANGELOG_RULE / MOCKUP_RULE 행 추가 + 테스트 명령 행 신설. plan/DISTRIBUTION §9 동기화 룰 예시 두 섹션 분리 정합. `/task-init` 블랙리스트 `Sources` 옛 표기 → `src / app / lib 등 프로젝트 소스 디렉토리` 언어/기술 중립 정합) |
 | 2026-05-30 | `[Unreleased]` §수정 보강 — README.md 디렉토리 구조 표시에 신설 룰 / 자료 반영 (rules/ 안 CHANGELOG_RULE / MOCKUP_RULE + .project/ 직속 GLOSSARY.md + tasks/ 옆 BACKLOG / mockup 명시) |
+| 2026-05-31 | `[Unreleased]` §추가 + §수정 — 0.1.2 백로그 스킬(`/add-backlog`) 신설 + 멀티세션 commit의 잘못 박힌 BACKLOG 경로 정정(글로벌 → 버전별). bin/lib.js 백로그 유틸 + CLAUDE.md 백로그 섹션 + 스킬 9종 표 + task-init §7.5 신규 + §4.2.5 신규 + task-close 노트 + GIT_RULE 출처 표 + plan/SKILLS.md §3.6 백로그 섹션 + §1 9종 표 + README 백로그 메모 단락 + 디렉토리 구조 9 skill + package.json 0.1.2 |

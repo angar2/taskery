@@ -104,7 +104,7 @@ my-app/
 ├─ .gitignore
 ├─ .claude/
 │   ├─ settings.json                      # hook 등록 (PreToolUse 매칭)
-│   ├─ skills/<skill-name>/SKILL.md       # 8 skill
+│   ├─ skills/<skill-name>/SKILL.md       # 9 skill
 │   └─ hooks/<hook-name>.sh               # 2 hook
 └─ .project/
     ├─ PROJECT.md                         # 프로젝트 개요
@@ -143,6 +143,17 @@ my-app/
 
 ---
 
+## 백로그 메모
+
+작업 흐름 중 발견되는 추가 기능과 버그를 *그 자리에서 짧게 적어 둔다*. 메인 세션이 사용자 발화를 받아 `/add-backlog`로 1건씩 활성 plan 버전의 `tasks/<vX.X>/BACKLOG.md`에 누적한다.
+
+- 항목 형식: 체크박스 + 식별자(BL-NNN) + 유형 + 제목 + 슬러그. 그 아래 *개요*(추정 원인 / 구상)와 *대상 영역*(관여할 파일·모듈) 2줄.
+- 시작 시점: 사용자가 *"BL-NNN 진행"*이라고 말하면 `/task-init`이 그 항목 메타로 task를 분기하고 BACKLOG.md 항목을 *확인* 마킹(`[x]`)하며 `- TASK: TASK-NNN`을 함께 남긴다. *완료*가 아니라 *task로 옮겼다*는 의미만 담는다.
+- 완료 추적: git 머지 히스토리와 `taskery status`. BACKLOG.md는 메모지 역할만 한다.
+- plan 후보 카탈로그(글로벌 `.project/BACKLOG.md`)는 다음 plan 버전 기획용으로 분리 관리한다.
+
+---
+
 ## Skills
 
 스킬은 호출 시점에 따라 4 카테고리(`project` / `plan` / `task` / `meta`)로 분류된다.
@@ -161,6 +172,7 @@ my-app/
 | `/task-dev` | task | 계획에 따른 단계별 구현 + 자가 검증 |
 | `/task-test` | task | 별도 격리 세션에서 독립 검증 (메인 가정 차단) |
 | `/task-close` | task | 최종 검증 후 git 커밋 + dev 브랜치 `--no-ff` 병합 |
+| `/add-backlog` | meta | 사용자 발화로 버전별 `tasks/<vX.X>/BACKLOG.md`에 task 후보 1건씩 추가 (0.1.2+) |
 | `/log-friction` | meta | 사용자 불편을 `.project/FRICTION_LOG.md`에 한 행 기록 |
 
 각 스킬은 슬래시로 직접 호출하거나, 사용자 발화의 의미가 스킬의 frontmatter description과 매칭되면 메인 세션이 자동으로 발동시킨다.

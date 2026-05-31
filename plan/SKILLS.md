@@ -5,24 +5,25 @@
 
 ---
 
-## 1. 스킬 8종 표 — project > plan > task 위계 + 회고
+## 1. 스킬 9종 표 — project > plan > task 위계 + 회고
 
 | 스킬 | 레벨 | 역할 | 상태 전이 | 호출 빈도 |
 |------|------|------|---------|----------|
 | `/project-init` | **project** | PROJECT.md / AGENT-GUIDE.md / LINKED-REPOS.md / .env / .project 골격 생성 | — | **1회성** (프로젝트 첫 셋업) |
 | `/plan-init` | **plan** | `.project/plans/<vX.X>/` 안 기획 문서 작성 | — | plan 버전마다 |
-| `/task-init` | **task** | **워크트리 분기** + task.md 6 섹션 placeholder + 헤더 status=draft | — → `draft` | task마다 |
+| `/task-init` | **task** | **워크트리 분기** + task.md 6 섹션 placeholder + 헤더 status=draft. BL 출처 진행 시 `tasks/<vX.X>/BACKLOG.md` 항목 확인 마킹 (`[ ]` → `[x]` + TASK 마크) | — → `draft` | task마다 |
 | `/task-plan` | task | Requirements / Scope / Dev Plan / Test Plan 채우기 (워크트리 안 호출 — 메타는 메인 워크트리 절대 경로) | `draft` → `planned` | task마다 |
 | `/task-dev` | task | Phase 순서 구현 + self-check 게이트 (워크트리 안 호출) | `planned`/`developing` → `developed` | task마다 |
 | `/task-test` | task | Task tool 격리 검증 (confirmation bias 회피, 워크트리 안 호출) | `developed` → `tested` (또는 `developing`/`tested`+결함 명시) | task마다 |
-| `/task-close` | task | git 마무리 + 검증 명령 재실행 게이트 + **머지 락 직렬화** + dev `--no-ff` 병합 + **워크트리/브랜치 자동 정리** | `tested` → `closed` | task마다 |
+| `/task-close` | task | git 마무리 + 검증 명령 재실행 게이트 + **머지 락 직렬화** + dev `--no-ff` 병합 + **워크트리/브랜치 자동 정리**. BACKLOG.md 무관 (task-init이 처리) | `tested` → `closed` | task마다 |
+| `/add-backlog` | **meta** | 사용자 발화로 *버전별* `tasks/<vX.X>/BACKLOG.md`에 항목 1건 추가 — 얕은 분석(개요 / 대상 영역) + BL-NNN 채번 + `withMetaLock` 직렬화 (0.1.2+) | — | 사용자 호출 / 백로그 발화 캐치 |
 | `/log-friction` | **meta** | FRICTION_LOG.md에 사용자 불편 한 행 기록 | — | 사용자 호출 / 불만 발화 캐치 / task-close 자체 감지 |
 
 **위계 정신**:
 - `project` → 1회성 (프로젝트 셋업)
 - `plan` → plan 버전마다 (기획 문서 단위)
 - `task` → task마다 (5 스킬 흐름)
-- `meta` → 사용자 불편 등록 (`/log-friction`)
+- `meta` → 백로그 누적 (`/add-backlog`) + 사용자 불편 등록 (`/log-friction`)
 
 ---
 
@@ -34,6 +35,7 @@
 | `/plan-init` | 버전명 (예: v1.0, alpha) | 인자 없으면 사용자에게 질문. **분기 1**(신규): vX.X/ 생성 + 기획 문서별 질문 라운드. **분기 2**(이어가기): 최신 카피 → 새 vY.Y/ + 변경 인터뷰 + 변경된 문서만 갱신 + AGENT-GUIDE.md 활성 버전 갱신 |
 | `/task-init` | 주제/유형/규모/플랜 | 직전 맥락 명확하면 메인 제안 + confirm. 맥락 부족 시 인터뷰. **자동 추정 진행 X** |
 | `/task-plan` ~ `/task-close` | TASK-NNN 인자 또는 자동 | 인자 없으면 *상태에 맞는 가장 최근 task* 자동 선택 + confirm |
+| `/add-backlog` | `<주제>` (예: "로그인 빈 화면 백로그에") 또는 백로그 발화 캐치 | 메인 워크트리/dev 검증 + 활성 버전(`AGENT-GUIDE.md`) 검출 + 얕은 분석(코드 탐색 X) + BL-NNN 채번 + append. 유형 모호 시 confirm |
 | `/log-friction` | `<불편 내용>` 또는 무인자 호출 | 사용자 합의 → FRICTION_LOG.md 한 행 추가 |
 
 **자동 추정 진행 X 정신** — `/task-init`이 가장 강조. 메인이 *추정한 메타로* 파일 생성하지 X. 사용자 답 받기 전 작성 금지.
@@ -89,6 +91,32 @@ draft → planned → developing → developed → testing → tested → closed
 
 ---
 
+## 3.6 백로그 (0.1.2+)
+
+`/add-backlog`는 *버전별 백로그* `.project/tasks/<vX.X>/BACKLOG.md`에 task 후보를 1건씩 누적한다. 글로벌 `.project/BACKLOG.md`(plan 기획 후보 카탈로그)는 `/plan-init` 영역 — 별 차원.
+
+**흐름**:
+- 사용자 *"~ 백로그에"* 발화 → 메인 워크트리 검출 + dev 체크아웃 검증 + 활성 버전(`AGENT-GUIDE.md` 파싱) 검출
+- 얕은 분석(코드 탐색 X, 추정 수준) — 유형 / 제목 / 개요 / 대상 영역
+- BL-NNN 채번(`BL-(\d+)` max + 1) + 결정적 슬러그(한국어 → 영어 의미 변환 → kebab-case 3 단어 이내)
+- `withMetaLock`으로 BACKLOG.md append (plan-init이 박은 placeholder 라인 치환 우선)
+
+**체크박스 의미**:
+- `[ ]` = 미확인 (task로 옮기지 않은 메모)
+- `[x]` = 확인 완료 (task로 옮김). **dev 머지 완료 의미 X**
+
+진행중/완료 추적은 git branch SSoT + `git log dev --grep 'BL-NNN'` + `taskery status`가 담당. BACKLOG.md는 *메모지 + task 참조 마크*만.
+
+**`/task-init` 연동**:
+- 사용자 *"백로그의 BL-NNN 진행"* → BACKLOG.md에서 BL-NNN 메타 파싱 → 슬러그 그대로 사용 → 개요/대상 영역을 task.md §1 초안으로 자동 복사 → 워크트리 생성 → `withMetaLock` 안에서 `[ ]` → `[x]` + `- TASK: TASK-NNN` 추가 (다회 진행 시 콤마)
+- 이미 `[x]` BL 재진행 요청 시 → 사용자 호출 + 결정 (콤마 추가 / 중단)
+
+**`/task-close` 무관** — `[x]` = task로 옮김 의미라 close 시점 마킹 X.
+
+상세 흐름은 → [template/.claude/skills/add-backlog/SKILL.md](../template/.claude/skills/add-backlog/SKILL.md) 참조.
+
+---
+
 ## 4. 스킬 본문 — 단일 진실 소스
 
 **본문 step별 디테일**은 `template/.claude/skills/<skill>/SKILL.md`에 위치. 본 문서는 link만:
@@ -102,6 +130,7 @@ draft → planned → developing → developed → testing → tested → closed
 | `/task-dev` | [template/.claude/skills/task-dev/SKILL.md](../template/.claude/skills/task-dev/SKILL.md) | 8,035 B |
 | `/task-test` | [template/.claude/skills/task-test/SKILL.md](../template/.claude/skills/task-test/SKILL.md) | 9,038 B |
 | `/task-close` | [template/.claude/skills/task-close/SKILL.md](../template/.claude/skills/task-close/SKILL.md) | 9,077 B |
+| `/add-backlog` | [template/.claude/skills/add-backlog/SKILL.md](../template/.claude/skills/add-backlog/SKILL.md) | (Phase 5 작성 후 측정) |
 | `/log-friction` | [template/.claude/skills/log-friction/SKILL.md](../template/.claude/skills/log-friction/SKILL.md) | 3,617 B |
 
 **공통 형식** (각 SKILL.md):
@@ -263,3 +292,4 @@ CLAUDE.md `## 검증 명령` 단일 섹션이 *4 시점에 분산 실행* (self-
 | 2026-05-30 | stash FRICTION_LOG 기반 정합 — §5 `## 검증 명령` + `## 테스트 명령` 두 섹션 분리 (pre-commit-verify hook 폐기 정합) + §6 task-test 격리 prompt 흐름 갱신 ([AUTO]/[USER] 분류 / 목업 정독 / 신규 식별자 grep / USER 검수 흐름). 8 스킬 본문 변경은 각 SKILL.md 참조. |
 | 2026-05-30 | 정합 검증 후속 정정 (Phase 5) — §6 격리 prompt 흐름 본문의 mockup path 표기 `<task>-mockup.html` → `<task-doc-name>-mockup.html` 으로 통일 (MOCKUP_RULE 단일 진실 소스 정합). |
 | 2026-05-31 | 멀티세션 0.1.2 반영 — §1 스킬 표에 task-init/close 멀티세션 동작 + 워크트리 호출 위치 명시 / §3.5 멀티세션 워크트리 섹션 신규 (SSoT / 메인=dev 전용 / race 2층 / 충돌 3단계 / 머지 락 / 자동 정리 / 호출 위치 분기 / CLI 보조 명령 / .gitignore 케이스 분기) |
+| 2026-05-31 | 0.1.2 백로그 스킬 추가 반영 — §1 스킬 8종 → 9종 + `/add-backlog` (meta) 행 / §2 입력 처리 패턴 행 추가 / §3.6 백로그 (0.1.2+) 섹션 신규 (흐름 / 체크박스 의미 / task-init 연동 / task-close 무관) / §4 스킬 본문 표에 `/add-backlog` 행 / 위계 정신 meta 그룹에 백로그 누적 명시. task-init `[x]` 확인 마킹 + task-close BACKLOG.md 무관 명시도 §1 표에 반영 |
