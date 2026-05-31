@@ -10,7 +10,8 @@
 # 차단 안 함 (의도적):
 #   - .project/tasks/<vX.X>/spec-diffs/*.md — 역사적 자료, 자유 수정
 #   - .project/tasks/<vX.X>/screenshots/* — 자유
-#   - 폴더 승격 task 폴더 안 추가 자료 — 자유
+#   - .project/tasks/<vX.X>/mockup/*.html — UX/UI 목업, 자유 수정 (vX.X 공통)
+#   - 폴더 승격 task 폴더 안 추가 자료 (서브 문서 등) — 자유
 #   - 코드 영역 — closed task 코드 재수정은 *새 task로 처리*가 정상 흐름
 #
 # 우회 (의도적으로 closed task를 풀어 다시 진행해야 하는 경우):
@@ -32,9 +33,9 @@ except Exception:
 " 2>/dev/null)
 
 # task.md 본 파일 매칭 (단일 + 폴더 승격)
-# - 단일: .project/tasks/v*/<NNN>_<slug>.md (NNN_<slug> 패턴 — vX.X 직속, spec-diffs/screenshots 하위 X)
+# - 단일: .project/tasks/v*/<NNN>_<slug>.md (NNN_<slug> 패턴 — vX.X 직속, spec-diffs/screenshots/mockup 하위 X)
 # - 폴더: .project/tasks/v*/TASK-<NNN>_<slug>/task.md
-# spec-diffs/ + screenshots/ 직속 파일은 매칭 안 됨 (보호 대상 X)
+# spec-diffs/ + screenshots/ + mockup/ 직속 파일은 매칭 안 됨 (보호 대상 X)
 if ! echo "$FILE_PATH" | grep -qE '\.project/tasks/v[^/]+/([0-9]+_[^/]+\.md|TASK-[^/]+/task\.md)$'; then
   exit 0
 fi
@@ -67,7 +68,7 @@ print(m.group(1) if m else '')
 if [ "$STATUS" = "closed" ]; then
   echo "closed-immutable: '$FILE_PATH' 차단. task '$TASK_MD' 상태가 'closed' — 재수정 금지." >&2
   echo "  의도적 재진입 필요 시: sed로 헤더 status를 'developing' 또는 다른 상태로 직접 변경 후 Edit 가능." >&2
-  echo "  *closed task 코드 / spec-diffs / screenshots*는 보호 영역 외 — 자유 수정. 단 코드 변경은 *새 task로 처리*가 정상 흐름." >&2
+  echo "  *closed task 코드 / spec-diffs / screenshots / mockup*은 보호 영역 외 — 자유 수정. 단 코드 변경은 *새 task로 처리*가 정상 흐름." >&2
   exit 2
 fi
 

@@ -3,7 +3,7 @@
  * bin/update.js
  * `npx @angar2/taskery update` — template/ 최신 자산과 사용자 측 비교 + 머지 갱신.
  *
- * 머지 로직 (§9-1):
+ * 머지 로직 (DISTRIBUTION.md §6):
  *   1. .taskery-manifest.json (cwd) 읽기 — 없으면 에러 ('init' 먼저)
  *   2. template/ 정독 → 새 해시 맵
  *   3. 각 파일 분기:
@@ -31,6 +31,9 @@ const {
   readManifest,
   getPackageVersion,
   isLocalOverride,
+  generateProjectId,
+  DEFAULT_STALE_DAYS,
+  DEFAULT_LOCK_TIMEOUT_MS,
 } = require('./lib');
 
 async function confirm(msg) {
@@ -146,14 +149,35 @@ async function main() {
     }
   }
 
-  // 5. manifest 갱신
+  // 5. manifest 갱신 — 멀티세션(0.1.2+) 필드 누락 시 자동 마이그레이션
+  const migration = { projectId: false, stale_days: false, lock_timeout_ms: false };
+  const projectId = oldManifest.projectId || (migration.projectId = true, generateProjectId());
+  const stale_days =
+    typeof oldManifest.stale_days === 'number'
+      ? oldManifest.stale_days
+      : (migration.stale_days = true, DEFAULT_STALE_DAYS);
+  const lock_timeout_ms =
+    typeof oldManifest.lock_timeout_ms === 'number'
+      ? oldManifest.lock_timeout_ms
+      : (migration.lock_timeout_ms = true, DEFAULT_LOCK_TIMEOUT_MS);
+
   const newManifest = {
     version: getPackageVersion(),
     installed_at: oldManifest.installed_at,
     updated_at: new Date().toISOString(),
+    projectId,
+    stale_days,
+    lock_timeout_ms,
     files: newFiles,
   };
   writeManifest(newManifest, manifestPath);
+
+  const migratedFields = Object.entries(migration)
+    .filter(([, added]) => added)
+    .map(([k]) => k);
+  if (migratedFields.length > 0) {
+    console.log(`  manifest 마이그레이션: ${migratedFields.join(', ')} 필드 추가`);
+  }
 
   // 결과 보고
   console.log(`\n✅ taskery update 완료`);

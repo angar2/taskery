@@ -7,7 +7,7 @@
  *   1. cwd에 .taskery-manifest.json 이미 있으면 경고 + confirm
  *   2. template/ 안 *모든 파일* cwd로 카피 (디렉토리 자동 생성)
  *   3. *.local.md 사용자 오버라이드 충돌 검사 (덮어쓰지 X)
- *   4. .taskery-manifest.json 박음 (version + installed_at + files{path,hash,core,managed} 맵)
+ *   4. .taskery-manifest.json 작성 (version + installed_at + files{path,hash,core,managed} 맵)
  *   5. 결과 요약 출력 + 다음 단계 안내 (`/project-init`)
  */
 
@@ -24,6 +24,9 @@ const {
   readManifest,
   getPackageVersion,
   isLocalOverride,
+  generateProjectId,
+  DEFAULT_STALE_DAYS,
+  DEFAULT_LOCK_TIMEOUT_MS,
 } = require('./lib');
 
 async function confirm(msg) {
@@ -93,13 +96,53 @@ async function main() {
     console.log(`  copy: ${rel}`);
   }
 
-  // 4. manifest 박음
+  // 4. manifest 작성 — 멀티세션(0.1.2+): projectId / stale_days / lock_timeout_ms 포함
   const manifest = {
     version: getPackageVersion(),
     installed_at: new Date().toISOString(),
+    projectId: generateProjectId(),
+    stale_days: DEFAULT_STALE_DAYS,
+    lock_timeout_ms: DEFAULT_LOCK_TIMEOUT_MS,
     files: manifestFiles,
   };
   writeManifest(manifest, manifestPath);
+
+  // 4.5. .gitignore prompt (stash FRICTION_LOG #26 반영)
+  //   공개 repo면 내부 워크플로 파일 노출 회피 — taskery 내부 영역 .gitignore 등록 제안.
+  //   사용자 NO면 패스 (그대로 둠). 이미 등록되어 있으면 스킵.
+  const gitignorePath = path.join(cwd, '.gitignore');
+  const taskeryPatterns = [
+    '.project/',
+    '.claude/',
+    'CLAUDE.md',
+    '.taskery-manifest.json',
+  ];
+  const addGitignore = await confirm(
+    `\ntaskery 내부 파일(.project/, .claude/, CLAUDE.md, .taskery-manifest.json)을 .gitignore에 등록할까?\n  (공개 repo면 권장 — 내부 워크플로 파일 노출 회피)`,
+  );
+  if (addGitignore) {
+    const existing = fs.existsSync(gitignorePath)
+      ? fs.readFileSync(gitignorePath, 'utf8').split('\n')
+      : [];
+    const existingSet = new Set(existing.map((l) => l.trim()));
+    const newPatterns = taskeryPatterns.filter((p) => !existingSet.has(p));
+    if (newPatterns.length > 0) {
+      const needsLeadingNewline =
+        existing.length > 0 && existing[existing.length - 1] !== '';
+      const block = [
+        needsLeadingNewline ? '' : null,
+        '# taskery 내부 파일',
+        ...newPatterns,
+        '',
+      ].filter((l) => l !== null);
+      fs.appendFileSync(gitignorePath, block.join('\n'));
+      console.log(`  .gitignore 갱신 — ${newPatterns.length}개 패턴 추가`);
+    } else {
+      console.log(`  .gitignore — taskery 패턴 이미 등록됨, 스킵`);
+    }
+  } else {
+    console.log(`  .gitignore — 사용자 선택으로 패스`);
+  }
 
   // 5. 결과 보고
   console.log(`\n✅ taskery init 완료`);

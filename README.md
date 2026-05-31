@@ -15,6 +15,7 @@ AI 코딩 에이전트의 자율 개발을 위한 Task 기반의 가드레일 �
 | 작업 컨텍스트가 휘발되어 이전 결정·사유를 추적하기 어려움 | task 문서로 컨텍스트와 히스토리 기록 — 작업 중 참조 가능 |
 | 에이전트가 catastrophic 사고를 일으킬 수 있음 | 필수 hook으로 차단 — 정상 흐름에는 무간섭 |
 | 에이전트가 작성한 코드의 자가검증으로 인해 문제를 놓침 (confirmation bias) | 테스트 시 별도 격리 세션 호출(`/task-test`) — 메인 세션의 가정 없이 독립 검증 |
+| 단일 메인 세션 운영으로 인해 task를 직렬로 진행해야 하는 병목 | 같은 프로젝트에서 여러 메인 세션이 독립 작업 폴더(worktree)로 병렬 진행 — 머지 시점에 직렬화로 정합성 유지 |
 
 > catastrophic 사고 예시 — git 운영 정책 위반, 검증 우회, 완료된 task 문서 재수정 등
 
@@ -46,7 +47,7 @@ draft → planned → developing → developed → testing → tested → closed
 
 ## 빠른 시작
 
-> **요구 사항**: Node.js ≥ 18.
+> **요구 사항**: Node.js ≥ 18, git ≥ 2.31 (멀티세션 워크트리 기능 사용 시).
 
 ### npx
 
@@ -62,6 +63,10 @@ npx @angar2/taskery init
 
 # 최신 버전 머지 갱신
 npx @angar2/taskery update
+
+# 멀티세션 보조 명령
+npx @angar2/taskery status   # 진행중 태스크 / 워크트리 / 머지 락 현황
+npx @angar2/taskery prune    # stale 워크트리 / 브랜치 대화형 정리
 ```
 
 ### 글로벌 npm install
@@ -80,6 +85,10 @@ taskery init
 
 # 최신 버전 머지 갱신
 taskery update
+
+# 멀티세션 보조 명령
+taskery status
+taskery prune
 ```
 
 ---
@@ -95,19 +104,22 @@ my-app/
 ├─ .gitignore
 ├─ .claude/
 │   ├─ settings.json                      # hook 등록 (PreToolUse 매칭)
-│   ├─ skills/<skil-name>/SKILL.md        # 8 skill
-│   └─ hooks/<hook-name>.sh               # 3 hook
+│   ├─ skills/<skill-name>/SKILL.md       # 9 skill
+│   └─ hooks/<hook-name>.sh               # 2 hook
 └─ .project/
     ├─ PROJECT.md                         # 프로젝트 개요
     ├─ AGENT-GUIDE.md                     # AI 에이전트 가이드
     ├─ LINKED-REPOS.md                    # 관계 리포지토리 정보
+    ├─ GLOSSARY.md                        # 도메인 용어집 (영문/한글 표기 일관성)
     ├─ .env                               # 사용자 설정 환경변수 (관계 리포지토리 환경변수 등)
     ├─ rules/
     │   ├─ TASK_DOC_RULE.md               # task 문서 작성 규칙
     │   ├─ GIT_RULE.md                    # 로컬 깃 운영 규칙
+    │   ├─ CHANGELOG_RULE.md              # CHANGELOG 작성 규칙
+    │   ├─ MOCKUP_RULE.md                 # UX/UI HTML 목업 규칙
     │   └─ *.local.md                     # 사용자 오버라이드 규칙 (패키지 업데이트 대상 제외)
     ├─ plans/                             # plan 문서
-    ├─ tasks/                             # task 문서
+    ├─ tasks/                             # task 문서 (vX.X/BACKLOG.md / spec-diffs / screenshots / mockup 포함)
     ├─ flows/                             # 서비스 로직 플로우 정보
     ├─ changelog/                         # 수정사항 정보
     ├─ shared/                            # 관계 리포지토리 소통 메세지함
@@ -115,6 +127,30 @@ my-app/
     │   └─ received/completed/
     └─ FRICTION_LOG.md                    # taskery 불편사항 누적 로그
 ```
+
+---
+
+## 멀티세션 (병렬 작업)
+
+같은 프로젝트에서 여러 메인 세션을 동시에 운영해 독립 task를 병렬로 진행한다.
+
+- 새 task를 시작하면(`/task-init`) 작업 폴더(`~/.taskery/worktrees/<projectId>/TASK-NNN_<출처>_<슬러그>/`)와 작업 브랜치를 함께 분기한다.
+- 사용자는 그 작업 폴더에서 새 메인 세션을 열어 task를 진행한다. 메인 워크트리(원본 폴더)는 `dev` 전용 상태로 유지된다.
+- task 완료(`/task-close`) 시 머지 락으로 직렬화한 후 dev에 `--no-ff` 병합한다. 다른 세션이 먼저 머지해 충돌이 발생하면 본 세션이 단순/의미적/판단 불가 3단계로 해결을 시도한다.
+- 머지 직후 작업 폴더와 작업 브랜치는 자동 정리된다(보존 키워드 사용 시 양쪽 유지). 안전망으로 복구 명령이 함께 출력된다.
+
+요건: git ≥ 2.31. 보조 명령 `npx @angar2/taskery status` / `prune`로 진행 현황과 stale 정리를 확인한다.
+
+---
+
+## 백로그 메모
+
+작업 흐름 중 발견되는 추가 기능과 버그를 *그 자리에서 짧게 적어 둔다*. 메인 세션이 사용자 발화를 받아 `/add-backlog`로 1건씩 활성 plan 버전의 `tasks/<vX.X>/BACKLOG.md`에 누적한다.
+
+- 항목 형식: 체크박스 + 식별자(BL-NNN) + 유형 + 제목 + 슬러그. 그 아래 *개요*(추정 원인 / 구상)와 *대상 영역*(관여할 파일·모듈) 2줄.
+- 시작 시점: 사용자가 *"BL-NNN 진행"*이라고 말하면 `/task-init`이 그 항목 메타로 task를 분기하고 BACKLOG.md 항목을 *확인* 마킹(`[x]`)하며 `- TASK: TASK-NNN`을 함께 남긴다. *완료*가 아니라 *task로 옮겼다*는 의미만 담는다.
+- 완료 추적: git 머지 히스토리와 `taskery status`. BACKLOG.md는 메모지 역할만 한다.
+- plan 후보 카탈로그(글로벌 `.project/BACKLOG.md`)는 다음 plan 버전 기획용으로 분리 관리한다.
 
 ---
 
@@ -136,6 +172,7 @@ my-app/
 | `/task-dev` | task | 계획에 따른 단계별 구현 + 자가 검증 |
 | `/task-test` | task | 별도 격리 세션에서 독립 검증 (메인 가정 차단) |
 | `/task-close` | task | 최종 검증 후 git 커밋 + dev 브랜치 `--no-ff` 병합 |
+| `/add-backlog` | meta | 사용자 발화로 버전별 `tasks/<vX.X>/BACKLOG.md`에 task 후보 1건씩 추가 (0.1.2+) |
 | `/log-friction` | meta | 사용자 불편을 `.project/FRICTION_LOG.md`에 한 행 기록 |
 
 각 스킬은 슬래시로 직접 호출하거나, 사용자 발화의 의미가 스킬의 frontmatter description과 매칭되면 메인 세션이 자동으로 발동시킨다.
@@ -157,7 +194,6 @@ my-app/
 | Hook | 작동 시점 | 차단 대상 |
 |------|---------|---------|
 | `git-guard.sh` | git 명령 실행 직전 | 주력 브랜치 직접 커밋 / `--force` / `--no-verify` / 강제 브랜치 삭제 / `reset --hard` / `clean -fd` |
-| `pre-commit-verify.sh` | `git commit` 실행 직전 | 검증 명령(린트·타입체크·빌드·테스트) 통과 실패 commit |
 | `closed-immutable.sh` | 파일 수정 직전 | 완료(`closed`)된 task.md 본 파일 재수정 (관련 spec-diff·스크린샷은 자유) |
 
 hook은 catastrophic 사고만 차단한다. 정상 흐름에는 간섭하지 않는다.
@@ -193,6 +229,7 @@ npx @angar2/taskery init
 
 - *"로그인 기능 추가해줘"* / *"이 버그 고쳐줘"* → `/task-init` 자동 발동 (새 task 시작 의도)
 - *"기획 다 됐으니 이제 구현 시작해"* → `/task-dev` 자동 발동 (planned task의 다음 단계)
+- *"이 부분도 백로그에 추가해줘"* / *"나중에 할 일로 적어둬"* → `/add-backlog` 자동 발동 (백로그 추가 의도)
 - *"이거 진짜 불편하다"* / *"이 부분 답답하네"* → `/log-friction` 자동 발동 (불만 발화 캐치)
 
 **실패·불확정 분기** — `/task-test`가 FAIL 또는 UNCERTAIN을 반환하면 메인 세션이 사용자에게 판단을 묻고, 사용자의 자연어 답변에서 의도를 해석해 다음 흐름을 *자동 발동*한다(별도 슬래시 호출 없이 진행됨).
@@ -208,9 +245,9 @@ npx @angar2/taskery init
 spec 문서는 GitHub에서 참고할 수 있다.
 
 - [OVERVIEW.md](https://github.com/angar2/taskery/blob/main/plan/OVERVIEW.md) — 시스템 진입 가이드와 전체 구조 개요.
-- [SKILLS.md](https://github.com/angar2/taskery/blob/main/plan/SKILLS.md) — 스킬 8종의 상세 명세와 호출 흐름.
+- [SKILLS.md](https://github.com/angar2/taskery/blob/main/plan/SKILLS.md) — 스킬 9종의 상세 명세와 호출 흐름.
 - [TASK-DOC.md](https://github.com/angar2/taskery/blob/main/plan/TASK-DOC.md) — task 문서의 작성 양식과 7 상태 머신의 동작 정의.
-- [HOOKS.md](https://github.com/angar2/taskery/blob/main/plan/HOOKS.md) — catastrophic hook 3종의 정책과 예외 처리 절차.
+- [HOOKS.md](https://github.com/angar2/taskery/blob/main/plan/HOOKS.md) — catastrophic hook 2종의 정책과 예외 처리 절차.
 - [DISTRIBUTION.md](https://github.com/angar2/taskery/blob/main/plan/DISTRIBUTION.md) — npx 배포 메커니즘과 자산 갱신 로직.
 - [DECISIONS.md](https://github.com/angar2/taskery/blob/main/plan/DECISIONS.md) — 시스템 설계의 핵심 의사결정과 변경 이력.
 - [PLAYBOOK.md](https://github.com/angar2/taskery/blob/main/plan/PLAYBOOK.md) — 향후 도입 가능한 기능 후보 목록.
