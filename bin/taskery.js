@@ -6,6 +6,8 @@
  * 서브커맨드:
  *   init    — 현재 디렉토리에 taskery 자산 카피 + manifest 생성
  *   update  — 최신 버전 fetch + manifest 비교 + 머지 갱신
+ *   status  — 멀티세션 현황 요약 (진행중 태스크 / 워크트리 / 머지 락, 0.1.2+)
+ *   prune   — stale 워크트리 / 브랜치 대화형 정리 (0.1.2+)
  *   help    — 사용법 출력
  */
 
@@ -28,6 +30,8 @@ function help() {
 사용법:
   npx @angar2/taskery init      현재 디렉토리에 taskery 자산 설치
   npx @angar2/taskery update    최신 버전 fetch + 머지 갱신
+  npx @angar2/taskery status    멀티세션 현황 (진행중 태스크 / 워크트리 / 머지 락)
+  npx @angar2/taskery prune     stale 워크트리 / 브랜치 대화형 정리
   npx @angar2/taskery help      도움말
 
 새 프로젝트 시작:
@@ -43,6 +47,27 @@ switch (sub) {
     break;
   case 'update':
     runScript('update.js');
+    break;
+  case 'status':
+    runScript('status.js');
+    break;
+  case 'prune':
+    if (process.argv[3] === '--help' || process.argv[3] === '-h') {
+      console.log(`taskery prune — stale 워크트리 / 브랜치 대화형 정리
+
+사용법:
+  npx @angar2/taskery prune
+
+설명:
+  .taskery-manifest.json의 stale_days (기본 30일) 기준으로 비활성 워크트리 + 브랜치를 대화형 정리합니다.
+  케이스 분기: A (워크트리 + 브랜치 모두 stale) / B (브랜치만 stale) / C (워크트리 폴더 잔존) / D (정합 영역).
+  각 케이스마다 y/n/k 선택 가능 (y = 삭제 / n = 건너뜀 / k = 보존 명시).
+
+상세: https://github.com/angar2/taskery
+`);
+      break;
+    }
+    runScript('prune.js');
     break;
   case 'help':
   case '--help':

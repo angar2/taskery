@@ -11,6 +11,23 @@ description: task 기획 채우기 — Requirements / Scope / Dev Plan / Test Pl
 
 리뷰는 *대화로 OK* 자동 전이로 단순화 — 별도 리뷰 단계 없음.
 
+## 멀티세션 메타 위치 (0.1.2+)
+
+본 스킬은 워크트리에서 호출된다. 메타(`.project/`, `CLAUDE.md`) 접근 시 **메인 워크트리 절대 경로** 우선 — *task 문서 단일 진실 소스* 유지.
+
+```sh
+MAIN_WT=$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")
+```
+
+`.gitignore` 케이스 분기:
+
+| 케이스 | task 문서 위치 | 9 기획 문서 위치 | 동시 쓰기 |
+|--------|--------------|----------------|----------|
+| 등록 (퍼블릭 리포 default) | `$MAIN_WT/.project/tasks/<vX.X>/...` | `$MAIN_WT/.project/plans/<vX.X>/...` | `withMetaLock` (`bin/lib.js`) |
+| 미등록 | `$WT_PATH/.project/tasks/<vX.X>/...` (워크트리 안, 머지 시 dev 반영) | `$MAIN_WT/.project/plans/<vX.X>/...` (plan 문서는 여전히 단일 소스) | 단일 세션 가정 (워크트리 내부) |
+
+본문 모든 `.project/...` 경로는 *위 분기에 따라* 적용. spec-diff / mockup / screenshots는 task 문서와 같은 위치.
+
 ## 호출 시점
 
 - `/task-init`로 만든 빈 골격 task에 기획 채울 때.

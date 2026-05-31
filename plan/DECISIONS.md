@@ -199,7 +199,7 @@ draft → planned → developing → developed → testing → tested → closed
 
 ## 9. 결정: Task tool 격리는 `/task-test`만 1차 default
 
-**결정**: 8 스킬 중 `/task-test`만 *Task tool 격리 호출*이 1차 default. 다른 스킬은 메인 세션 직접 실행.
+**결정**: 9 스킬 중 `/task-test`만 *Task tool 격리 호출*이 1차 default. 다른 스킬은 메인 세션 직접 실행.
 
 **WHY**:
 - `/task-test`는 *confirmation bias 회피*가 핵심 — 메인 세션의 plan/dev 가정이 결과 해석에 안 들어가야
@@ -348,3 +348,4 @@ FRICTION_LOG 누적 → 사용자 직접 정독 → PLAYBOOK 항목 §방법 그
 | 2026-05-30 | stash FRICTION_LOG 기반 정합 — §5 결정 본문에 *2 hook 갱신* 명시 (pre-commit-verify 폐기) + §12 변경 이력에 *정합 결정 모음* 14건 신규 §12.1 추가. |
 | 2026-05-30 | 정합 검증 후속 정정 (3차) — §12.1 #14+19 영향 표 + 결과 위치 본문에 `TASK_DOC_RULE.md` 누락분 추가 (양식 spec 단일 진실 소스 정합). |
 | 2026-05-30 | 정합 검증 후속 정정 (3차 추가) — §6 분산 원칙 표 보강: 스킬 본문 path `<skill>.md` → `<skill>/SKILL.md` (디렉토리 구조 마이그레이션 정합) + CHANGELOG_RULE / MOCKUP_RULE 행 추가 (신설 룰 정합) + 검증 명령 행 옆에 *테스트 명령* 행 신설 (두 섹션 분리 정합). |
+| 2026-05-31 | 정합 순회 1차 — §9 결정 본문 *8 스킬 중* → *9 스킬 중* 갱신 (0.1.2 add-backlog 스킬 추가 정합). 본 본문은 *현재 정신*을 명시하는 부분(시점 기록 X)이라 9 스킬로 갱신 필요. §12.1 결과 위치 본문은 *2026-05-30 stash 정합 시점 기록*이라 *8 스킬 SKILL.md* 그대로 유지(시점 기록 — 정정 X) |

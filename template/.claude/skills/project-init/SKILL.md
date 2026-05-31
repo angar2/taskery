@@ -102,7 +102,7 @@ taskery 도입 직후 **1회성**으로 호출. 사용자 또는 동료가 새 �
 - 불편 등록: `/log-friction` (사용자 호출 / 발화 캐치 / task-close 자체 감지)
 
 ## 폴더 구조
-- `.project/rules/` — 코어 룰 (TASK_DOC_RULE / GIT_RULE)
+- `.project/rules/` — 코어 룰 (TASK_DOC_RULE / GIT_RULE / CHANGELOG_RULE / MOCKUP_RULE)
 - `.project/plans/<vX.X>/` — 9 기획 문서
 - `.project/tasks/<vX.X>/` — task 문서
 - `.project/flows/` — 도메인 흐름
@@ -180,7 +180,7 @@ stash FRICTION_LOG #3 반영 — 프로젝트 도메인 용어를 *영문/한글
 - `.project/tasks/` (`.gitkeep` — `/task-init`이 `vX.X/<NNN>_<slug>.md` 작성)
 - `.project/shared/{sent,received}/completed/` (`.gitkeep`)
 - `.project/FRICTION_LOG.md` (빈 템플릿)
-- `.project/rules/{TASK_DOC_RULE,GIT_RULE}.md` (코어 룰)
+- `.project/rules/{TASK_DOC_RULE,GIT_RULE,CHANGELOG_RULE,MOCKUP_RULE}.md` (코어 룰)
 
 → `/project-init`은 폴더 생성 X. 누락 시(`init` 안 거치고 수동 셋업한 경우)에만 `mkdir -p` 실행.
 

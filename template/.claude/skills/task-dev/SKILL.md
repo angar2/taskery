@@ -11,6 +11,23 @@ description: task 구현 — Dev Plan Phase 순서대로 코드 작성 + self-ch
 
 self-check 명령은 프로젝트 루트 `CLAUDE.md`의 *검증 명령* 섹션 참조 — 단일 진실 소스.
 
+## 멀티세션 메타 위치 (0.1.2+)
+
+본 스킬은 워크트리에서 호출된다. 메타(`.project/`, `CLAUDE.md`) 접근 시 **메인 워크트리 절대 경로** 우선.
+
+```sh
+MAIN_WT=$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")
+```
+
+`.gitignore` 케이스 분기:
+
+| 케이스 | task 문서 / Result 갱신 위치 | CLAUDE.md (검증 명령) |
+|--------|---------------------------|----------------------|
+| 등록 (퍼블릭 리포 default) | `$MAIN_WT/.project/tasks/<vX.X>/...` (`bin/lib.js` `withMetaLock`) | `$MAIN_WT/CLAUDE.md` |
+| 미등록 | `$WT_PATH/.project/tasks/<vX.X>/...` (워크트리 안, 머지 시 dev 반영) | `$MAIN_WT/CLAUDE.md` (CLAUDE.md는 단일 소스) |
+
+self-check 명령은 워크트리(`$WT_PATH`)에서 실행 — 코드 변경이 워크트리 안에 있으므로 검증 대상도 거기.
+
 ## 호출 시점
 
 - `/task-plan` 끝나고 기획 합의된 직후.
