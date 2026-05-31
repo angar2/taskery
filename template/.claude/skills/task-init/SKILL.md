@@ -114,7 +114,7 @@ NEXT=$((MAX + 1))
 
 #### 4.2 메타 가져오기 (BL/RM)
 
-- BL: `$MAIN_WT/.project/BACKLOG.md` Read → `BL-NNN` grep → 항목 메타(제목 / 유형 / 우선순위 등) 파싱
+- BL: `$MAIN_WT/.project/tasks/<활성버전>/BACKLOG.md` Read → `BL-NNN` grep → 항목 메타(제목 / 유형 / 우선순위 등) 파싱 (활성 버전은 `AGENT-GUIDE.md`에서 검출)
 - RM: `$MAIN_WT/.project/plans/<활성버전>/ROADMAP.md` Read → `RM-NNN` grep → 항목 메타 파싱
 - DR: 사용자 발화에서 주제 그대로
 
@@ -225,7 +225,7 @@ git -C "$MAIN_WT" check-ignore -q "$MAIN_WT/.project/dummy"
 ## 도구 가이드
 
 - **Bash**: 메인 워크트리 검출 / 사전 검증 / `git worktree add` / SSoT 조회 / TASK-NNN 계산
-- **Read**: `$MAIN_WT/.project/AGENT-GUIDE.md` / `BACKLOG.md` / `ROADMAP.md`
+- **Read**: `$MAIN_WT/.project/AGENT-GUIDE.md` / `$MAIN_WT/.project/tasks/<활성버전>/BACKLOG.md` / `$MAIN_WT/.project/plans/<활성버전>/ROADMAP.md`
 - **Write**: task.md 빈 골격 작성 (위치는 .gitignore 케이스에 따라)
 - **AskUserQuestion**: 분기 2 인터뷰 (한 번에 한 질문)
 
