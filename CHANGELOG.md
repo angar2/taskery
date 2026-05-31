@@ -30,7 +30,6 @@
 - `bin/lib.js` 백로그 유틸 — `getActiveVersion` / `getBacklogPath` / `parseBacklogItem` / `appendBacklogItem` / `markBacklogChecked` + private helper(`computeNextBLNumber` / `formatBacklogBlock`) + `BACKLOG_PLACEHOLDER` 상수. 멀티세션 인프라 `withMetaLock` 재사용 (proper-lockfile 직렬화)
 - `template/.claude/skills/task-init/SKILL.md` §7.5 BL 체크 마킹 단계 신설 — 워크트리 생성 직후 `withMetaLock` 안에서 `- [ ] **BL-NNN**` → `- [x] **BL-NNN**` 4번째 글자 치환 + 같은 블록 끝에 `  - TASK: TASK-NNN` append (이미 있으면 콤마). 출처 분기: BL일 때만 실행, RM/DR은 skip. §4.2.5 신규 — 이미 `[x]` BL 재진행 요청 시 사용자 호출 + 콤마 추가/중단 분기
 - `template/CLAUDE.md` "백로그 (0.1.2+)" 섹션 신설 — 흐름 / 체크박스 의미(`[ ]`=미확인, `[x]`=확인(task로 옮김), dev 머지 완료 의미 X) / 글로벌 vs 버전별 분리 명시. 스킬 8종 → 9종 표에 `/add-backlog` (meta) 행 추가
-- `template/.project/BACKLOG.md` 신규 — `/add-backlog` 스킬 결과를 누적할 *버전별* 백로그 경로는 plan-init이 생성 (별도 카피 불필요)
 - `package.json` 0.1.1 → 0.1.2
 
 ### 수정
@@ -107,3 +106,5 @@
 | 2026-05-30 | `[Unreleased]` §수정 보강 — 3차 검증 마지막 누적 (plan/DECISIONS §6 분산 원칙 표 — 스킬 path `<skill>.md` → `<skill>/SKILL.md` + CHANGELOG_RULE / MOCKUP_RULE 행 추가 + 테스트 명령 행 신설. plan/DISTRIBUTION §9 동기화 룰 예시 두 섹션 분리 정합. `/task-init` 블랙리스트 `Sources` 옛 표기 → `src / app / lib 등 프로젝트 소스 디렉토리` 언어/기술 중립 정합) |
 | 2026-05-30 | `[Unreleased]` §수정 보강 — README.md 디렉토리 구조 표시에 신설 룰 / 자료 반영 (rules/ 안 CHANGELOG_RULE / MOCKUP_RULE + .project/ 직속 GLOSSARY.md + tasks/ 옆 BACKLOG / mockup 명시) |
 | 2026-05-31 | `[Unreleased]` §추가 + §수정 — 0.1.2 백로그 스킬(`/add-backlog`) 신설 + 멀티세션 commit의 잘못 박힌 BACKLOG 경로 정정(글로벌 → 버전별). bin/lib.js 백로그 유틸 + CLAUDE.md 백로그 섹션 + 스킬 9종 표 + task-init §7.5 신규 + §4.2.5 신규 + task-close 노트 + GIT_RULE 출처 표 + plan/SKILLS.md §3.6 백로그 섹션 + §1 9종 표 + README 백로그 메모 단락 + 디렉토리 구조 9 skill + package.json 0.1.2 |
+| 2026-05-31 | `[Unreleased]` §추가 정정 — `template/.project/BACKLOG.md 신규` 자기모순 항목 삭제 (표제는 *신규*인데 본문은 *plan-init이 생성, 별도 카피 불필요*로 모순. 실제 `template/.project/` 안 BACKLOG.md 파일 부재 — 신설된 적 없음). 정합 순회 1차 결함 fix |
+| 2026-05-31 | `[Unreleased]` §수정 추가 — 스킬 8종 → 9종 표기 갱신 (README §상세 문서 SKILLS.md 캡션 / template/CLAUDE.md 헤더 / plan/OVERVIEW.md §1·§3·§4·§6·§7 본문 다수 / plan/DECISIONS.md §9 결정 본문 / plan/SKILLS.md 제목+캡션) + bin/ 5 → 7 스크립트 표기 갱신 (OVERVIEW §4-1 디렉토리 / DISTRIBUTION §3 표 + status.js/prune.js 행 추가) + lib.js / status.js / prune.js / init.js / update.js / create.js / taskery.js 분량 갱신 (DISTRIBUTION §3) + 카피 대상 24 → 25 파일 / 8 → 9 스킬 본문 (DISTRIBUTION §4 + §8 files 배열) + proper-lockfile 외부 의존성 명시 (DISTRIBUTION §3) + plan/SKILLS.md §4 표 9 스킬 분량 실측 갱신 + §6 컨텍스트 관리 표 `/add-backlog` 행 추가 + OVERVIEW §4 본 리포 / 사용자 프로젝트 디렉토리 구조에 GLOSSARY.md / CHANGELOG_RULE.md / MOCKUP_RULE.md / add-backlog 미반영분 정합. 정합 순회 1차 결함 fix |

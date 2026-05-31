@@ -1,7 +1,7 @@
-# SKILLS — taskery 스킬 8종
+# SKILLS — taskery 스킬 9종
 
-> 본 리포 *작업 흐름의 단일 진실 소스*. 8 스킬 명세 + 흐름 + 컨텍스트 관리 전략.
-> 스킬 본문 step별 디테일은 `template/.claude/skills/<skill>.md`에 위치 — 본 문서는 *흐름과 정신* 중심.
+> 본 리포 *작업 흐름의 단일 진실 소스*. 9 스킬 명세 + 흐름 + 컨텍스트 관리 전략.
+> 스킬 본문 step별 디테일은 `template/.claude/skills/<skill>/SKILL.md`에 위치 — 본 문서는 *흐름과 정신* 중심.
 
 ---
 
@@ -123,13 +123,13 @@ draft → planned → developing → developed → testing → tested → closed
 
 | 스킬 | 본문 위치 | 분량 |
 |------|---------|------|
-| `/project-init` | [template/.claude/skills/project-init/SKILL.md](../template/.claude/skills/project-init/SKILL.md) | 5,990 B |
-| `/plan-init` | [template/.claude/skills/plan-init/SKILL.md](../template/.claude/skills/plan-init/SKILL.md) | 5,494 B |
-| `/task-init` | [template/.claude/skills/task-init/SKILL.md](../template/.claude/skills/task-init/SKILL.md) | 7,079 B |
-| `/task-plan` | [template/.claude/skills/task-plan/SKILL.md](../template/.claude/skills/task-plan/SKILL.md) | 9,273 B |
-| `/task-dev` | [template/.claude/skills/task-dev/SKILL.md](../template/.claude/skills/task-dev/SKILL.md) | 8,035 B |
-| `/task-test` | [template/.claude/skills/task-test/SKILL.md](../template/.claude/skills/task-test/SKILL.md) | 9,038 B |
-| `/task-close` | [template/.claude/skills/task-close/SKILL.md](../template/.claude/skills/task-close/SKILL.md) | 9,077 B |
+| `/project-init` | [template/.claude/skills/project-init/SKILL.md](../template/.claude/skills/project-init/SKILL.md) | 9,780 B |
+| `/plan-init` | [template/.claude/skills/plan-init/SKILL.md](../template/.claude/skills/plan-init/SKILL.md) | 7,711 B |
+| `/task-init` | [template/.claude/skills/task-init/SKILL.md](../template/.claude/skills/task-init/SKILL.md) | 14,010 B |
+| `/task-plan` | [template/.claude/skills/task-plan/SKILL.md](../template/.claude/skills/task-plan/SKILL.md) | 15,081 B |
+| `/task-dev` | [template/.claude/skills/task-dev/SKILL.md](../template/.claude/skills/task-dev/SKILL.md) | 11,507 B |
+| `/task-test` | [template/.claude/skills/task-test/SKILL.md](../template/.claude/skills/task-test/SKILL.md) | 11,942 B |
+| `/task-close` | [template/.claude/skills/task-close/SKILL.md](../template/.claude/skills/task-close/SKILL.md) | 14,736 B |
 | `/add-backlog` | [template/.claude/skills/add-backlog/SKILL.md](../template/.claude/skills/add-backlog/SKILL.md) | 6,321 B |
 | `/log-friction` | [template/.claude/skills/log-friction/SKILL.md](../template/.claude/skills/log-friction/SKILL.md) | 3,617 B |
 
@@ -207,6 +207,7 @@ CLAUDE.md `## 검증 명령` 단일 섹션이 *4 시점에 분산 실행* (self-
 | `/task-dev` | 직접 실행 | plan 컨텍스트 이어짐 필요 |
 | `/task-test` | **Task 격리 권장 (default)** | confirmation bias 회피 — 메인 plan/dev 가정이 결과 해석에 안 들어가야 |
 | `/task-close` | 직접 실행 | 짧고 명확 |
+| `/add-backlog` | 직접 실행 | 사용자 발화 → 얕은 분석(코드 탐색 X) + BACKLOG.md append. 대화 흐름 위주, 격리 의미 약함 |
 | `/log-friction` | 직접 실행 | FRICTION_LOG.md 한 행 Append + 사용자 합의 |
 
 **격리 메커니즘** — `/task-test` 1차 default (stash FRICTION_LOG #14+19 / #25 반영):
@@ -293,3 +294,4 @@ CLAUDE.md `## 검증 명령` 단일 섹션이 *4 시점에 분산 실행* (self-
 | 2026-05-30 | 정합 검증 후속 정정 (Phase 5) — §6 격리 prompt 흐름 본문의 mockup path 표기 `<task>-mockup.html` → `<task-doc-name>-mockup.html` 으로 통일 (MOCKUP_RULE 단일 진실 소스 정합). |
 | 2026-05-31 | 멀티세션 0.1.2 반영 — §1 스킬 표에 task-init/close 멀티세션 동작 + 워크트리 호출 위치 명시 / §3.5 멀티세션 워크트리 섹션 신규 (SSoT / 메인=dev 전용 / race 2층 / 충돌 3단계 / 머지 락 / 자동 정리 / 호출 위치 분기 / CLI 보조 명령 / .gitignore 케이스 분기) |
 | 2026-05-31 | 0.1.2 백로그 스킬 추가 반영 — §1 스킬 8종 → 9종 + `/add-backlog` (meta) 행 / §2 입력 처리 패턴 행 추가 / §3.6 백로그 (0.1.2+) 섹션 신규 (흐름 / 체크박스 의미 / task-init 연동 / task-close 무관) / §4 스킬 본문 표에 `/add-backlog` 행 / 위계 정신 meta 그룹에 백로그 누적 명시. task-init `[x]` 확인 마킹 + task-close BACKLOG.md 무관 명시도 §1 표에 반영 |
+| 2026-05-31 | 정합 순회 1차 후속 정정 — 제목 + 캡션 *스킬 8종* → *9종* 갱신 (멀티세션 + 백로그 commit 후 잔존). 본문 링크 path 표기 `<skill>.md` → `<skill>/SKILL.md` (0.1.1 디렉토리 마이그레이션 정합 누락분). §6 컨텍스트 관리 표 `/add-backlog` 행 추가 (9 스킬 정합). §4 본문 표 7 스킬 분량 실측 갱신 (멀티세션 commit으로 분량 증가 후 갱신 누락 — project-init/plan-init/task-init/task-plan/task-dev/task-test/task-close). 단순 수치 정합, 행위 변경 X |

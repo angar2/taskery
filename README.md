@@ -244,7 +244,7 @@ npx @angar2/taskery init
 spec 문서는 GitHub에서 참고할 수 있다.
 
 - [OVERVIEW.md](https://github.com/angar2/taskery/blob/main/plan/OVERVIEW.md) — 시스템 진입 가이드와 전체 구조 개요.
-- [SKILLS.md](https://github.com/angar2/taskery/blob/main/plan/SKILLS.md) — 스킬 8종의 상세 명세와 호출 흐름.
+- [SKILLS.md](https://github.com/angar2/taskery/blob/main/plan/SKILLS.md) — 스킬 9종의 상세 명세와 호출 흐름.
 - [TASK-DOC.md](https://github.com/angar2/taskery/blob/main/plan/TASK-DOC.md) — task 문서의 작성 양식과 7 상태 머신의 동작 정의.
 - [HOOKS.md](https://github.com/angar2/taskery/blob/main/plan/HOOKS.md) — catastrophic hook 2종의 정책과 예외 처리 절차.
 - [DISTRIBUTION.md](https://github.com/angar2/taskery/blob/main/plan/DISTRIBUTION.md) — npx 배포 메커니즘과 자산 갱신 로직.
