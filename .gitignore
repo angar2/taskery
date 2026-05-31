@@ -12,3 +12,6 @@ coverage/
 
 # 임시 작업 영역 (BUILD_RESULT.md 등 — git 추적 X)
 .temp/
+
+# Claude Code 로컬 설정 / 테스트 파이프라인 (배포물 X)
+.claude/
