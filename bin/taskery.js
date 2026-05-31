@@ -52,6 +52,21 @@ switch (sub) {
     runScript('status.js');
     break;
   case 'prune':
+    if (process.argv[3] === '--help' || process.argv[3] === '-h') {
+      console.log(`taskery prune — stale 워크트리 / 브랜치 대화형 정리
+
+사용법:
+  npx @angar2/taskery prune
+
+설명:
+  .taskery-manifest.json의 stale_days (기본 30일) 기준으로 비활성 워크트리 + 브랜치를 대화형 정리합니다.
+  케이스 분기: A (워크트리 + 브랜치 모두 stale) / B (브랜치만 stale) / C (워크트리 폴더 잔존) / D (정합 영역).
+  각 케이스마다 y/n/k 선택 가능 (y = 삭제 / n = 건너뜀 / k = 보존 명시).
+
+상세: https://github.com/angar2/taskery
+`);
+      break;
+    }
     runScript('prune.js');
     break;
   case 'help':

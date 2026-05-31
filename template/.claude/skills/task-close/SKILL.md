@@ -54,7 +54,9 @@ LOCK_FILE="$HOME/.taskery/${PROJECT_ID}.merge.lock"
    ```sh
    git -C "$WT_PATH" status --porcelain
    ```
-   - 결과 있으면 → 사용자 호출 + close 중단 (자동 커밋 X).
+   - 결과 *있음* = 정상 흐름 (taskery 정책: `/task-dev` = *git 작업 X*). 본 변경분은 Step 6-3에서 *task-close가 자동 Phase 커밋 생성*으로 처리.
+   - 결과 *없음* = 변경분 0건 → Step 2 검증만 수행 후 Step 6-3 자동 커밋 단계 자연 스킵 (빈 커밋 X).
+   - **차단 X** — 본 단계는 *상태 인지*용. close 중단 사유 X.
 4. **task 파일 + GIT_RULE 확인**:
    - task 문서 위치 분기 (`.gitignore` 케이스):
      ```sh
@@ -110,11 +112,12 @@ git -C "$WT_PATH" rebase dev
 
 | 순위 | 자료 | 위치 |
 |------|------|------|
-| 1 | 태스크 문서 | `$MAIN_WT/.project/tasks/<vX.X>/...` (등록 케이스) / `~/.taskery/worktrees/<projectId>/TASK-...` 다른 워크트리 (미등록 케이스, SSoT 조회로 경로 산출) |
+| 1 | 태스크 문서 + plan 문서 (양쪽 정독 후 의도 종합) | 태스크: `$MAIN_WT/.project/tasks/<vX.X>/...` (등록 케이스) / `~/.taskery/worktrees/<projectId>/TASK-...` 다른 워크트리 (미등록 케이스, SSoT 조회로 경로 산출). plan: `$MAIN_WT/.project/plans/<vX.X>/` (ROADMAP / FEATURES / ARCHITECTURE / TECH-STACK 등) |
 | 2 | 커밋 메시지 | `git log dev --grep` (GIT_RULE 풍부 메시지) |
 | 3 | diff | 변경 코드 자체 |
 
 - 1순위 부재 시 2/3순위 자동 fallback + 사용자에게 *자료 한계* 보고
+- 태스크 문서 = 본 task의 *세부 의도* / plan 문서 = *전체 의도* (Stage 순 / 의존 그래프 / 의도된 위치 분리). 충돌 영역의 *그림 전체*는 plan 문서가 더 명확한 경우 많음 (Stage 순서로 *먼저 머지된 쪽 다음 줄에 추가* 등)
 - 정독 후 *의미 의도 추출* → 충돌 해결 → `git rebase --continue`
 
 #### 4-c. 판단 불가 → 사용자 호출
@@ -167,9 +170,22 @@ git -C "$WT_PATH" rebase dev
 락 외 rebase 이후 *다른 세션이 dev 머지했을 수 있음* — 락 안 rebase로 흡수.
 - 재충돌 발견 시 Step 4 에스컬레이션 재실행 + Step 5 문서 기록 재실행.
 
-#### 6-3. Phase 기능 커밋 (Dev Plan 각 Phase마다 1개)
+#### 6-3. Phase 기능 커밋 (Dev Plan 각 Phase마다 1개 — task-close가 자동 생성)
 
-- 같은 파일이 여러 Phase에 걸쳐 변경됐으면 *단일 통합 커밋 1개*로 묶음.
+> **책임 영역**: taskery 정책상 `/task-dev` = *git 작업 X* (워크트리 코드만 수정). 본 단계가 *task-close가 uncommitted 변경분 정독 → task.md `## Dev Plan` Phase 진행 [x] 매핑 → Phase별 commit 자동 생성*하는 단일 진입점이다.
+
+자동 생성 절차:
+
+1. **uncommitted 변경분 정독**:
+   ```sh
+   git -C "$WT_PATH" status --porcelain
+   git -C "$WT_PATH" diff --name-only
+   ```
+2. **task.md `## Dev Plan` 정독** — Phase별 `진행: [x]` + 파일 매핑 추출.
+3. **Phase ↔ 변경 파일 매핑**:
+   - 한 Phase가 단독 파일 영역이면 → Phase별 1 커밋.
+   - 같은 파일이 여러 Phase에 걸쳐 있으면 → *단일 통합 커밋 1개*로 묶음 (Phase 번호 표기는 *Phase X+Y*).
+   - 매핑 모호 / Dev Plan 본문 추적 불가 시 → 사용자 호출 + 결정 (자동 진행 X).
 - 메시지 형식 (GIT_RULE.md):
   ```
   {태그}: [TASK-<NNN>] Phase <N> - <작업 요약>
@@ -181,6 +197,8 @@ git -C "$WT_PATH" rebase dev
 - 태그: feature → `feat:`, bug → `fix:`, improvement → `improve:`, refactor → `refactor:`, docs/chore → `docs:`, 테스트 → `test:`
 
 > **GIT_RULE 풍부 메시지** — 본 메시지는 *충돌 해결 자료 2순위*로 쓰인다. 의도 한 줄 압축.
+
+> **자동 분리 로직 코드 구현**은 본 SKILL.md 영역 외 — 메인 세션이 본 절차를 따라 *수동/대화형* 진행. 향후 `bin/lib.js`에 `splitUncommittedByPhase(wtPath, taskMd)` 영역 별도 라운드.
 
 #### 6-4. flows/ 모듈 커밋 (해당 시)
 

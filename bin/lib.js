@@ -260,14 +260,11 @@ function parseBranchName(branch) {
 }
 
 function getActiveTasks(mainWtPath) {
-  // SSoT — dev에 미머지된 작업 브랜치 (TASK-* 패턴)
-  const out = gitCapture(mainWtPath, [
-    'branch',
-    '--no-merged',
-    'dev',
-    '--list',
-    ...BRANCH_PATTERNS,
-  ]);
+  // SSoT — TASK-* 패턴 작업 브랜치 (분기 직후 빈 브랜치 포함). `--no-merged dev` 미사용:
+  // 워크트리 분기 직후 브랜치는 dev와 동일 commit이라 `--no-merged dev`가 *완전 머지 상태*로
+  // 처리 → 빈 결과 → getNextTaskNumber 충돌. 브랜치 존재 자체가 SSoT (정상 흐름은 task-close
+  // 자동 삭제로 자연 정리, 보존 키워드 잔존분도 *진행중*으로 잡힘이 정합).
+  const out = gitCapture(mainWtPath, ['branch', '--list', ...BRANCH_PATTERNS]);
   if (!out) return [];
   return out
     .split('\n')

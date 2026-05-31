@@ -97,8 +97,10 @@ description: task 시작 — 워크트리 분기 + 6 섹션 빈 골격 + 헤더 
 
 `bin/lib.js` `getNextTaskNumber(MAIN_WT)` 호출. 내부 동작:
 ```sh
-# 진행중 (SSoT)
-A=$(git -C "$MAIN_WT" branch --no-merged dev --list \
+# 진행중 (SSoT) — TASK-* 패턴 작업 브랜치 전체. `--no-merged dev` 미사용:
+# 워크트리 분기 직후 브랜치는 dev와 동일 commit이라 `--no-merged dev`가 *완전 머지 상태*로
+# 처리 → 빈 결과 → getNextTaskNumber 충돌. 브랜치 존재 자체가 SSoT.
+A=$(git -C "$MAIN_WT" branch --list \
     'feature/*_TASK-*' 'bug/*_TASK-*' 'improve/*_TASK-*' \
     'refactor/*_TASK-*' 'docs/*_TASK-*' 'chore/*_TASK-*' \
     | grep -oE 'TASK-[0-9]+')
