@@ -6,6 +6,8 @@
  * 서브커맨드:
  *   init    — 현재 디렉토리에 taskery 자산 카피 + manifest 생성
  *   update  — 최신 버전 fetch + manifest 비교 + 머지 갱신
+ *   status  — 멀티세션 현황 요약 (진행중 태스크 / 워크트리 / 머지 락, 0.1.2+)
+ *   prune   — stale 워크트리 / 브랜치 대화형 정리 (0.1.2+)
  *   help    — 사용법 출력
  */
 

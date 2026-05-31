@@ -182,7 +182,7 @@ draft → planned → developing → developed → testing → tested → closed
 | 정보 | 단일 진실 소스 |
 |------|--------------|
 | 양식 spec + 작성 방법 + 가이드 + 예시 (4단 layer) | [template/.project/rules/TASK_DOC_RULE.md](../template/.project/rules/TASK_DOC_RULE.md) |
-| 스킬별 task.md 갱신 흐름 | [template/.claude/skills/task-{init,plan,dev,test,close}.md](../template/.claude/skills/) |
+| 스킬별 task.md 갱신 흐름 | [template/.claude/skills/task-{init,plan,dev,test,close}/SKILL.md](../template/.claude/skills/) |
 | 형식 위반 차단 | (현재 없음) — instruction + 대화. PLAYBOOK §4 minimal form hook 부활 검토 시점 |
 
 본 문서는 *상위 추상 + link*만. 본문 spec은 TASK_DOC_RULE.md.
@@ -214,3 +214,4 @@ draft → planned → developing → developed → testing → tested → closed
 | 2026-05-30 | Test Plan = 실질 동작 시나리오 본질 명시 + `[AUTO]`/`[USER]` 분류 강제 + 카탈로그 / UX/UI 영역 분리 매트릭스 / 목업 기준 참조 / 시각 fix 사이클 예고. §1 위계에 mockup/ 디렉토리 추가 (vX.X 공통). (stash FRICTION_LOG #14+19 / #25 반영) |
 | 2026-05-30 | 정합 검증 후속 정정 (Phase 5) — §1.5 mockup path 표기 `<NNN>_<slug>-mockup.html` → `<task-doc-name>-mockup.html` 으로 통일 (MOCKUP_RULE 단일 진실 소스 표기 정합 — 폴더 승격 케이스도 커버). |
 | 2026-05-30 | 정합 검증 후속 정정 (3차) — §5 작성 주체 표의 Test Plan 표기 *자유 형식 — 자기완결성 가이드라인* → *실질 동작 시나리오 + `[AUTO]` / `[USER]` 분류 강제* 정합 (TASK_DOC_RULE §2.5 본질 재정의 정합). |
+| 2026-05-31 | 정합 순회 2차 — §7 본문 단일 진실 소스 표 스킬 path *`<skill>.md`* → *`<skill>/SKILL.md`* (0.1.1 디렉토리 마이그레이션 후 갱신 누락분 정합). 단순 path 표기 정합 |

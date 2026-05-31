@@ -99,11 +99,15 @@
 
 > ⚠ 원 plan §5-1 도식에는 `template/.taskery-manifest.json`로 들어 있었지만, 실제 구현은 *사용자별 path / installed_at / hash가 모두 다르므로* `template/`에 포함하지 않고 *init.js 동적 생성*으로 수정.
 
-**구조**:
+**구조** (필드 순서는 `bin/init.js` / `bin/update.js`의 `writeManifest` 호출 시 객체 리터럴 순서 그대로):
 ```json
 {
-  "version": "0.1.0",
+  "version": "0.1.2",
   "installed_at": "2026-05-08T07:55:07.652Z",
+  "updated_at": "<update 호출 시 갱신 — init 시점에는 없음>",
+  "projectId": "<8자 hex — 멀티세션 워크트리 폴더 충돌 방지, 0.1.2+>",
+  "stale_days": 30,
+  "lock_timeout_ms": 30000,
   "files": {
     "CLAUDE.md": {
       "hash": "sha256:60e56a651fe3...",
@@ -118,11 +122,7 @@
     ".claude/hooks/git-guard.sh": { ... },
     ".project/rules/TASK_DOC_RULE.md": { ... }
     // ... 25 파일 (0.1.2+ — 스킬 9종 + 룰 4종 + hook 2종 + settings.json + CLAUDE.md + FRICTION_LOG.md + 빈 골격 .gitkeep 6 + .gitignore)
-  },
-  "projectId": "<8자 hex — 멀티세션 워크트리 폴더 충돌 방지, 0.1.2+>",
-  "stale_days": 30,
-  "lock_timeout_ms": 30000,
-  "updated_at": "<update 호출 시 갱신>"
+  }
 }
 ```
 
@@ -300,8 +300,8 @@ npm publish --tag beta       # beta tag로 publish
 | `bin/update.js` 0.1.1 → 0.1.2 마이그레이션 | manifest에 `projectId` / `stale_days` / `lock_timeout_ms` 자동 추가 ✅ |
 | `bin/status.js` 진행중 태스크 + 워크트리 + 머지 락 출력 (0.1.2+) | 통과 ✅ |
 | `bin/prune.js` stale 워크트리 대화형 정리 (0.1.2+) | 통과 ✅ |
-| `bin/lib.js` `appendBacklogItem` 동시 두 프로세스 (0.1.2+) | 직렬화 — P2 BL-001 (6ms) + P1 BL-002 (1011ms retry) ✅ |
-| `bin/lib.js` `markBacklogChecked` 중복 방지 + 다회 콤마 (0.1.2+) | 정확 ✅ |
+| `bin/lib.js` `appendBacklogItem` 동시 두 프로세스 (0.1.2+) | `withMetaLock` 직렬화 통과 ✅ |
+| `bin/lib.js` `markBacklogChecked` 중복 방지 + 다회 콤마 (0.1.2+) | 통과 ✅ |
 
 **아직 검증 안 된 것**:
 - 실제 npm publish (사용자 직접)
@@ -324,3 +324,4 @@ npm publish --tag beta       # beta tag로 publish
 | 2026-05-30 | 정합 검증 후속 정정 (Phase 5) — §4 카피 대상 표 *23 파일* → *24 파일* 갱신: Hook (3) → (2) [pre-commit-verify.sh 삭제] + 룰 (2) → (4) [CHANGELOG_RULE / MOCKUP_RULE 신설]. §7 디렉토리 구조 본문도 동일 갱신. (stash FRICTION_LOG 정합 후속) |
 | 2026-05-30 | 정합 검증 후속 정정 (3차) — §9 자동 빌드 미채택 본문 사용자 프로젝트 CLAUDE.md 동기화 룰 예시에서 `검증 명령 (위)` → `## 검증 명령 / ## 테스트 명령 (두 섹션)` 정합 (CLAUDE.md 두 섹션 분리 정합). |
 | 2026-05-31 | 0.1.2 멀티세션 + 백로그 정합 누락 일괄 정정 (정합 순회 1차) — §1행 캡션 *bin/ 5 스크립트* → *7 스크립트* / §2 명령 표 `status` / `prune` 행 추가 / §3 헤더 *5 스크립트* → *7 스크립트* + 본문 lib.js 분량 3,089B → 16,570B + 멀티세션/백로그 함수 목록 명시 / taskery.js 1,350B → 1,694B + `status` / `prune` 서브커맨드 명시 / init.js 3,765B → 5,608B + .gitignore prompt 명시 / create.js 1,592B → 1,638B / update.js 5,764B → 6,749B + manifest 마이그레이션 명시 / status.js / prune.js 행 신규 / 의존성 본문 *외부 npm 의존 0* → *proper-lockfile 1종* 갱신 / §4 카피 대상 *24 파일 + 스킬 (8)* → *25 파일 + 스킬 (9, add-backlog 포함)* / §5 manifest 예시 *18 파일* → *25 파일* 주석 + `projectId` / `stale_days` / `lock_timeout_ms` 필드 명시 / §5 필드 본문에 0.1.2+ 3 필드 추가 / §8 files 배열 본문 *5 스크립트 + 24 파일* → *7 스크립트 + 25 파일* / §11 동작 검증 표 갱신 (7 스크립트 + 25 파일 카피 / 25 unchanged + 0.1.1 → 0.1.2 마이그레이션 + status.js / prune.js 동작 + appendBacklogItem 동시 직렬화 + markBacklogChecked 중복 방지). 단순 수치 정합, 행위 변경 X |
+| 2026-05-31 | 정합 순회 2차 후속 정정 — §5 manifest 예시 필드 순서를 실제 `bin/init.js:100~107` / `bin/update.js:164~172` 출력 순서(version → installed_at → updated_at → projectId → stale_days → lock_timeout_ms → files)와 일치시킴 (1차 정정 시 `projectId` 등을 `files` 뒤에 박았던 표기 정합 X 정정) + version 예시 0.1.0 → 0.1.2 갱신 / §11 동작 검증 표 *appendBacklogItem 동시 직렬화* / *markBacklogChecked 중복 방지* 행 본 세션 미실행 검증 결과 수치(P2 BL-001 6ms 등) 인용 제거 → 단순 *통과 ✅* 표기로 변경 (이전 세션 보고 수치를 본 세션이 직접 재현하지 않았으므로 수치 명시 부적절) |
