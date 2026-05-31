@@ -130,7 +130,7 @@ draft → planned → developing → developed → testing → tested → closed
 | `/task-dev` | [template/.claude/skills/task-dev/SKILL.md](../template/.claude/skills/task-dev/SKILL.md) | 8,035 B |
 | `/task-test` | [template/.claude/skills/task-test/SKILL.md](../template/.claude/skills/task-test/SKILL.md) | 9,038 B |
 | `/task-close` | [template/.claude/skills/task-close/SKILL.md](../template/.claude/skills/task-close/SKILL.md) | 9,077 B |
-| `/add-backlog` | [template/.claude/skills/add-backlog/SKILL.md](../template/.claude/skills/add-backlog/SKILL.md) | (Phase 5 작성 후 측정) |
+| `/add-backlog` | [template/.claude/skills/add-backlog/SKILL.md](../template/.claude/skills/add-backlog/SKILL.md) | 6,321 B |
 | `/log-friction` | [template/.claude/skills/log-friction/SKILL.md](../template/.claude/skills/log-friction/SKILL.md) | 3,617 B |
 
 **공통 형식** (각 SKILL.md):
