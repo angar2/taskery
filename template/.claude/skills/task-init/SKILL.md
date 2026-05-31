@@ -114,13 +114,20 @@ NEXT=$((MAX + 1))
 
 #### 4.2 메타 가져오기 (BL/RM)
 
-- BL: `$MAIN_WT/.project/tasks/<활성버전>/BACKLOG.md` Read → `BL-NNN` grep → 항목 메타(제목 / 유형 / 우선순위 등) 파싱 (활성 버전은 `AGENT-GUIDE.md`에서 검출)
+- BL: `$MAIN_WT/.project/tasks/<활성버전>/BACKLOG.md` Read → `BL-NNN` 블록 파싱 → `{ status, type, title, slug, summary, target, taskNums }` (활성 버전은 `AGENT-GUIDE.md`에서 검출. `bin/lib.js`의 `parseBacklogItem(mainWtPath, blId)` 호출 권장). 개요 / 대상 영역 → task.md §1 Requirements 초안에 자동 복사 (얕은 분석이 task 문서 시작점)
 - RM: `$MAIN_WT/.project/plans/<활성버전>/ROADMAP.md` Read → `RM-NNN` grep → 항목 메타 파싱
 - DR: 사용자 발화에서 주제 그대로
 
+#### 4.2.5 이미 `[x]` BL 재진행 케이스
+
+`parseBacklogItem` 결과 `status === 'checked'`이고 `taskNums` 비어 있지 않을 때:
+- 사용자 호출 + 결정: *"BL-NNN은 ${taskNums}로 이미 처리된 적 있어. 새 task로 다시 진행할까?"*
+- 사용자 OK → 새 TASK-NNN 진행. §7.5 (BL 확인 마킹) 단계에서 `- TASK:` 줄에 콤마로 추가 (덮어쓰기 X)
+- 사용자 X → task-init 중단
+
 #### 4.3 결정적 슬러그 산출
 
-- BL/RM: 항목 제목 → kebab-case 자동 변환 (예: *"사용자 인증"* → `user-auth`)
+- BL/RM: BACKLOG/ROADMAP에 박힌 슬러그 그대로 사용 (`parseBacklogItem` 결과의 `slug` 필드). task-init이 별도 변환 X — 재현성 보장
 - DR: 사용자 작명 또는 메시지에서 자동 산출 후 confirm
 - 한국어 → 영어 kebab-case. 짧고 명확하게 (3 단어 이내 권장).
 - 같은 항목이면 같은 슬러그 → 같은 브랜치명 → git이 동시 분기 자동 거부 (race 차단 1층).
@@ -211,6 +218,21 @@ git -C "$MAIN_WT" check-ignore -q "$MAIN_WT/.project/dummy"
 - 6 섹션 placeholder는 *빈 헤딩 + 한 줄 안내*. 구체 내용 X.
 - 폴더 승격 시 `TASK-<NNN>_<slug>/task.md`로 동일 본문 작성.
 
+### Step 7.5 — BL 출처 BACKLOG.md 확인 마킹 (BL일 때만)
+
+§4 출처 결정에서 *BL*이 선택된 경우만 실행. RM/DR은 skip.
+
+`bin/lib.js`의 `markBacklogChecked(mainWtPath, blId, taskNum)` 호출.
+
+내부 흐름 (`withMetaLock` 안에서 원자성 보장):
+1. 첫 줄 패턴 `- [ ] **BL-NNN**` → `- [x] **BL-NNN**`로 4번째 글자(체크박스) 치환
+2. 같은 BL 블록 끝 (다음 `- ` 헤드 또는 파일 끝 직전, 빈 줄 건너뛴 위치) 에 `  - TASK: TASK-NNN` 한 줄 append
+3. 이미 `  - TASK:` 줄 있으면 → 콤마로 추가 (`TASK-007, TASK-012`. 덮어쓰기 X)
+
+`[x]` 의미: *"이 항목은 task로 옮겼다"*. **dev 머지 완료 의미 X**. 완료 추적은 `git log dev --grep 'BL-NNN'` + 브랜치명 + `npx @angar2/taskery status`.
+
+> §4.2.5 (이미 `[x]` BL 재진행 케이스)에서 사용자 OK 받은 경우만 본 단계 진입. 사용자 X로 중단된 경우 본 Step 7.5도 skip.
+
 ### Step 8 — 결과 보고
 
 ```
@@ -219,6 +241,7 @@ git -C "$MAIN_WT" check-ignore -q "$MAIN_WT/.project/dummy"
 - 브랜치: <BRANCH>
 - task 문서: <TASK_DOC_PATH> (메인 워크트리 / 워크트리 안 — 위 케이스에 따라)
 - 헤더: <생성일> / <vX.X> / <유형> / <규모> / draft
+- BL 마킹: BL-<NNN> [x] (BL 출처 시. RM/DR이면 생략)
 - 다음: 워크트리 폴더에서 새 세션 열기 → /task-plan TASK-<NNN> 으로 기획 채우기
 ```
 
