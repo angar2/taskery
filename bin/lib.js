@@ -25,6 +25,13 @@
  *   - getNextTaskNumber(mainWtPath): (진행중 ∪ dev 머지 히스토리) 최대 + 1
  *   - assertMainWorktreeOnDev(mainWtPath): 메인 워크트리가 dev 체크아웃 상태인지 검증
  *   - assertDevExists(mainWtPath): dev 브랜치 존재 검증
+ *
+ * 백로그 (0.1.2+):
+ *   - getActiveVersion(mainWtPath): .project/AGENT-GUIDE.md에서 활성 plan 버전(vX.X) 추출
+ *   - getBacklogPath(mainWtPath, activeVersion?): .project/tasks/<vX.X>/BACKLOG.md 절대 경로
+ *   - parseBacklogItem(mainWtPath, blId): BL-NNN 항목 메타 파싱 ({ status, type, title, slug, summary, target, taskNums })
+ *   - appendBacklogItem(mainWtPath, meta): withMetaLock + BL-NNN 채번 + 항목 append (placeholder 치환 우선)
+ *   - markBacklogChecked(mainWtPath, blId, taskNum): withMetaLock + [ ] → [x] + TASK 마크 (다회 진행 시 콤마 추가)
  */
 
 const fs = require('fs');
@@ -290,6 +297,170 @@ function getNextTaskNumber(mainWtPath) {
   return Math.max(...all) + 1;
 }
 
+// ─── 백로그 (0.1.2+) ────────────────────────────────────────────────
+
+const BACKLOG_PLACEHOLDER =
+  '(사용자 발화 또는 task-close 직후 메인 감지로 한 행씩 추가. 빈 상태 default.)';
+
+function getActiveVersion(mainWtPath) {
+  // .project/AGENT-GUIDE.md '## 활성 plan 버전' 섹션 다음 비어 있지 않은 첫 줄에서 vX.X 추출
+  const guidePath = path.join(mainWtPath, '.project', 'AGENT-GUIDE.md');
+  if (!fs.existsSync(guidePath)) {
+    throw new Error(`.project/AGENT-GUIDE.md 부재. /project-init 먼저 호출.`);
+  }
+  const content = fs.readFileSync(guidePath, 'utf8');
+  const sec = content.match(/##\s*활성 plan 버전\s*\n+([^\n]+)/);
+  if (!sec) {
+    throw new Error(`.project/AGENT-GUIDE.md '## 활성 plan 버전' 섹션 부재.`);
+  }
+  const m = sec[1].match(/\bv[\d.]+(?:[-\w]*)?/);
+  if (!m) {
+    throw new Error(
+      `'## 활성 plan 버전' 값에서 vX.X 패턴 추출 실패: ${sec[1].trim()} — /plan-init으로 활성 버전 갱신 필요.`,
+    );
+  }
+  return m[0];
+}
+
+function getBacklogPath(mainWtPath, activeVersion) {
+  const v = activeVersion ?? getActiveVersion(mainWtPath);
+  return path.join(mainWtPath, '.project', 'tasks', v, 'BACKLOG.md');
+}
+
+function computeNextBLNumber(content) {
+  const matches = Array.from(content.matchAll(/\bBL-(\d+)\b/g)).map((m) => parseInt(m[1], 10));
+  if (matches.length === 0) return 1;
+  return Math.max(...matches) + 1;
+}
+
+function formatBacklogBlock({ id, type, title, slug, summary, target }) {
+  const blId = `BL-${String(id).padStart(3, '0')}`;
+  return `- [ ] **${blId}** [${type}] ${title} \`${slug}\`\n  - 개요: ${summary}\n  - 대상 영역: ${target}`;
+}
+
+async function appendBacklogItem(mainWtPath, meta) {
+  // meta: { type, title, slug, summary, target }
+  const backlogPath = getBacklogPath(mainWtPath);
+  if (!fs.existsSync(backlogPath)) {
+    throw new Error(
+      `${backlogPath} 부재. /plan-init 먼저 호출해 활성 버전 디렉토리 + 빈 BACKLOG.md 생성 필요.`,
+    );
+  }
+  return await withMetaLock(backlogPath, async () => {
+    const content = fs.readFileSync(backlogPath, 'utf8');
+    const next = computeNextBLNumber(content);
+    const block = formatBacklogBlock({ id: next, ...meta });
+    let updated;
+    if (content.includes(BACKLOG_PLACEHOLDER)) {
+      updated = content.replace(BACKLOG_PLACEHOLDER, block);
+    } else {
+      updated = content.replace(/\s*$/, '') + '\n\n' + block + '\n';
+    }
+    fs.writeFileSync(backlogPath, updated);
+    return next;
+  });
+}
+
+function parseBacklogItem(mainWtPath, blId) {
+  // blId: 'BL-001'. 발견 못하면 null.
+  const backlogPath = getBacklogPath(mainWtPath);
+  if (!fs.existsSync(backlogPath)) return null;
+  const content = fs.readFileSync(backlogPath, 'utf8');
+  const lines = content.split('\n');
+  const headRe = new RegExp(
+    `^- \\[([ x])\\] \\*\\*${blId}\\*\\* \\[(\\w+)\\] (.+?) \`([\\w-]+)\``,
+  );
+  let idx = -1;
+  let head = null;
+  for (let i = 0; i < lines.length; i++) {
+    const m = lines[i].match(headRe);
+    if (m) {
+      idx = i;
+      head = m;
+      break;
+    }
+  }
+  if (idx === -1) return null;
+  let summary = null;
+  let target = null;
+  let taskNums = null;
+  for (let j = idx + 1; j < lines.length; j++) {
+    const l = lines[j];
+    if (l.startsWith('- ') && !l.startsWith('  - ')) break; // 다음 BL 항목
+    if (l.trim() === '') continue; // 블록 안 빈 줄 허용 (안전)
+    if (!l.startsWith('  - ')) break;
+    const ms = l.match(/^  - 개요:\s*(.+)/);
+    if (ms) { summary = ms[1].trim(); continue; }
+    const mt = l.match(/^  - 대상 영역:\s*(.+)/);
+    if (mt) { target = mt[1].trim(); continue; }
+    const mk = l.match(/^  - TASK:\s*(.+)/);
+    if (mk) { taskNums = mk[1].trim(); continue; }
+  }
+  return {
+    blId,
+    status: head[1] === 'x' ? 'checked' : 'pending',
+    type: head[2],
+    title: head[3],
+    slug: head[4],
+    summary,
+    target,
+    taskNums,
+  };
+}
+
+async function markBacklogChecked(mainWtPath, blId, taskNum) {
+  // taskNum: number. [ ] → [x] + TASK 마크 (있으면 콤마 추가, 없으면 신규 줄)
+  const backlogPath = getBacklogPath(mainWtPath);
+  if (!fs.existsSync(backlogPath)) {
+    throw new Error(`${backlogPath} 부재.`);
+  }
+  const taskLabel = `TASK-${String(taskNum).padStart(3, '0')}`;
+  return await withMetaLock(backlogPath, async () => {
+    const content = fs.readFileSync(backlogPath, 'utf8');
+    const lines = content.split('\n');
+    const headRe = new RegExp(`^(- )\\[[ x]\\](\\s+\\*\\*${blId}\\*\\*.+)$`);
+    let idx = -1;
+    for (let i = 0; i < lines.length; i++) {
+      if (headRe.test(lines[i])) {
+        idx = i;
+        break;
+      }
+    }
+    if (idx === -1) {
+      throw new Error(`${blId} 항목 없음.`);
+    }
+    lines[idx] = lines[idx].replace(headRe, '$1[x]$2');
+    // 다음 BL 헤드 또는 파일 끝까지가 같은 블록 — 그 안에서 TASK 줄 검색
+    let blockEnd = lines.length;
+    for (let j = idx + 1; j < lines.length; j++) {
+      if (lines[j].startsWith('- ') && !lines[j].startsWith('  - ')) {
+        blockEnd = j;
+        break;
+      }
+    }
+    let taskLineIdx = -1;
+    for (let j = idx + 1; j < blockEnd; j++) {
+      if (lines[j].match(/^  - TASK:/)) {
+        taskLineIdx = j;
+        break;
+      }
+    }
+    if (taskLineIdx !== -1) {
+      const existing = lines[taskLineIdx].match(/^  - TASK:\s*(.+)/)[1].trim();
+      const existingTasks = existing.split(/[,\s]+/).filter(Boolean);
+      if (!existingTasks.includes(taskLabel)) {
+        lines[taskLineIdx] = `  - TASK: ${existing}, ${taskLabel}`;
+      }
+    } else {
+      // blockEnd 직전 빈 줄 건너뛰고 삽입
+      let insertAt = blockEnd;
+      while (insertAt > idx + 1 && lines[insertAt - 1].trim() === '') insertAt--;
+      lines.splice(insertAt, 0, `  - TASK: ${taskLabel}`);
+    }
+    fs.writeFileSync(backlogPath, lines.join('\n'));
+  });
+}
+
 module.exports = {
   LOCAL_SUFFIX,
   MANIFEST_NAME,
@@ -321,4 +492,13 @@ module.exports = {
   parseBranchName,
   getActiveTasks,
   getNextTaskNumber,
+  // 백로그 (0.1.2+)
+  BACKLOG_PLACEHOLDER,
+  getActiveVersion,
+  getBacklogPath,
+  computeNextBLNumber,
+  formatBacklogBlock,
+  appendBacklogItem,
+  parseBacklogItem,
+  markBacklogChecked,
 };
