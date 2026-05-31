@@ -215,19 +215,21 @@ my-app/                                   ← 사용자 프로젝트
 
 ## 9. 현재 상태 + 남은 작업
 
-**완료**:
+> 본 섹션은 *0.1.0 부트스트랩 시점*의 상태 + 남은 작업 기록. 그 후 진척(0.1.0 publish / 0.1.1 / [Unreleased] 0.1.2 멀티세션 + 백로그 등)은 [CHANGELOG.md](../CHANGELOG.md)가 단일 진실 소스. 본 본문은 *역사적 시점 기록*으로 보존.
+
+**완료** (0.1.0 부트스트랩 시점):
 - ✅ 부트스트랩 — plan/ 7 문서 + bin/ 5 스크립트 + template/ 24 파일
 - ✅ spec 정합성 audit 안정화
 - ✅ smoke test 1회 — notepad-todo 10 task / 47 commit / test 31/31 PASS
 - ✅ smoke test follow-up fix 4건 (catastrophic 1 + 가이드 명확화 3)
 
-**남은 작업 — npm publish 전**:
+**남은 작업 — npm publish 전** (0.1.0 시점 기록 — 모두 완료됨, 0.1.0 publish 2026-05-09 [CHANGELOG.md](../CHANGELOG.md) 참조):
 - 🟡 `README.md` 작성 (npm 페이지 본문)
 - 🟡 `bin/taskery.js` GitHub URL placeholder 교체
 - 🟡 `package.json` metadata 점검 (description / keywords / repository / author)
 - 🟡 `LICENSE` 작성 (권장 — MIT 등)
 
-**publish 진행**: 사용자 명시 트리거 시.
+**publish 진행**: 사용자 명시 트리거 시. 이후 0.1.1 / 0.1.2 minor 보강 누적은 CHANGELOG 단일 진실 소스 참조.
 
 ---
 
@@ -245,3 +247,4 @@ my-app/                                   ← 사용자 프로젝트
 | 2026-05-30 | stash FRICTION_LOG 기반 정합 — §3 안전망 hook 3종 → 2종 (`pre-commit-verify` 폐기) + §6 단일 진실 소스 표에 CHANGELOG_RULE / MOCKUP_RULE 추가 + 검증/테스트 명령 두 섹션 분리 명시. |
 | 2026-05-30 | 정합 검증 후속 정정 (Phase 5) — §1 / §3 / §4 / §7 본문·도식에 잔존한 *hook 3종* / *catastrophic 3* 표기를 2종으로 갱신 + §4 / §10 *코어 23 파일* → *24 파일* (CHANGELOG_RULE / MOCKUP_RULE 신설 반영, pre-commit-verify.sh 삭제). |
 | 2026-05-31 | 0.1.2 멀티세션 + 백로그 정합 누락 일괄 정정 (정합 순회 1차) — §1 *1 메인 세션*만 표기 → *1 메인 세션(또는 멀티세션)* + 워크트리 격리 명시 / §3 흐름 표지 *스킬 8종* → *9종 + 메타 그룹(백로그 누적 / 불편 등록)* / §4-1 본 리포 *bin/ 5 스크립트* → *7 스크립트* (status.js / prune.js 추가) + *코어 24 파일* → *25 파일* (add-backlog 신설) + skills/ *(8)* → *(9)* + rules/ 본문에 CHANGELOG_RULE / MOCKUP_RULE 명시 + tasks/ 캡션에 vX.X/BACKLOG.md plan-init 생성 명시 / §4-2 사용자 프로젝트 디렉토리 구조에 GLOSSARY.md / CHANGELOG_RULE / MOCKUP_RULE 본문 추가 + skills/ (8) → (9) + tasks/ 캡션 plan-init BACKLOG 명시 / §6 단일 진실 소스 표 *(8 디렉토리)* → *(9 디렉토리)* / §7 plan 문서 인덱스 SKILLS.md 캡션 *8종* → *9종* / §7 사용자 프로젝트 자산 표 메인 진입점 *스킬 8종* → *9종*. 단순 수치 정합, 행위 변경 X |
+| 2026-05-31 | 정합 순회 3차 — §9 *현재 상태 + 남은 작업* 본문에 *0.1.0 부트스트랩 시점 기록* 명시 박스 추가 (그 후 진척은 CHANGELOG.md 단일 진실 소스 link). *남은 작업 publish-prep 4 항목*도 *0.1.0 시점 기록, 모두 완료됨*으로 시점 명시. 행위 변경 X — 시점 기록 보존 + 단일 진실 소스 명시 |
