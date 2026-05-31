@@ -7,6 +7,12 @@
 
 ## [Unreleased]
 
+(영역 없음 — 직전 0.1.2 publish 후 누적 영역 박힘 예정)
+
+---
+
+## [0.1.2] - 2026-05-31
+
 ### 추가
 
 - **멀티세션 워크트리 메커니즘 신설 (0.1.2 후보)** — 한 프로젝트 같은 `.git`을 공유하는 여러 메인 세션이 독립 작업 폴더(worktree)로 병렬 task를 진행. 메인 워크트리는 `dev` 전용으로 유지, task는 `~/.taskery/worktrees/<projectId>/TASK-NNN_<출처>_<슬러그>/`에 분기. SSoT = git 브랜치 (`git branch --no-merged dev --list 'feature/*_TASK-*' ...`). race 차단 2층 — 결정적 슬러그(같은 항목 → 같은 브랜치명 → git 자동 거부) + SSoT BL/RM-NNN grep. 충돌 자체 해결 3단계 — 단순 자동 / 의미적 자료 분석 / 판단 불가 사용자 호출. 머지 락 직렬화(`proper-lockfile`, `~/.taskery/<projectId>.merge.lock`). task-close 후 워크트리 + 작업 브랜치 자동 정리(GIT_RULE 면제 조항, 보존 키워드 시 양쪽 보존).
@@ -55,6 +61,7 @@
 - `template/.project/rules/GIT_RULE.md` 출처 표 — BL-NNN 채번 주체 `/backlog-add` → `/add-backlog` + *버전별* `.project/tasks/<vX.X>/BACKLOG.md` 경로 명시
 - `plan/SKILLS.md` 8종 → 9종 — §1 스킬 표 `/add-backlog` (meta) 행 / `task-init` BL 출처 진행 시 BACKLOG.md 확인 마킹 + `task-close` BACKLOG.md 무관 명시 / 위계 정신 meta 그룹 *백로그 누적* 추가 / §2 입력 처리 패턴 행 / §3.6 백로그 (0.1.2+) 섹션 신규 (흐름 / 체크박스 의미 / `/task-init` 연동 / `/task-close` 무관) / §4 스킬 본문 표 행 추가 (분량은 Phase 5 작성 후 측정)
 - `README.md` — 멀티세션 섹션 다음에 *백로그 메모* 단락 신설 (외부 평이체, jargon 풀이) + Skills 표 `/add-backlog` (meta) 행 / 패키지 디렉토리 구조 `8 skill` → `9 skill` 정합
+- **`/test-pipeline` 시뮬 9 task 라운드 발견 결함 5건 일괄 정정 (2026-05-31)** — `bin/lib.js` `getActiveTasks`: `--no-merged dev` 필터 제거 (분기 직후 빈 브랜치 = dev 동일 commit → *완전 머지 상태* 처리 → `getNextTaskNumber` 충돌 결함). `template/.claude/skills/task-init/SKILL.md` Step 4.1 같은 영역 본문 정합. `template/.claude/skills/task-close/SKILL.md` Step 1.3 *uncommitted 차단* 룰 제거 → *task-dev = git X / task-close = 자동 commit* taskery 정책 정합 + Step 6-3 *task-close가 uncommitted 변경분 정독 + Dev Plan Phase 매핑 → Phase별 commit 자동 생성* 책임 본문 강화 (자동 분리 코드 구현은 별도 라운드) + Step 4-b 자료 우선순위 1순위에 *plan 문서 (ROADMAP / FEATURES / ARCHITECTURE 등)* 추가 (task 문서와 동등 정독). `template/.claude/skills/task-test/SKILL.md` 수행 룰 9 추가 — *task.md 본문 메타 발언 (mismatch / aborted 의도 등)이 raw 시나리오 결과 판정 못 덮음* (결과 기반 판정 룰). `bin/taskery.js` prune `--help` / `-h` flag 처리 추가. `.gitignore` `.claude/` → `/.claude/` 루트 한정 정정 (template/.claude/는 배포물 영역)
 
 ---
 
@@ -102,6 +109,8 @@
 | 2026-05-30 | `[Unreleased]` §수정 보강 — 3차 검증 후속 정정 누적 (TASK_DOC_RULE §1.5 mockup 행 추가 + §2.5 Test Plan 본질 재정의 + §4.5 / §5 완성 예시 3개 Test Plan 형식 갱신, closed-immutable.sh hook 주석 mockup 자유 수정 명시) |
 | 2026-05-30 | `[Unreleased]` §수정 보강 — 3차 검증 후속 정정 추가 누적 (`/task-init` / `/plan-init` / `/task-close` SKILL 본문 + plan/HOOKS.md §6에 mockup `vX.X 공통` 명시 확산 정합. 행위 변경 X, 본문 가독성 정합) |
 | 2026-05-31 | `[Unreleased]` §추가 + §수정 — 멀티세션 워크트리 메커니즘 신설 (0.1.2 후보). bin/lib.js 유틸 확장 + bin/status.js / bin/prune.js 신설 + manifest 신규 필드(projectId / stale_days / lock_timeout_ms) + proper-lockfile 의존성. GIT_RULE 멀티세션 오버라이드 + CLAUDE.md 가이드 갱신. 스킬 본문 task-init/close 전면 재정의 + task-plan/dev/test 메타 위치 분기 + plan/SKILLS.md §3.5 신규 + README §멀티세션 + §해결하는 문제 한 행 |
+| 2026-05-31 | `[Unreleased]` §수정 — `/test-pipeline` 시뮬 발견 결함 5건 일괄 정정 (lib.js getActiveTasks SSoT + task-init Step 4.1 + task-close Step 1.3/6-3/4-b + task-test 룰 9 + prune --help + .gitignore 루트 한정) |
+| 2026-05-31 | `[Unreleased]` → `[0.1.2] - 2026-05-31` 발행 — 멀티세션 워크트리 + 백로그 + 충돌 해결 + `/test-pipeline` 발견 결함 정정 누적분 묶음 |
 | 2026-05-30 | `[Unreleased]` §수정 보강 — 3차 검증 추가 누적 (closed-immutable.sh 주석 / plan/HOOKS §2·§3·§6 / plan/DECISIONS §5 / template/CLAUDE.md Hook 표 본문에 *spec-diffs / screenshots / mockup* 표기 일관성 정합 — mockup 누락 6건 보강) |
 | 2026-05-30 | `[Unreleased]` §수정 보강 — 3차 검증 마지막 누적 (plan/DECISIONS §6 분산 원칙 표 — 스킬 path `<skill>.md` → `<skill>/SKILL.md` + CHANGELOG_RULE / MOCKUP_RULE 행 추가 + 테스트 명령 행 신설. plan/DISTRIBUTION §9 동기화 룰 예시 두 섹션 분리 정합. `/task-init` 블랙리스트 `Sources` 옛 표기 → `src / app / lib 등 프로젝트 소스 디렉토리` 언어/기술 중립 정합) |
 | 2026-05-30 | `[Unreleased]` §수정 보강 — README.md 디렉토리 구조 표시에 신설 룰 / 자료 반영 (rules/ 안 CHANGELOG_RULE / MOCKUP_RULE + .project/ 직속 GLOSSARY.md + tasks/ 옆 BACKLOG / mockup 명시) |
