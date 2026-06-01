@@ -12,9 +12,9 @@
 | `/project-init` | **project** | PROJECT.md / AGENT-GUIDE.md / LINKED-REPOS.md / .env / .project 골격 생성 | — | **1회성** (프로젝트 첫 셋업) |
 | `/plan-init` | **plan** | `.project/plans/<vX.X>/` 안 기획 문서 작성 | — | plan 버전마다 |
 | `/task-init` | **task** | **워크트리 분기** + task.md 6 섹션 placeholder + 헤더 status=draft. BL 출처 진행 시 `tasks/<vX.X>/BACKLOG.md` 항목 확인 마킹 (`[ ]` → `[x]` + TASK 마크) | — → `draft` | task마다 |
-| `/task-plan` | task | Requirements / Scope / Dev Plan / Test Plan 채우기 (워크트리 안 호출 — 메타는 메인 워크트리 절대 경로) | `draft` → `planned` | task마다 |
-| `/task-dev` | task | Phase 순서 구현 + self-check 게이트 (워크트리 안 호출) | `planned`/`developing` → `developed` | task마다 |
-| `/task-test` | task | Task tool 격리 검증 (confirmation bias 회피, 워크트리 안 호출) | `developed` → `tested` (또는 `developing`/`tested`+결함 명시) | task마다 |
+| `/task-plan` | task | Requirements / Scope / Dev Plan / Test Plan 채우기 (워크트리 호출 default — 멀티세션. 호출 위치 자유, cwd 무관) | `draft` → `planned` | task마다 |
+| `/task-dev` | task | Phase 순서 구현 + self-check 게이트 (워크트리 호출 default. cwd 무관) | `planned`/`developing` → `developed` | task마다 |
+| `/task-test` | task | Task tool 격리 검증 (confirmation bias 회피. 워크트리 호출 default. cwd 무관) | `developed` → `tested` (또는 `developing`/`tested`+결함 명시) | task마다 |
 | `/task-close` | task | git 마무리 + 검증 명령 재실행 게이트 + **머지 락 직렬화** + dev `--no-ff` 병합 + **워크트리/브랜치 자동 정리**. BACKLOG.md 무관 (task-init이 처리) | `tested` → `closed` | task마다 |
 | `/add-backlog` | **meta** | 사용자 발화로 *버전별* `tasks/<vX.X>/BACKLOG.md`에 항목 1건 추가 — 얕은 분석(개요 / 대상 영역) + BL-NNN 채번 + `withMetaLock` 직렬화 (0.1.2+) | — | 사용자 호출 / 백로그 발화 캐치 |
 | `/log-friction` | **meta** | FRICTION_LOG.md에 사용자 불편 한 행 기록 | — | 사용자 호출 / 불만 발화 캐치 / task-close 자체 감지 |
@@ -75,9 +75,17 @@ draft → planned → developing → developed → testing → tested → closed
 - **머지 락 직렬화** — `proper-lockfile` 기반 머지 락 (`~/.taskery/<projectId>.merge.lock`), 락 외 사전 rebase + 락 안 재 rebase로 race 흡수
 - **자동 정리** — task-close 마지막에 워크트리 + 브랜치 자동 제거 (GIT_RULE.md 면제 조항). 보존 키워드 시 양쪽 보존
 
-**호출 위치 분기 (task-close)**:
-- 워크트리에서 호출 — *그 워크트리의 태스크* 자동 컨텍스트
-- 메인 워크트리에서 호출 — 진행중 태스크 목록 인터뷰 + 사용자 선택 → 해당 워크트리 컨텍스트 진입
+**호출 위치 정책 (0.1.3+ — cwd 무관 동작 보장)**:
+- **task-init만 예외 — 메인 워크트리 cwd 전용** (워크트리 생성 단계라 cwd 제약 의미). Step 1 사전 검증에서 `git rev-parse --show-toplevel` 결과가 메인 워크트리와 일치 안 하면 중단
+- **나머지 task-* 스킬은 호출 위치 자유** — 운영 모델별 default:
+  - *멀티세션 병렬* (시스템 default) — 각 워크트리에 새 세션 열어 그 세션이 task-* 스킬 호출
+  - *단일 메인 지휘* — 메인 cwd 세션 1개가 모든 task 호출 (별도 워크트리 세션 X)
+  - *메인이 서브 세션 spawn* — 메인이 다른 세션 호출해 각 task 병렬 진행 (각 서브 세션이 그 task의 메인)
+- **cwd 무관 동작** — 모든 git 명령이 `git -C "$WT_PATH"` / `git -C "$MAIN_WT"` 형태라 어느 cwd에서 호출하든 결과 동일 (task-init 제외)
+- **task-close 인자 분기**:
+  - 인자 명시 (`TASK-NNN`) → 해당 워크트리 컨텍스트 진입
+  - 인자 없음 → 워크트리 cwd면 *그 워크트리의 태스크* 자동 / 메인 cwd면 진행중 태스크 인터뷰 + 사용자 선택
+- **내부 명령 형태 강제** (메인 cwd 호출 시 git-guard 오판 차단): 모든 git 명령 `git -C <경로> ...` 형태로만 발행. 셸 prefix(`cd <경로> && git ...`) / `--git-dir=` / `--work-tree=` 변형 영구 금지 — git-guard.sh가 5종 변형(`-C` / `--git-dir=` / `--git-dir` 공백 / `--work-tree=` / `--work-tree` 공백) 인식하나 셸 prefix는 인식 X
 
 **관련 CLI 보조 명령**:
 - `npx @angar2/taskery status` — 진행중 태스크 + 워크트리 + 머지 락 + stale 의심 항목 출력
@@ -295,3 +303,4 @@ CLAUDE.md `## 검증 명령` 단일 섹션이 *4 시점에 분산 실행* (self-
 | 2026-05-31 | 멀티세션 0.1.2 반영 — §1 스킬 표에 task-init/close 멀티세션 동작 + 워크트리 호출 위치 명시 / §3.5 멀티세션 워크트리 섹션 신규 (SSoT / 메인=dev 전용 / race 2층 / 충돌 3단계 / 머지 락 / 자동 정리 / 호출 위치 분기 / CLI 보조 명령 / .gitignore 케이스 분기) |
 | 2026-05-31 | 0.1.2 백로그 스킬 추가 반영 — §1 스킬 8종 → 9종 + `/add-backlog` (meta) 행 / §2 입력 처리 패턴 행 추가 / §3.6 백로그 (0.1.2+) 섹션 신규 (흐름 / 체크박스 의미 / task-init 연동 / task-close 무관) / §4 스킬 본문 표에 `/add-backlog` 행 / 위계 정신 meta 그룹에 백로그 누적 명시. task-init `[x]` 확인 마킹 + task-close BACKLOG.md 무관 명시도 §1 표에 반영 |
 | 2026-05-31 | 정합 순회 1차 후속 정정 — 제목 + 캡션 *스킬 8종* → *9종* 갱신 (멀티세션 + 백로그 commit 후 잔존). 본문 링크 path 표기 `<skill>.md` → `<skill>/SKILL.md` (0.1.1 디렉토리 마이그레이션 정합 누락분). §6 컨텍스트 관리 표 `/add-backlog` 행 추가 (9 스킬 정합). §4 본문 표 7 스킬 분량 실측 갱신 (멀티세션 commit으로 분량 증가 후 갱신 누락 — project-init/plan-init/task-init/task-plan/task-dev/task-test/task-close). 단순 수치 정합, 행위 변경 X |
+| 2026-06-02 | 0.1.3 F3 정합 — §1 스킬 표 task-plan/dev/test 캡션 *워크트리 안 호출* → *워크트리 호출 default (멀티세션), 호출 위치 자유, cwd 무관* / §3.5 호출 위치 분기(task-close) → *호출 위치 정책 (0.1.3+ — cwd 무관 동작 보장)* 섹션 재작성: 운영 모델 3가지(멀티세션 병렬 default / 단일 메인 지휘 / 메인 spawn 서브 세션) 모두 지원 + cwd 무관 동작 + 내부 명령 형태 강제 (`git -C` 형태, 셸 prefix / `--git-dir=` / `--work-tree=` 변형 금지) + git-guard.sh 5종 변형 인식 명시. stash FRICTION_LOG 2026-06-01 반영. |

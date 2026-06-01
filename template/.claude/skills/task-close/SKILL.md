@@ -7,7 +7,7 @@ description: task git 마무리 — 검증 게이트 + 커밋 순서 + 머지 �
 
 ## 개요
 
-`tested` 상태 task의 git 마무리. **워크트리에서 호출** 권장. 사전 rebase → 충돌 해결 (3단계 에스컬레이션) → 머지 락 → 락 안 재 rebase → dev `--no-ff` 머지 → 워크트리 제거 + 작업 브랜치 자동 삭제.
+`tested` 상태 task의 git 마무리. **호출 위치 자유** — 워크트리 cwd / 메인 워크트리 cwd / 다른 세션이 호출한 서브 세션 모두 동작 동일 (모든 git 명령이 `git -C <경로>` 형태라 cwd 무관). 사전 rebase → 충돌 해결 (3단계 에스컬레이션) → 머지 락 → 락 안 재 rebase → dev `--no-ff` 머지 → 워크트리 제거 + 작업 브랜치 자동 삭제.
 
 **최종 게이트**: 모든 검증 명령 재실행 — 린트/타입체크/빌드 PASS여야 진행.
 
@@ -18,8 +18,19 @@ description: task git 마무리 — 검증 게이트 + 커밋 순서 + 머지 �
 
 ## 호출 위치 정책
 
-- **워크트리에서 호출 권장** (CWD = 워크트리 폴더).
-- **메인 워크트리에서 호출 시** → 진행중 태스크 목록 인터뷰 + 사용자 선택 → 해당 워크트리 컨텍스트로 진행.
+- **호출 위치 자유** — 운영 모델에 따라 다양:
+  - *멀티세션 병렬* (system default) — 각 워크트리에 새 메인 세션 열어 그 세션이 본 스킬 호출
+  - *단일 메인 지휘* — 메인 cwd 세션 1개가 모든 task 호출 (서브 세션 X)
+  - *메인이 서브 세션 호출 병렬* — 메인이 다른 세션 spawn해서 각 task 진행
+- **호출 분기**:
+  - 인자 명시 (`TASK-NNN`) → 해당 워크트리 컨텍스트로 진입 (`$WT_PATH = ~/.taskery/worktrees/<projectId>/TASK-NNN_<...>/`).
+  - 인자 없음 → 워크트리 cwd면 *그 워크트리의 태스크* 자동 / 메인 cwd면 진행중 태스크 (status=tested) 인터뷰 + 사용자 선택.
+- **cwd 무관 동작** — 본 SKILL의 모든 git 명령이 `git -C "$WT_PATH" ...` / `git -C "$MAIN_WT" ...` 형태라 어느 cwd에서 호출되든 결과 동일.
+- **내부 git 명령 형태 강제** (메인 cwd 호출 시 git-guard 오판 + 변형 우회 방지):
+  - 본 SKILL의 모든 git 명령은 *`git -C <경로> ...` 형태로만 발행*.
+  - 셸 prefix(`cd <경로> && git ...` / `(cd <경로> && git ...)`) **영구 금지** — git-guard.sh가 변형 인식 X (catastrophic 우회 위험).
+  - `--git-dir=` / `--work-tree=` 변형 **영구 금지** — 가독성 ↓, 다른 워크트리 조작 혼동.
+  - 근거: stash FRICTION_LOG 2026-06-01 — 메인 cwd 세션에서 워크트리 브랜치 커밋이 git-guard에 dev 직접 커밋으로 오인 차단된 마찰.
 
 ## 입력 처리
 
@@ -33,7 +44,7 @@ description: task git 마무리 — 검증 게이트 + 커밋 순서 + 머지 �
 
 ```sh
 MAIN_WT=$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")
-WT_PATH=$(pwd)  # 워크트리에서 호출됐다고 가정 (메인 호출 시 사용자 선택 결과)
+WT_PATH=$(pwd)  # 워크트리 cwd 호출 시. 메인 cwd / 서브 세션 호출 시 인자 또는 인터뷰 결과로 결정
 PROJECT_ID=$(jq -r '.projectId' "$MAIN_WT/.taskery-manifest.json")
 BRANCH=$(git -C "$WT_PATH" rev-parse --abbrev-ref HEAD)
 LOCK_TIMEOUT_MS=$(jq -r '.lock_timeout_ms // 30000' "$MAIN_WT/.taskery-manifest.json")
@@ -324,7 +335,7 @@ git -C "$MAIN_WT" worktree remove "$WT_PATH"
 
 - **사용자 명시 호출 외 자체 진입 영구 금지** (stash FRICTION_LOG #6+10/#20) — task-close는 git 영역. 사용자가 *"X부터 Y까지"* 범위 명시했는데 Y가 close 이전 단계면 close 자체 진입 영구 X.
 - **검증 명령 재실행 게이트** — `/task-dev` self-check와 *별개*. 환경 변화 / 부분 작업 잡는 안전망.
-- **dev 직접 커밋 절대 X** — 워크트리에서만. dev에서 `git commit` 시도 시 git-guard.sh 차단.
+- **dev 직접 커밋 절대 X** — 작업 브랜치에서만. dev에서 `git commit` 시도 시 git-guard.sh 차단. 모든 git 명령은 cwd 무관 `git -C "$WT_PATH" ...` / `git -C "$MAIN_WT" ...` 형태 강제. 셸 prefix(`cd && git`) / `--git-dir=` / `--work-tree=` 변형 영구 금지 (§호출 위치 정책).
 - **`--no-ff` 강제** — 머지 커밋 없으면 분기 정보 영구 손실.
 - **머지 락 직렬화** — 두 세션이 동시 머지 시도해도 한쪽씩 순차 진행. 락 외 rebase로 race 흡수 + 락 안 재 rebase로 다른 세션 머지 흡수.
 - **충돌 자체 해결 3단계** — 단순 자동 / 의미적 자료 / 판단 불가 사용자. 자료 한계 발견 시 *반드시 사용자에게 보고* (1순위 자료 부재 등).

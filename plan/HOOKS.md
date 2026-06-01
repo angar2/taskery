@@ -74,16 +74,30 @@ practice 영역에 hook을 강제하면 *합리적 변형 차단 사고*가 발�
 **차단 6 명령**:
 | # | 패턴 | 메시지 |
 |---|------|------|
-| 1 | `git commit` on `main` 또는 `dev` 브랜치 | *작업 브랜치({타입}/{개발자}_TASK-NNN_slug)에서 커밋* |
+| 1 | `git commit` on `main` 또는 `dev` 브랜치 (**5종 변형 인식** — 0.1.3+, cwd 무관) | *작업 브랜치({타입}/{개발자}_TASK-NNN_slug)에서 커밋* + 변형/셸 prefix 가이드 |
 | 2 | `git push --force` 또는 `-f` | *정상 흐름 사유 없음. 사용자 명시 승인 필요* |
 | 3 | `git commit --no-verify` | *commit hook 우회 금지* |
 | 4 | `git branch -D` (강제 삭제) | *머지 안 된 브랜치 강제 삭제 사유 없음* |
 | 5 | `git reset --hard` | *작업 손실 위험* |
 | 6 | `git clean -fd` | *untracked 파일 + 디렉토리 강제 삭제 사유 없음* |
 
+**#1 변형 인식 (0.1.3+ — cwd 무관 동작 보장)**: 메인 cwd 세션에서 워크트리 브랜치 커밋을 *cwd 기준 dev 직접 커밋*으로 오인 차단하던 마찰(stash FRICTION_LOG 2026-06-01) 해결. 어느 cwd에서 호출하든 *대상 경로의 브랜치*로 검사.
+
+| 변형 | 형태 |
+|------|------|
+| `-C` | `git -C <경로> commit ...` |
+| `--git-dir=` | `git --git-dir=<경로>/.git commit ...` |
+| `--git-dir` (공백) | `git --git-dir <경로>/.git commit ...` |
+| `--work-tree=` | `git --work-tree=<경로> commit ...` |
+| `--work-tree` (공백) | `git --work-tree <경로> commit ...` |
+
+헬퍼 `extract_target_path`가 명령에서 대상 경로 추출 → 그 경로의 `git -C <대상> branch --show-current`로 검사 → task 브랜치 통과 / main·dev 차단.
+
+**셸 prefix 영구 금지**: `cd <경로> && git ...` / `(cd <경로> && git ...)` 형태는 hook 인식 X (정규식이 명령 시작 위치 기준이라 *cd 다음의 git*은 매칭 못함 — catastrophic 우회 위험). 모든 워크트리 대상 명령은 `git -C <경로> ...` 형태로만 발행. 차단 메시지에 안내 출력.
+
 **우회**: 사용자 명시 승인이 있을 때만 hook 비활성화 (또는 hook 자체 임시 disable). 정상 흐름에서 우회 사유 없음.
 
-**구현**: `tool_input.command` 추출 → 정규식 매칭 → exit 2 + GIT_RULE 인용 메시지.
+**구현**: `tool_input.command` 추출 → 정규식 매칭 → (#1) 변형 인식 헬퍼 → 대상 경로 브랜치 검사 → exit 2 + GIT_RULE 인용 메시지.
 
 **본문**: [template/.claude/hooks/git-guard.sh](../template/.claude/hooks/git-guard.sh) (2,766 B)
 
@@ -227,3 +241,4 @@ hook 영역에서 부활 가능한 미래 옵션:
 | 2026-05-30 | `pre-commit-verify.sh` hook 폐기 — task-close Step 2 게이트 + git-guard로 충분 (redundant 검증 사이클 제거). §3 / §5 / §7 / §9 / §10 표 정합. CLAUDE.md `## 검증 명령` + `## 테스트 명령` 두 섹션 분리 명시 추가 (stash FRICTION_LOG #25 반영). |
 | 2026-05-30 | 정합 검증 후속 정정 (Phase 5) — §2 본문 *hook 3종* 잔존 표기 *2종*으로 갱신 + process 영역 한정 표현 제거 (pre-commit-verify 폐기 정합). §4 git-guard 표 메시지 *pre-commit-verify hook 우회 금지* → *commit hook 우회 금지* 일반화. |
 | 2026-05-30 | 정합 검증 후속 정정 (3차) — §6 *차단 안 함 (의도적)* 본문에 `.project/tasks/v*/mockup/*.html` 행 추가 (vX.X 공통, 자유 수정) + 폴더 승격 추가 자료에서 *mockup* 제거 (vX.X 공통이라 폴더 안 X). closed-immutable.sh hook 동작 정합 (mockup은 task.md 매칭 X로 자동 보호 범위 외 — 본 정정은 가독성 정합). |
+| 2026-06-02 | 0.1.3 F3 정합 — §4 git-guard.sh #1 차단 룰 표 갱신: *5종 변형 인식 (0.1.3+, cwd 무관)* 명시 + `extract_target_path` 헬퍼 함수 + 변형 5종(`-C` / `--git-dir=` / `--git-dir` 공백 / `--work-tree=` / `--work-tree` 공백) 표 + 셸 prefix(`cd <경로> && git ...`) 영구 금지 안내 추가. stash FRICTION_LOG 2026-06-01 cwd 기준 브랜치 검사로 워크트리 브랜치 커밋이 dev 직접 커밋으로 오인 차단되던 마찰 해결 (cwd 무관 동작 보장 — 어느 운영 모델에서도 동등 동작). |

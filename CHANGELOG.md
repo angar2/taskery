@@ -7,7 +7,35 @@
 
 ## [Unreleased]
 
-(영역 없음 — 직전 0.1.2 publish 후 누적 영역 박힘 예정)
+(영역 없음 — 직전 0.1.3 publish 후 누적 영역 박힘 예정)
+
+---
+
+## [0.1.3] - 2026-06-02
+
+### 수정
+
+- **stash FRICTION_LOG 2026-06-01 5건 마찰 일괄 정정 (4건 반영, F4 stash 도메인 자체 처리로 제외)** — 0.1.2 도입 프로젝트(stash) 사용 중 적발된 마찰을 taskery 코어 결함으로 식별하여 본 라운드에 일괄 처리. FRICTION_LOG 본문 명시 개선 방향만 반영(메인 자율 확장 금지). 사용자 메모리 영역 미수정(taskery는 다른 PC·다른 리포에서도 사용)
+  - **F1 — UX/UI task의 Step 4.5 목업 confirm 우회 차단**: `template/.claude/skills/task-plan/SKILL.md` Step 4.5 #2 본문 강화 — UX/UI 포함 판단=O이면 *예외 없이* 발화 강제. 메인 효용 판단(*"이 케이스는 목업 효용 낮음"* / *"SF Symbol HTML 재현 X"* 등)으로 confirm 자체 생략 영구 금지. 효용 판단은 질문에 *곁들이는 의견*으로만 (생략 결정 대체 X — 목업 제작 여부는 *사용자 검수 방식 선택권*이라 *개발 자율 판단* 영역 X). `template/.project/rules/MOCKUP_RULE.md` §5 #2 정합 갱신
+  - **F2 — 메인 워크트리 = dev 전용 룰 위반 차단 (심각)**: `template/CLAUDE.md` §3 워크트리 자가 진단 안에 *모호 발화 자의 해석 금지* #4 신설 (*"워크트리 없이"* / *"메인에서"* / *"이 자리에서"* 류 발화 = 코어 규칙 충돌 신호 → 즉시 정지 + 규칙 명시 + 1줄 confirm. 자의 해석 후 진행 영구 금지) + §멀티세션 워크트리 본문 강화 (메인 워크트리 HEAD를 dev에서 떼는 어떤 명령도 영구 금지: `git checkout <task-branch>` / `git switch <task-branch>` / `git reset` HEAD 이동 / `git rebase` HEAD 이동 등. *"잠깐만 메인에서"* / *"테스트 한 번만"* 같은 예외 발화도 거부). `template/.project/rules/GIT_RULE.md` §멀티세션 워크트리 정책 §메인 워크트리 = dev 전용 정합 갱신
+  - **F3 — git-guard 변형 인식 강화 + 호출 위치 cwd 무관 동작 보장**: `template/.claude/hooks/git-guard.sh`에 `extract_target_path` 헬퍼 신설 — `git -C <경로>` / `git --git-dir=<경로>` (= 형태) / `git --git-dir <경로>` (공백) / `git --work-tree=<경로>` (= 형태) / `git --work-tree <경로>` (공백) 5종 변형 모두 인식해 *대상 경로의 브랜치*로 검사. 어느 cwd에서 호출하든 워크트리 브랜치 커밋이 *dev 직접 커밋*으로 오인되어 차단되던 마찰 해결. 차단 메시지에 *셸 prefix(`cd <경로> && git ...`) 형태는 hook 인식 X → `git -C <경로> ...` 형태 사용* 가이드 추가. `template/.claude/skills/task-close/SKILL.md` 호출 위치 정책 — *호출 위치 자유* (멀티세션 병렬 / 단일 메인 지휘 / 메인 spawn 서브 세션 모두 지원) + cwd 무관 동작 + 내부 git 명령 형태 강제 (`git -C "$WT_PATH" ...` / `git -C "$MAIN_WT" ...` 형태로만 발행, 셸 prefix·`--git-dir=`·`--work-tree=` 변형 영구 금지). `template/.project/rules/GIT_RULE.md` §Hook 안전망 + `plan/HOOKS.md` §4 정합 갱신
+  - **F5 — Test Plan grep 동어반복 + end-to-end 회피 차단**: `template/.claude/skills/task-plan/SKILL.md` Step 5 가이드라인에 안티패턴 3종 추가 — (a) grep/Read-only 존재 확인 시나리오는 *보조 검증*(PASS 카운트 제외) (b) 요구사항당 *최소 1개 end-to-end 실동작 시나리오* 강제 (c) *무거운 검증 회피 영구 금지* (부담 이유로 grep 동어반복 대체 X, 최소 1회 실제 산출물 확인) + *요구사항 ↔ 시나리오 커버리지 점검 단계* 신설 (Test Plan 끝에 매트릭스 첨부 — *"누적/리셋 안 함"* 같은 요구사항 시나리오 누락 차단). `template/.claude/skills/task-test/SKILL.md` 수행 룰 #10 신설 — grep-only 시나리오 단독 PASS 단정 영구 금지 (실동작 시나리오 부재 시 UNCERTAIN/FAIL 판정 + 메인 보고). `template/.project/rules/TASK_DOC_RULE.md` §2.5 정합 갱신
+  - **F4 — 워크트리 제거 시 외부 캐시 정리는 taskery 도메인 외 (제외)**: stash의 Xcode DerivedData 死 캐시 누적 마찰은 *프로젝트별 영역*. taskery는 범용 파이프라인 도구로 워크트리 제거까지가 책임 범위. 특정 케이스(Xcode 캐시)를 의식해 hook 진입점을 만드는 것조차 범용 도구 원칙 위반이므로 0.1.3 라운드에서 제외 — stash 영역에서 자체 처리
+- `package.json` 0.1.2 → 0.1.3
+- **0.1.3 정합 순회 — 본 라운드 변경에 영향받는 영역 일괄 정정 (cwd 무관 동작 정합 7곳 + 발행 후속 4곳)**:
+  - cwd 무관 동작 정합 (F3 5종 변형 인식의 의도 = *호출 위치 자유 + cwd 무관 동작*. 특정 운영 모델 강제 X — 멀티세션 병렬 / 단일 메인 지휘 / 메인 spawn 서브 세션 모두 지원):
+    - `template/.claude/skills/task-init/SKILL.md` Step 8 결과 보고 — 운영 모델 자유 명시 (워크트리 새 세션 / 메인 세션 그대로 / 메인 spawn 서브)
+    - `template/.claude/skills/task-plan/SKILL.md` §멀티세션 메타 위치 — 워크트리 호출 default (멀티세션) + 호출 위치 자유 + cwd 무관 동작 명시
+    - `template/.claude/skills/task-dev/SKILL.md` §멀티세션 메타 위치 — 동일 갱신
+    - `template/.claude/skills/task-test/SKILL.md` §멀티세션 메타 위치 — 동일 갱신
+    - `plan/SKILLS.md` §1 스킬 표 task-plan/dev/test 캡션 — *워크트리 호출 default (멀티세션) + cwd 무관*
+    - `plan/SKILLS.md` §3.5 *호출 위치 정책 (0.1.3+ — cwd 무관 동작 보장)* 섹션 재작성 — 운영 모델 3가지(멀티세션 병렬 default / 단일 메인 지휘 / 메인 spawn 서브 세션) 모두 지원 + cwd 무관 동작 + 내부 명령 형태 강제 + 5종 변형 인식 명시
+    - `README.md` §멀티세션 — 운영 방식 3가지(워크트리 새 세션 / 메인 1개 지휘 / 메인 spawn 서브) 자유 표기 (외부 평이체 정합)
+  - 발행 후속 정합:
+    - `plan/DISTRIBUTION.md` §5 manifest 예시 `"version": "0.1.2"` → *0.1.3*
+    - `plan/HOOKS.md` 수정 이력 — 0.1.3 F3 §4 갱신 항목 기재
+    - `plan/SKILLS.md` 수정 이력 — 0.1.3 F3 §1·§3.5 갱신 항목 기재
+    - `plan/DISTRIBUTION.md` 수정 이력 — 0.1.3 manifest 버전 정합 항목 기재
 
 ---
 
@@ -120,3 +148,4 @@
 | 2026-05-31 | `[Unreleased]` §수정 추가 — 정합 순회 2차 후속 정정. bin/taskery.js 헤더 주석 서브커맨드 목록에 `status` / `prune` 2행 추가 + package.json description *스킬 8종* → *9종* (npm 페이지 첫 화면) + plan/TASK-DOC.md §7 스킬 path *`<skill>.md`* → *`<skill>/SKILL.md`* (0.1.1 디렉토리 마이그레이션 후 갱신 누락분) + plan/DISTRIBUTION.md §5 manifest 예시 필드 순서를 실제 bin/init.js / bin/update.js writeManifest 호출 순서와 일치 + §11 동작 검증 표 본 세션 미실행 수치 인용 제거. package-lock.json 신규 추가 (0.1.2 멀티세션 Phase 1 commit에서 proper-lockfile 의존성 추가 시 누락된 lockfile 합류) |
 | 2026-05-31 | `[Unreleased]` §수정 추가 — 정합 순회 3차 최신 요구사항 기준 보강. README.md §자동 발동 예시에 `/add-backlog` 발화 패턴 한 줄 추가 (*"이 부분도 백로그에 추가해줘"* / *"나중에 할 일로 적어둬"*) + plan/OVERVIEW.md §9 *현재 상태 + 남은 작업* 본문에 *0.1.0 부트스트랩 시점 기록* 명시 박스 추가 (그 후 진척은 CHANGELOG.md 단일 진실 소스 link). 행위 변경 X — 외부 시각 9 스킬 정합 보강 + 시점 기록 명시 |
 | 2026-05-31 | `[Unreleased]` §수정 추가 — 정합 순회 5차 잔존 결함 정정. plan/DISTRIBUTION.md §3 `bin/taskery.js` 분량 *1,694 B* → *1,870 B* (2차 commit에서 헤더 주석에 `status` / `prune` 서브커맨드 2행 추가했으나 §3 분량 표 갱신 누락분) + §8 `package.json` 메타 예시 *0.1.0 → 0.1.2* / `"engines.git": ">=2.31.0"` 추가 / `"dependencies": { "proper-lockfile": "^4.1.2" }` 신규 추가 (실제 0.1.2 package.json 본문과 일치) + template/.claude/skills/project-init/SKILL.md Step 4 폴더 구조 본문 + Step 7 빈 골격 점검 본문의 *코어 룰 (TASK_DOC_RULE / GIT_RULE)* 2개 표기 → *(TASK_DOC_RULE / GIT_RULE / CHANGELOG_RULE / MOCKUP_RULE)* 4개로 갱신 (CHANGELOG_RULE / MOCKUP_RULE 신설 후 본 스킬 본문 누락분 정합). 행위 변경 X |
+| 2026-06-02 | `[Unreleased]` → `[0.1.3] - 2026-06-02` 발행 — stash FRICTION_LOG 2026-06-01 5건 마찰 일괄 정정 (F1·F2·F3·F5 반영, F4 stash 도메인 자체 처리로 제외). CLAUDE.md §3 모호 발화 자의 해석 금지 + §멀티세션 워크트리 메인 HEAD 떼기 금지 / git-guard.sh 5종 변형 인식 헬퍼 + 셸 prefix 가이드 / task-close 호출 위치 정책 — 운영 모델 자유(멀티세션 병렬 default / 단일 메인 지휘 / 메인 spawn 서브 세션) + cwd 무관 동작 + 내부 명령 형태 강제 / task-plan Step 4.5 #2 confirm 발화 강제 + Step 5 안티패턴 3종 + 요구사항 ↔ 시나리오 매트릭스 / task-test 수행 룰 #10 grep-only 보조 + 정합 갱신 4건(MOCKUP_RULE / GIT_RULE / plan-HOOKS / TASK_DOC_RULE) |
