@@ -191,7 +191,9 @@ docs: [TASK-{NNN}] CHANGELOG 업데이트
 ### 메인 워크트리 = dev 전용
 
 - 메인 워크트리는 항상 dev 체크아웃 상태 유지
-- 모든 태스크 작업은 *별도 워크트리*에서 수행
+- 모든 태스크 작업은 *예외 없이* 별도 워크트리에서 수행
+- **메인 워크트리 HEAD를 dev에서 떼는 어떤 명령도 영구 금지**: `git checkout <task-branch>` / `git switch <task-branch>` / `git reset` HEAD 이동 / `git rebase` HEAD 이동 등. *"잠깐만 메인에서"* / *"테스트 한 번만"* 같은 예외 발화도 거부 (별도 워크트리로 처리)
+- **모호 발화 자의 해석 금지**: *"워크트리 없이"* / *"메인에서"* / *"이 자리에서"* 류 발화 = 본 규칙 충돌 신호 → 즉시 정지 + 규칙 명시 + 1줄 confirm 요청 (자의 해석 후 진행 영구 금지). 사용자 의도가 *오타/모호*일 가능성은 *워크트리 사용*으로 읽는 게 자연스러움
 - `/task-init` / `/task-close` 시작 시 검증 (위배 시 사용자 호출 + 중단)
 
 ### 워크트리 위치
@@ -243,11 +245,14 @@ git -C "$MAIN_WT" branch --no-merged dev --list \
 ## Hook 안전망 — `git-guard.sh`
 
 `.claude/hooks/git-guard.sh`가 PreToolUse(Bash)로 다음 명령 차단:
-- `main` / `dev` 직접 커밋
+- `main` / `dev` 직접 커밋 — **5종 변형 인식** (0.1.3+): `git -C <경로>` / `git --git-dir=<경로>` / `git --git-dir <경로>` / `git --work-tree=<경로>` / `git --work-tree <경로>` 모두 인식해 *대상 경로의 브랜치*로 검사. 어느 cwd에서 호출하든 워크트리 브랜치 커밋이 dev 직접 커밋으로 오인 차단되지 않음
 - `git push --force` (작업 브랜치 외 / 사용자 미승인)
 - `git commit --no-verify`
 - `git branch -D` (사용자 미승인)
 - `git reset --hard` (사용자 미승인)
+- `git clean -fd` (사용자 미승인)
+
+**셸 prefix 금지**: `cd <경로> && git ...` / `(cd <경로> && git ...)` 형태는 hook이 정확히 인식 X (변형 우회 위험). 모든 워크트리 대상 명령은 `git -C <경로> ...` 형태로만 발행.
 
 이 hook은 *catastrophic 차단 안전망*. 잘 지키면 작동 0회 (무해).
 
@@ -278,3 +283,4 @@ git -C "$MAIN_WT" branch --no-merged dev --list \
 | 2026-05-30 | docs/* 브랜치 ff-only 예외 명시 — plan-init 단일 커밋 한정. task 진행 중 ROADMAP/플랜 갱신은 작업 브랜치 + --no-ff 명시 추가 (stash FRICTION_LOG #4 반영) |
 | 2026-05-31 | 멀티세션 0.1.2 오버라이드 — 브랜치명에 출처(BL/RM/DR) 추가 / 케이스 2(TASK 없는 브랜치) 시스템 외 명시 / `/task-close` 자동 삭제 + 워크트리 제거 면제 조항 / 멀티세션 워크트리 정책 섹션 신규 (메인=dev 전용 / SSoT 조회 / 머지 락 직렬화) |
 | 2026-05-31 | 0.1.2 백로그 스킬 추가 정합 — 출처 표 `BL-NNN` 채번 주체 `/backlog-add` → `/add-backlog`로 갱신 + 버전별 경로(`.project/tasks/<vX.X>/BACKLOG.md`) 명시 |
+| 2026-06-02 | 0.1.3 F2·F3 정합 — §멀티세션 워크트리 정책 *메인 HEAD 떼기 금지* + *모호 발화 자의 해석 금지* / §git-guard.sh 5종 변형 인식 (-C / --git-dir / --work-tree) + 셸 prefix 금지 명시. stash FRICTION_LOG 2026-06-01 반영 |

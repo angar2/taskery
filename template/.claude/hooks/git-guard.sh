@@ -3,7 +3,7 @@
 # PreToolUse(Bash) 훅 — catastrophic git 명령 차단
 #
 # 잡는 것:
-#   1. main / dev 브랜치 직접 커밋
+#   1. main / dev 브랜치 직접 커밋 (5종 변형 인식: -C / --git-dir / --work-tree)
 #   2. git push --force / -f
 #   3. git commit --no-verify
 #   4. git branch -D (강제 삭제)
@@ -31,12 +31,46 @@ if ! echo "$CMD" | grep -qE '(^|;|&&|\|\|)\s*git\s'; then
   exit 0
 fi
 
-# 1. main / dev 직접 커밋 차단
+# 헬퍼: git 명령에서 대상 워크트리 경로 추출 (5종 변형)
+#   1. git -C <경로>
+#   2. git --git-dir=<경로>  (= 형태)
+#   3. git --git-dir <경로>  (공백 분리)
+#   4. git --work-tree=<경로>  (= 형태)
+#   5. git --work-tree <경로>  (공백 분리)
+# 추출 실패 시 빈 문자열 (cwd 사용).
+# --git-dir 변형은 `.git` 디렉토리를 가리키므로 dirname 처리해 워크트리 경로로 변환.
+extract_target_path() {
+  local cmd="$1"
+  local path=""
+
+  if [[ "$cmd" =~ git[[:space:]]+-C[[:space:]]+([^[:space:]]+) ]]; then
+    path="${BASH_REMATCH[1]}"
+  elif [[ "$cmd" =~ --git-dir=([^[:space:]]+) ]]; then
+    path=$(dirname "${BASH_REMATCH[1]}")
+  elif [[ "$cmd" =~ --git-dir[[:space:]]+([^[:space:]]+) ]]; then
+    path=$(dirname "${BASH_REMATCH[1]}")
+  elif [[ "$cmd" =~ --work-tree=([^[:space:]]+) ]]; then
+    path="${BASH_REMATCH[1]}"
+  elif [[ "$cmd" =~ --work-tree[[:space:]]+([^[:space:]]+) ]]; then
+    path="${BASH_REMATCH[1]}"
+  fi
+
+  echo "$path"
+}
+
+# 1. main / dev 직접 커밋 차단 (5종 변형 인식)
 # 현재 브랜치 확인 + git commit 명령 감지 시 차단
-if echo "$CMD" | grep -qE '(^|;|&&|\|\|)\s*git\s+commit\b'; then
-  CURRENT_BRANCH=$(git branch --show-current 2>/dev/null)
+if echo "$CMD" | grep -qE '(^|;|&&|\|\|)\s*git(\s+(-C\s+\S+|--git-dir[= ]\S+|--work-tree[= ]\S+))*\s+commit\b'; then
+  TARGET_PATH=$(extract_target_path "$CMD")
+  if [ -n "$TARGET_PATH" ]; then
+    CURRENT_BRANCH=$(git -C "$TARGET_PATH" branch --show-current 2>/dev/null)
+  else
+    CURRENT_BRANCH=$(git branch --show-current 2>/dev/null)
+  fi
   if [ "$CURRENT_BRANCH" = "main" ] || [ "$CURRENT_BRANCH" = "dev" ]; then
     echo "git-guard: '$CURRENT_BRANCH' 브랜치 직접 커밋 차단. 작업 브랜치({타입}/{개발자}_TASK-NNN_slug)에서 커밋. (.project/rules/GIT_RULE.md §기본 원칙)" >&2
+    echo "  변형 인식: 'git -C <경로> ...' / 'git --git-dir=<경로> ...' / 'git --work-tree=<경로> ...' — 메인 cwd에서 워크트리 대상 커밋 가능." >&2
+    echo "  셸 prefix('cd <경로> && git ...' / '(cd ... && git ...)')는 hook이 정확히 인식 X — 'git -C <경로> ...' 형태로만 발행." >&2
     exit 2
   fi
 fi

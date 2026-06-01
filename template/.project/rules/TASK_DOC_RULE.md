@@ -208,6 +208,29 @@ draft → planned → developing → developed → testing → tested → closed
 - **자기완결적**: `/task-test` 격리 세션이 *task.md만 보고도* 수행 가능. 메인의 plan/dev 컨텍스트 없이.
 - **명령 / 기대값 포함**: 무엇을 실행하고 무엇이 기대되는지 명확.
 - **메인 가정 X**: 격리 세션이 *코드와 동작만 신뢰*. *"잘 될 거야"* 같은 가정 금지.
+- **grep/Read-only 존재 확인 시나리오 = 보조용** (stash FRICTION_LOG 2026-06-01 반영) — 구현 코드의 존재 여부를 grep/Read로 재확인하는 시나리오는 *동어반복*. PASS 카운트에서 제외하거나 실동작 시나리오의 *보조*로만 사용. 단독 검증 가치 X.
+- **요구사항당 end-to-end 1개 이상 강제** — Requirements 각 항목이 *사용자 관점에서 실제 작동하는지* 검증하는 end-to-end 실동작 시나리오 최소 1개 보장. 산출물 실행 → 결과 확인 형태.
+- **무거운 검증 회피 영구 금지** — 부담(빌드 수 분+ / 외부 의존 / 환경 설정) 이유로 실동작 시나리오를 grep 동어반복으로 대체 X. 최소 1회는 실제 산출물로 확인. 부담은 *fix 사이클 1~2회 예상* 같은 사전 예고로 처리 (생략 사유 X).
+
+**요구사항 ↔ 시나리오 커버리지 점검** (필수 — stash FRICTION_LOG 2026-06-01 반영):
+
+Test Plan 작성 완료 후 *반드시* 점검. *"누적/리셋 안 함"* 같은 요구사항이 시나리오에서 통째로 빠지는 누락 차단용.
+
+1. Requirements 합의 항목 전체를 *매트릭스*로 펼침.
+2. 각 항목당 *최소 1개 시나리오 커버* 확인.
+3. 미커버 발견 시 → 시나리오 보강 후 재점검.
+
+형식 (Test Plan 끝에 첨부):
+
+```markdown
+### Requirements ↔ Test Plan 매트릭스
+
+| 요구사항 | 커버 시나리오 # |
+|---------|----------------|
+| <Req 1 한 줄> | #1, #3 |
+| <Req 2 한 줄> | #2 (end-to-end) |
+| <Req 3 한 줄> | #5 |
+```
 
 ### 2.6 Result 기록 (`/task-dev`, `/task-test` 끝)
 
@@ -614,3 +637,4 @@ draft → planned → developing → developed → testing → tested → closed
 | 2026-05-08 | §1.5 추가 — task 파일/폴더/부속 자료 위치 단일 진실 소스. spec-diffs/screenshots는 vX.X 공통 통일. closed-immutable hook 보호 범위는 task.md 본 파일만 (스킬 본문 간 위치 모순 통일) |
 | 2026-05-09 | 표현 정제 — 인명 / 경박 표현 / 스킬 용어 / 이전 버전 비교 단락 정리 |
 | 2026-05-30 | stash FRICTION_LOG 기반 정합 — §1.5 mockup 행 추가 (vX.X 공통, 단일 진실 소스 MOCKUP_RULE) + §2.5 Test Plan 본질 재정의 (실질 동작 시나리오 + `[AUTO]` / `[USER]` 분류 강제 + 카탈로그 7방식 + UX/UI 영역 분리 매트릭스 + 시각 fix 사이클 사전 예고 + 검증 / 테스트 명령 두 섹션 참조) + §4.5 / §5 완성 예시 3개 Test Plan 형식 갱신 (분류 표 + PASS 기준 명시. 기존 번호 매김 시나리오 + 검증 명령 나열은 옛 형식). (stash FRICTION_LOG #14+19 / #25 정합) |
+| 2026-06-02 | 0.1.3 F5 정합 — §2.5 가이드라인 안티패턴 3종 추가 (grep/Read-only 보조용 / 요구사항당 end-to-end 1개 이상 / 무거운 검증 회피 금지) + 요구사항 ↔ 시나리오 커버리지 점검 단계 신설 (stash FRICTION_LOG 2026-06-01 Test Plan 동어반복 + 누락 마찰 반영) |

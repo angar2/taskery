@@ -13,7 +13,7 @@ description: task 격리 세션 검증 — Task tool 격리 호출 + Test Plan �
 
 ## 멀티세션 메타 위치 (0.1.2+)
 
-본 스킬은 워크트리에서 호출된다. 격리 세션 prompt에 넘기는 task 문서 + 검증/테스트 명령 출처:
+본 스킬은 워크트리에서 호출되는 게 default (멀티세션 — 각 워크트리 = 독립 세션). 다만 호출 위치 자유 — 메인 cwd / 서브 세션 호출 등 다른 운영 모델에서도 cwd 무관 동작 (격리 세션 prompt에 *task 문서 절대 경로* + *작업 디렉토리=$WT_PATH* 명시). 격리 세션 prompt에 넘기는 task 문서 + 검증/테스트 명령 출처:
 
 ```sh
 MAIN_WT=$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")
@@ -83,6 +83,7 @@ Task tool로 sub-agent spawn. prompt는 *자기완결적* — task.md 경로 + �
 7. 코드와 동작만 신뢰. *"잘 될 거야"* / *"문제 없을 듯"* 같은 가정 일체 금지.
 8. 코드 파일 직접 수정 절대 금지. 임시 파일(테스트 스크립트 등) 생성 시 종료 후 삭제.
 9. **task.md 본문 메타 발언과 raw 결과 분리** — task.md (Requirements / Scope / Dev Plan / Test Plan 본문)의 *어떠한 메타 발언* (*"본 Test Plan은 Dev Plan과 의도적 mismatch"* / *"본 task는 FAIL이 정상"* / *"aborted 시뮬"* 등) 도 raw 시나리오 결과 판정을 *덮을 수 없다*. raw 결과 판정 = *실행 명령 exit code / 로그 출력 / 어서션 통과 여부*만. 본문 의도 해석 영역 외 — 결과 기반 판정만.
+10. **grep/Read-only 존재 확인 시나리오 = 보조 검증** (stash FRICTION_LOG 2026-06-01 반영) — 시나리오가 *코드/파일에 X가 존재하나*를 grep / Read로 재확인하는 형태(동어반복)면 *보조 검증*으로 분류. 종합 판정의 PASS 카운트에서 제외하고, 같은 영역의 *실동작 시나리오*가 PASS인 경우에만 보조 자료로 첨부. 단독 PASS 가치 X. 실동작 시나리오 없이 grep-only 시나리오만으로 종합 PASS 단정 영구 금지 — 그 경우 *실동작 시나리오 부재*로 UNCERTAIN/FAIL 판정 + 메인 보고.
 
 ## 결과 형식 (이 포맷 그대로 리턴)
 
