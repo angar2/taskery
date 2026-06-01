@@ -244,7 +244,7 @@ git -C "$MAIN_WT" check-ignore -q "$MAIN_WT/.project/dummy"
 - task 문서: <TASK_DOC_PATH> (메인 워크트리 / 워크트리 안 — 위 케이스에 따라)
 - 헤더: <생성일> / <vX.X> / <유형> / <규모> / draft
 - BL 마킹: BL-<NNN> [x] (BL 출처 시. RM/DR이면 생략)
-- 다음: 워크트리 폴더에서 새 세션 열기 → /task-plan TASK-<NNN> 으로 기획 채우기
+- 다음: /task-plan TASK-<NNN> 으로 기획 채우기 (워크트리 폴더에서 새 세션 열어 진행 / 메인 세션 그대로 진행 / 메인이 서브 세션 spawn 등 운영 모델 자유)
 ```
 
 ## 도구 가이드

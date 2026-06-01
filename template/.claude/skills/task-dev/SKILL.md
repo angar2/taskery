@@ -13,7 +13,7 @@ self-check 명령은 프로젝트 루트 `CLAUDE.md`의 *검증 명령* 섹션 �
 
 ## 멀티세션 메타 위치 (0.1.2+)
 
-본 스킬은 워크트리에서 호출된다. 메타(`.project/`, `CLAUDE.md`) 접근 시 **메인 워크트리 절대 경로** 우선.
+본 스킬은 워크트리에서 호출되는 게 default (멀티세션 — 각 워크트리 = 독립 세션). 다만 호출 위치 자유 — 메인 cwd / 서브 세션 호출 등 다른 운영 모델에서도 cwd 무관 동작. 메타(`.project/`, `CLAUDE.md`) 접근 시 **메인 워크트리 절대 경로** 우선.
 
 ```sh
 MAIN_WT=$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")
