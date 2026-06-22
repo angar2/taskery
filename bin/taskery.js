@@ -4,7 +4,8 @@
  * `npx @angar2/taskery <subcommand>` — 진입점 dispatcher.
  *
  * 서브커맨드:
- *   init    — 현재 디렉토리에 taskery 자산 카피 + manifest 생성
+ *   init    — 현재 디렉토리에 taskery 자산 카피 + manifest 생성 (플랫폼 선택)
+ *   add     — 기존 설치 리포에 플랫폼 자산 추가 (claude | codex)
  *   update  — 최신 버전 fetch + manifest 비교 + 머지 갱신
  *   status  — 멀티세션 현황 요약 (진행중 태스크 / 워크트리 / 머지 락, 0.1.2+)
  *   prune   — stale 워크트리 / 브랜치 대화형 정리 (0.1.2+)
@@ -28,7 +29,8 @@ function help() {
   console.log(`taskery v${require('./lib').getPackageVersion()}
 
 사용법:
-  npx @angar2/taskery init      현재 디렉토리에 taskery 자산 설치
+  npx @angar2/taskery init      현재 디렉토리에 taskery 자산 설치 (플랫폼 선택)
+  npx @angar2/taskery add <p>   기존 설치에 플랫폼 추가 (claude | codex)
   npx @angar2/taskery update    최신 버전 fetch + 머지 갱신
   npx @angar2/taskery status    멀티세션 현황 (진행중 태스크 / 워크트리 / 머지 락)
   npx @angar2/taskery prune     stale 워크트리 / 브랜치 대화형 정리
@@ -44,6 +46,9 @@ function help() {
 switch (sub) {
   case 'init':
     runScript('init.js');
+    break;
+  case 'add':
+    runScript('add.js');
     break;
   case 'update':
     runScript('update.js');

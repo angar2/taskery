@@ -1,0 +1,17 @@
+# taskery Codex 프로젝트 설정 — PreToolUse hook 2종 등록 (git 안전망 + closed 보호)
+#
+# hook 스크립트 경로는 git 리포 루트 기준으로 해석한다($(git rev-parse --show-toplevel)).
+# 설치 위치와 무관하게 동작하도록 절대경로 하드코딩을 피한다.
+# 최초 1회 코덱스 `/hooks`로 trust 승인이 필요하다(승인 전 hook은 자동 skip).
+
+[[hooks.PreToolUse]]
+matcher = "^Bash$"
+[[hooks.PreToolUse.hooks]]
+type = "command"
+command = 'bash "$(git rev-parse --show-toplevel)/.codex/hooks/git-guard.sh"'
+
+[[hooks.PreToolUse]]
+matcher = "apply_patch"
+[[hooks.PreToolUse.hooks]]
+type = "command"
+command = 'bash "$(git rev-parse --show-toplevel)/.codex/hooks/closed-immutable.sh"'

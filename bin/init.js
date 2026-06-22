@@ -27,6 +27,8 @@ const {
   generateProjectId,
   DEFAULT_STALE_DAYS,
   DEFAULT_LOCK_TIMEOUT_MS,
+  resolveInstallPlan,
+  gitignorePatternsFor,
 } = require('./lib');
 
 async function confirm(msg) {
@@ -36,6 +38,23 @@ async function confirm(msg) {
       rl.close();
       resolve(ans.trim().toLowerCase() === 'y');
     });
+  });
+}
+
+// 에이전트 플랫폼 선택 — 고른 것만 독립 설치 (공통 .project/는 항상)
+async function selectPlatforms() {
+  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+  return new Promise((resolve) => {
+    rl.question(
+      `\n에이전트 플랫폼 선택:\n  1) Claude Code\n  2) Codex\n  3) 둘 다\n선택 (1/2/3, 기본 1): `,
+      (ans) => {
+        rl.close();
+        const c = ans.trim() || '1';
+        if (c === '2') resolve(['codex']);
+        else if (c === '3') resolve(['claude', 'codex']);
+        else resolve(['claude']);
+      },
+    );
   });
 }
 
@@ -55,26 +74,28 @@ async function main() {
     }
   }
 
-  // 2. template/ 정독 + 해시 맵
+  // 2. 플랫폼 선택 + template/ 정독 → 설치 계획 전개 (공통 shared/는 플랫폼 경로로 매핑)
+  const platforms = await selectPlatforms();
   const templateFiles = walkTemplate(templateDir);
-  const fileEntries = Object.entries(templateFiles);
+  const plan = resolveInstallPlan(templateFiles, platforms);
 
   console.log(`\ntaskery v${getPackageVersion()} init`);
   console.log(`대상: ${cwd}`);
-  console.log(`카피 대상: ${fileEntries.length}개 파일\n`);
+  console.log(`플랫폼: ${platforms.join(', ')}`);
+  console.log(`카피 대상: ${plan.length}개 파일\n`);
 
-  // 3. 카피 + manifest 빌드
+  // 3. 카피 + manifest 빌드 (manifest 키 = 설치 경로 installRel)
   const manifestFiles = {};
   let copied = 0;
   let skipped = 0;
 
-  for (const [rel, hash] of fileEntries) {
-    const src = path.join(templateDir, rel);
-    const dst = path.join(cwd, rel);
+  for (const { templateRel, installRel, hash } of plan) {
+    const src = path.join(templateDir, templateRel);
+    const dst = path.join(cwd, installRel);
 
     // .local.md suffix는 사용자 영역 — taskery template에는 없어야 정상이지만 방어적으로 스킵
-    if (isLocalOverride(rel)) {
-      console.log(`  skip (.local override 영역): ${rel}`);
+    if (isLocalOverride(installRel)) {
+      console.log(`  skip (.local override 영역): ${installRel}`);
       skipped++;
       continue;
     }
@@ -82,18 +103,18 @@ async function main() {
     // 사용자 .local.md 충돌 검사 — 사용자가 직접 만든 *.local.md 보호
     // 본 init은 신규 설치 default, 충돌 거의 없지만 update 흐름과 일관성 유지
     if (fs.existsSync(dst)) {
-      const ok = await confirm(`  '${rel}' 이미 존재 — 덮어쓸까?`);
+      const ok = await confirm(`  '${installRel}' 이미 존재 — 덮어쓸까?`);
       if (!ok) {
-        console.log(`    skip: ${rel}`);
+        console.log(`    skip: ${installRel}`);
         skipped++;
         continue;
       }
     }
 
     copyFile(src, dst);
-    manifestFiles[rel] = { hash, core: true, managed: true };
+    manifestFiles[installRel] = { hash, core: true, managed: true };
     copied++;
-    console.log(`  copy: ${rel}`);
+    console.log(`  copy: ${installRel}`);
   }
 
   // 4. manifest 작성 — 멀티세션(0.1.2+): projectId / stale_days / lock_timeout_ms 포함
@@ -101,6 +122,7 @@ async function main() {
     version: getPackageVersion(),
     installed_at: new Date().toISOString(),
     projectId: generateProjectId(),
+    platforms,
     stale_days: DEFAULT_STALE_DAYS,
     lock_timeout_ms: DEFAULT_LOCK_TIMEOUT_MS,
     files: manifestFiles,
@@ -111,14 +133,9 @@ async function main() {
   //   공개 repo면 내부 워크플로 파일 노출 회피 — taskery 내부 영역 .gitignore 등록 제안.
   //   사용자 NO면 패스 (그대로 둠). 이미 등록되어 있으면 스킵.
   const gitignorePath = path.join(cwd, '.gitignore');
-  const taskeryPatterns = [
-    '.project/',
-    '.claude/',
-    'CLAUDE.md',
-    '.taskery-manifest.json',
-  ];
+  const taskeryPatterns = gitignorePatternsFor(platforms);
   const addGitignore = await confirm(
-    `\ntaskery 내부 파일(.project/, .claude/, CLAUDE.md, .taskery-manifest.json)을 .gitignore에 등록할까?\n  (공개 repo면 권장 — 내부 워크플로 파일 노출 회피)`,
+    `\ntaskery 내부 파일(${taskeryPatterns.join(', ')})을 .gitignore에 등록할까?\n  (공개 repo면 권장 — 내부 워크플로 파일 노출 회피)`,
   );
   if (addGitignore) {
     const existing = fs.existsSync(gitignorePath)
@@ -147,12 +164,15 @@ async function main() {
   // 5. 결과 보고
   console.log(`\n✅ taskery init 완료`);
   console.log(`   카피: ${copied}개 / 스킵: ${skipped}개`);
+  console.log(`   플랫폼: ${platforms.join(', ')}`);
   console.log(`   manifest: ${MANIFEST_NAME}\n`);
+  const entryFile = platforms.includes('claude') ? 'CLAUDE.md' : 'AGENTS.md';
   console.log(`다음 단계:`);
-  console.log(`  1. CLAUDE.md 정독 + 프로젝트 메타 + 검증 명령 채우기`);
-  console.log(`  2. Claude Code 진입 → '/project-init' 호출 → '.project/' 진입 문서 골격 생성`);
-  console.log(`  3. '/plan-init <vX.X>' 호출 → 9 기획 문서 작성`);
-  console.log(`  4. '/task-init' 호출 → 첫 task 시작\n`);
+  console.log(`  1. ${entryFile} 정독 + 프로젝트 메타 + 검증 명령 채우기`);
+  if (platforms.includes('codex')) {
+    console.log(`  2. Codex 최초 1회 '/hooks'로 hook trust 승인 (.codex/config.toml — git-guard / closed-immutable)`);
+  }
+  console.log(`  3. 에이전트 진입 → '/project-init' → '/plan-init <vX.X>' → '/task-init'\n`);
 }
 
 main().catch((e) => {
