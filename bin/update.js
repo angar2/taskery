@@ -34,6 +34,8 @@ const {
   generateProjectId,
   DEFAULT_STALE_DAYS,
   DEFAULT_LOCK_TIMEOUT_MS,
+  DEFAULT_PLATFORMS,
+  resolveInstallPlan,
 } = require('./lib');
 
 async function confirm(msg) {
@@ -60,8 +62,17 @@ async function main() {
     process.exit(1);
   }
 
-  // 2. template/ 새 해시 맵
-  const newTemplateFiles = walkTemplate(templateDir);
+  // 2. 설치된 플랫폼 자산만 갱신 대상 (platforms 누락 시 마이그레이션 기본값)
+  //    설치 계획(installRel 기준)으로 전개 — shared/는 플랫폼 경로로 매핑된 상태.
+  //    newTemplateFiles: installRel → { hash(소스), templateRel(복사 원본) }
+  const platforms = Array.isArray(oldManifest.platforms)
+    ? oldManifest.platforms
+    : DEFAULT_PLATFORMS;
+  const plan = resolveInstallPlan(walkTemplate(templateDir), platforms);
+  const newTemplateFiles = {};
+  for (const it of plan) {
+    newTemplateFiles[it.installRel] = { hash: it.hash, templateRel: it.templateRel };
+  }
   const oldFiles = oldManifest.files || {};
 
   console.log(`\ntaskery update`);
@@ -71,8 +82,8 @@ async function main() {
   const newFiles = {};
   const summary = { unchanged: 0, new: 0, autoUpdated: 0, customizedReplaced: 0, skipped: 0, removed: 0 };
 
-  // 3. 새 template 파일 분기
-  for (const [rel, newHash] of Object.entries(newTemplateFiles)) {
+  // 3. 새 template 파일 분기 (rel = 설치 경로 installRel)
+  for (const [rel, { hash: newHash, templateRel }] of Object.entries(newTemplateFiles)) {
     if (isLocalOverride(rel)) {
       // template에 .local.md 들어가면 안 되지만 방어적 스킵
       console.log(`  skip (.local override 영역): ${rel}`);
@@ -80,7 +91,7 @@ async function main() {
       continue;
     }
 
-    const src = path.join(templateDir, rel);
+    const src = path.join(templateDir, templateRel);
     const dst = path.join(cwd, rel);
     const oldEntry = oldFiles[rel];
 
@@ -149,8 +160,8 @@ async function main() {
     }
   }
 
-  // 5. manifest 갱신 — 멀티세션(0.1.2+) 필드 누락 시 자동 마이그레이션
-  const migration = { projectId: false, stale_days: false, lock_timeout_ms: false };
+  // 5. manifest 갱신 — 멀티세션(0.1.2+) / 플랫폼(0.2.0+) 필드 누락 시 자동 마이그레이션
+  const migration = { projectId: false, stale_days: false, lock_timeout_ms: false, platforms: false };
   const projectId = oldManifest.projectId || (migration.projectId = true, generateProjectId());
   const stale_days =
     typeof oldManifest.stale_days === 'number'
@@ -160,12 +171,14 @@ async function main() {
     typeof oldManifest.lock_timeout_ms === 'number'
       ? oldManifest.lock_timeout_ms
       : (migration.lock_timeout_ms = true, DEFAULT_LOCK_TIMEOUT_MS);
+  if (!Array.isArray(oldManifest.platforms)) migration.platforms = true;
 
   const newManifest = {
     version: getPackageVersion(),
     installed_at: oldManifest.installed_at,
     updated_at: new Date().toISOString(),
     projectId,
+    platforms,
     stale_days,
     lock_timeout_ms,
     files: newFiles,

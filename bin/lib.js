@@ -43,6 +43,81 @@ const { execFileSync } = require('child_process');
 const LOCAL_SUFFIX = '.local.md';
 const MANIFEST_NAME = '.taskery-manifest.json';
 
+// === 멀티 플랫폼 (0.2.0+) ===
+// 공통 소스 + 플랫폼별 조립 설치: 공통 자산(shared/)은 단일 소스로 보관하고
+// 설치 시 고른 플랫폼의 실제 경로로 매핑 복사한다. 플랫폼 고유 자산은 그대로 복사.
+const PLATFORMS = ['claude', 'codex'];
+const DEFAULT_PLATFORMS = ['claude']; // 기존(0.1.x) 설치 마이그레이션 기본값
+
+// shared/ 공통 자산의 플랫폼별 설치 경로 매핑.
+// shared 하위 첫 세그먼트(skills|hooks) → 각 플랫폼의 실제 설치 루트.
+// 스킬·git-guard 본문은 양 플랫폼 동일(검증 완료) — 단일 소스로 보관, 설치 때 갈라 깐다.
+const SHARED_DEST = {
+  claude: { skills: '.claude/skills', hooks: '.claude/hooks' },
+  codex: { skills: '.agents/skills', hooks: '.codex/hooks' },
+};
+
+// template 상대경로 → 소속 ('agnostic' | 'shared' | 'claude' | 'codex')
+function platformOf(relPath) {
+  if (relPath.startsWith('shared/')) return 'shared'; // 공통 — 설치 시 플랫폼별 매핑
+  if (relPath === 'CLAUDE.md' || relPath.startsWith('.claude/')) return 'claude';
+  if (relPath === 'AGENTS.md' || relPath.startsWith('.codex/')) return 'codex';
+  return 'agnostic'; // .project/, .gitignore 등 — 항상 설치
+}
+
+// shared/ 상대경로를 특정 플랫폼의 설치 경로로 변환.
+// 예: 'shared/skills/task-init/SKILL.md' + 'codex' → '.agents/skills/task-init/SKILL.md'
+function mapSharedDest(relPath, platform) {
+  const rest = relPath.slice('shared/'.length); // 'skills/task-init/SKILL.md'
+  const sep = rest.indexOf('/');
+  const top = sep === -1 ? rest : rest.slice(0, sep); // 'skills'
+  const tail = sep === -1 ? '' : rest.slice(sep); // '/task-init/SKILL.md'
+  const root = SHARED_DEST[platform] && SHARED_DEST[platform][top];
+  if (!root) {
+    throw new Error(`shared 자산 매핑 미정의: ${relPath} (platform=${platform})`);
+  }
+  return root + tail;
+}
+
+// template 파일맵을 설치 계획으로 전개 — [{ templateRel, installRel, hash }].
+//   - agnostic: 그대로 (includeAgnostic=false면 제외 — add 용)
+//   - shared: 선택 플랫폼마다 매핑 경로로 1건씩 전개 (1:N)
+//   - 플랫폼 고유: 선택 플랫폼이면 그대로
+function resolveInstallPlan(templateFiles, platforms, { includeAgnostic = true } = {}) {
+  const plan = [];
+  for (const [rel, hash] of Object.entries(templateFiles)) {
+    const p = platformOf(rel);
+    if (p === 'agnostic') {
+      if (includeAgnostic) plan.push({ templateRel: rel, installRel: rel, hash });
+    } else if (p === 'shared') {
+      for (const platform of platforms) {
+        plan.push({ templateRel: rel, installRel: mapSharedDest(rel, platform), hash });
+      }
+    } else if (platforms.includes(p)) {
+      plan.push({ templateRel: rel, installRel: rel, hash });
+    }
+  }
+  return plan;
+}
+
+// .gitignore 등록 패턴 (플랫폼별)
+const GITIGNORE_PATTERNS = {
+  agnostic: ['.project/', '.taskery-manifest.json'],
+  claude: ['.claude/', 'CLAUDE.md'],
+  codex: ['.codex/', '.agents/', 'AGENTS.md'],
+};
+
+// 선택 플랫폼 + agnostic의 gitignore 패턴 합성 (중복 제거)
+function gitignorePatternsFor(platforms) {
+  const out = [...GITIGNORE_PATTERNS.agnostic];
+  for (const p of platforms) {
+    for (const pat of GITIGNORE_PATTERNS[p] || []) {
+      if (!out.includes(pat)) out.push(pat);
+    }
+  }
+  return out;
+}
+
 function findTemplateDir() {
   // 패키지 루트는 이 lib.js 파일의 부모(bin/)의 부모
   const pkgRoot = path.resolve(__dirname, '..');
@@ -461,6 +536,15 @@ async function markBacklogChecked(mainWtPath, blId, taskNum) {
 module.exports = {
   LOCAL_SUFFIX,
   MANIFEST_NAME,
+  // 멀티 플랫폼 (0.2.0+)
+  PLATFORMS,
+  DEFAULT_PLATFORMS,
+  SHARED_DEST,
+  platformOf,
+  mapSharedDest,
+  resolveInstallPlan,
+  GITIGNORE_PATTERNS,
+  gitignorePatternsFor,
   findTemplateDir,
   sha256,
   walkTemplate,
