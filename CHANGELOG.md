@@ -7,7 +7,29 @@
 
 ## [Unreleased]
 
-(영역 없음 — 직전 0.1.3 publish 후 누적 영역 박힘 예정)
+(영역 없음 — 직전 0.2.0 publish 후 누적 영역 박힐 예정)
+
+---
+
+## [0.2.0] - 2026-06-22
+
+### 추가
+
+- **멀티 에이전트 플랫폼(Codex) 지원** — taskery를 Claude Code 외 Codex CLI에서도 사용 가능하게 확장. `init` 시 플랫폼을 선택(Claude Code / Codex / 둘 다)하고, 고른 플랫폼 자산만 독립 설치한다. 폴더가 갈려(`.claude/` vs `.agents/`+`.codex/`) 둘 다 선택해도 충돌 없이 공존.
+  - **공통 소스 + 플랫폼별 조립 설치** — 양 플랫폼 내용까지 동일한 자산(스킬 9종 · `git-guard.sh`)은 `template/shared/`에 단일 소스로 보관하고, 설치 시점에 고른 플랫폼의 실제 경로로 매핑 복사(조립)한다. 사본 중복을 template에 두지 않음. 실측 diff로 동일성 확인(`closed-immutable.sh`만 코덱스 `apply_patch` 파싱이라 플랫폼별 분리).
+  - `bin/add.js` 신설 — `npx @angar2/taskery add <platform>`으로 기존 설치에 다른 플랫폼 자산 추가 (멱등).
+  - `template/.codex/` 신설 — `config.toml`(`[[hooks.PreToolUse]]` 등록) / `hooks/closed-immutable.sh`(apply_patch 재작성판) / `agents/task-tester.toml`(격리 검증 서브에이전트, `model` 명시).
+  - `template/AGENTS.md` 신설 — Codex 진입 문서 (운영룰 자체 보유 + 코덱스 차이 명시).
+  - `plan/PLATFORMS.md` 신설 — 멀티 플랫폼 지원의 단일 진실 소스 (자산 매핑 / 메커니즘 대응 / 설치 흐름 / 실측 검증).
+
+### 변경
+
+- **`template/` 구조 개편 — 공통 소스 단일화** — 스킬 9종과 `git-guard.sh`를 `template/.claude/`·`.agents/`에서 `template/shared/`로 이동(`git mv`, 내용 무변조). 설치 결과는 개편 전과 byte-identical (검증 완료 — 기존 Claude Code 사용 무손상).
+- `bin/lib.js` — `resolveInstallPlan(templateFiles, platforms)` 신설 (설치 계획 `{templateRel, installRel, hash}`로 전개, shared는 플랫폼 경로로 1:N 매핑). `SHARED_DEST` 매핑 테이블. `platformOf`에 `shared` 분류 추가. `filterAssetsByPlatforms` 대체. init/update/add가 공유.
+- `bin/init.js` / `update.js` / `add.js` — 설치 경로(installRel) 기준으로 전환. manifest `files` 키 = 설치 경로. update는 `platforms` 누락(0.1.x) 시 `["claude"]` 마이그레이션.
+- `.taskery-manifest.json` — `platforms` 필드 추가 (init 선택 / add push / 0.1.x update 마이그레이션).
+- `README.md` — 멀티 플랫폼 정합 (빠른 시작 플랫폼 선택·`add` / 디렉토리 구조 플랫폼 매핑표 / Hooks 등록 방식 / 진입 문서).
+- `package.json` 0.1.3 → 0.2.0 (`description`·`keywords`에 Codex 반영).
 
 ---
 

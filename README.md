@@ -57,9 +57,12 @@ draft → planned → developing → developed → testing → tested → closed
 # 새 프로젝트
 npx -p @angar2/taskery create-taskery <project-name>
 
-# 기존 프로젝트에 도입
+# 기존 프로젝트에 도입 (init 시 에이전트 플랫폼 선택)
 cd <project-name>
 npx @angar2/taskery init
+
+# 다른 플랫폼 자산 추가 (예: 기존 설치에 Codex 추가)
+npx @angar2/taskery add codex
 
 # 최신 버전 머지 갱신
 npx @angar2/taskery update
@@ -79,9 +82,12 @@ npm install -g @angar2/taskery
 # 새 프로젝트
 create-taskery <project-name>
 
-# 기존 프로젝트에 도입
+# 기존 프로젝트에 도입 (init 시 에이전트 플랫폼 선택)
 cd <project-name>
 taskery init
+
+# 다른 플랫폼 자산 추가 (예: 기존 설치에 Codex 추가)
+taskery add codex
 
 # 최신 버전 머지 갱신
 taskery update
@@ -95,7 +101,7 @@ taskery prune
 
 ## 패키지 디렉토리 구조
 
-`taskery init` 직후 골격:
+`taskery init` 직후 골격 (아래는 Claude Code 선택 시 예시):
 
 ```
 my-app/
@@ -127,6 +133,15 @@ my-app/
     │   └─ received/completed/
     └─ FRICTION_LOG.md                    # taskery 불편사항 누적 로그
 ```
+
+`.project/`는 플랫폼 무관 공통 자산이다. 진입 문서와 에이전트 자산 위치는 선택한 플랫폼에 따라 갈린다.
+
+| 플랫폼 | 진입 문서 | 스킬 위치 | hook 위치 | hook 등록 |
+|--------|----------|----------|----------|----------|
+| Claude Code | `CLAUDE.md` | `.claude/skills/` | `.claude/hooks/` | `.claude/settings.json` |
+| Codex | `AGENTS.md` | `.agents/skills/` | `.codex/hooks/` | `.codex/config.toml` |
+
+> 스킬 9종과 `git-guard.sh`는 양 플랫폼 동일 자산이다. 진입 문서, hook 등록 방식, 완료 보호 hook(`closed-immutable.sh`)의 구현만 플랫폼별로 다르다. `init`에서 둘 다 선택하면 폴더가 갈려 충돌 없이 공존한다.
 
 ---
 
@@ -196,7 +211,7 @@ my-app/
 | `git-guard.sh` | git 명령 실행 직전 | 주력 브랜치 직접 커밋 / `--force` / `--no-verify` / 강제 브랜치 삭제 / `reset --hard` / `clean -fd` |
 | `closed-immutable.sh` | 파일 수정 직전 | 완료(`closed`)된 task.md 본 파일 재수정 (관련 spec-diff·스크린샷은 자유) |
 
-hook은 catastrophic 사고만 차단한다. 정상 흐름에는 간섭하지 않는다.
+hook은 catastrophic 사고만 차단한다. 정상 흐름에는 간섭하지 않는다. 등록 방식은 플랫폼별로 다르다 — Claude Code는 `.claude/settings.json`, Codex는 `.codex/config.toml`(최초 1회 `/hooks` 신뢰 승인 필요).
 
 > 각 hook의 영역 분리 정신, 등록 매칭, 차단 정책, 예외 처리 절차는 [HOOKS.md](https://github.com/angar2/taskery/blob/main/plan/HOOKS.md)에서 확인 가능
 
@@ -210,7 +225,7 @@ cd <project-name>
 npx @angar2/taskery init
 ```
 
-이후 메인 세션에 진입(`CLAUDE.md` 자동 정독)하여 다음 시퀀스로 호출한다. task 5 스킬은 호출과 동시에 상태를 전이시킨다.
+이후 메인 세션에 진입(진입 문서 `CLAUDE.md` 또는 `AGENTS.md` 자동 정독)하여 다음 시퀀스로 호출한다. task 5 스킬은 호출과 동시에 상태를 전이시킨다.
 
 ```
 /project-init                  # 진입 메타 문서와 디렉토리 골격 생성
