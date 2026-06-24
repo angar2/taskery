@@ -58,7 +58,11 @@
 
 - **`/add-backlog`**: 사용자 *"~ 백로그에 추가"* 발화 → 얕은 분석(코드 탐색 X, 추정 수준) → BL-NNN 채번 → BACKLOG.md append (`[ ]` 대기).
 - **`/task-init` 연동**: 사용자 *"백로그의 BL-NNN 진행"* 발화 → 해당 항목 *확인 마킹*. `[ ]` → `[x]` + `- TASK: TASK-NNN` 추가 (다회 진행 시 콤마).
-- **체크박스 의미**: `[ ]` = 미확인 (task로 옮기지 않은 메모) / `[x]` = 확인 완료 (task로 옮김). **dev 머지 완료 의미 X** — 완료 여부는 `git log dev --grep 'BL-NNN'` + 브랜치명 추적 + `taskery status`.
+- **체크박스 의미**: `[ ]` = 미확인 (task로 옮기지 않은 메모) / `[x]` = 확인 완료 (task로 옮김). `[x]`는 *task로 옮겼다*는 메모일 뿐, dev 머지·완료 여부와는 무관하다.
+- **`[x]` 항목이 실제로 완료된 작업인지 굳이 확인하려 들지 않는다.** 진행·완료 상태는 백로그가 아니라 `taskery status`(살아있는 브랜치) + dev 머지커밋이 판단한다.
+- **머지 여부를 직접 알아야 할 경우에만** 아래 순서로 작업 완료 여부를 확인한다:
+  1. `taskery status` 진행중 목록에 그 TASK가 **있으면** → 아직 진행 중(dev 미머지)이므로 `git log dev --grep`이 비는 것이 정상이다. 재조회하지 않는다.
+  2. 목록에 **없으면** → `git log dev --grep 'BL-NNN'` + 브랜치명으로 작업 완료 여부를 확인한다.
 - **글로벌 `.project/BACKLOG.md`** (plan 기획 후보 카탈로그) 는 본 흐름 무관 — `/plan-init` 영역.
 
 상세: `.claude/skills/add-backlog/SKILL.md`.
