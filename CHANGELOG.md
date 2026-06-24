@@ -7,7 +7,9 @@
 
 ## [Unreleased]
 
-(영역 없음 — 직전 0.2.0 publish 후 누적 영역 박힐 예정)
+### 수정
+
+- **추적 변경 0 task close 시 채번 누락 방지** — `.project`가 gitignore된 프로젝트에서 *코드 변경 0 + 산출물이 task 문서뿐*인 docs/분석 task를 close하면, 작업 브랜치가 dev보다 앞선 커밋이 0개라 `--no-ff` 머지가 *Already up to date*가 되어 머지 커밋이 생성되지 않았다. 이후 브랜치 자동 삭제 시 `getNextTaskNumber`가 번호를 추적하지 못해 다음 task가 번호를 재사용·충돌할 수 있었다. `/task-close`에 Step 6-8(추적 마커 빈커밋)을 추가 — 머지 커밋이 생기지 않는 경우에 한해 `--allow-empty` 마커 1개를 생성해 분기·채번 정보를 보존한다. GIT_RULE에 동일 예외 명시. (FRICTION 검토 F1)
 
 ---
 

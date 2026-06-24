@@ -133,6 +133,7 @@ docs: [TASK-{NNN}] CHANGELOG 업데이트
 - 머지 커밋 메시지는 git 기본 메시지 사용
 - `-m` 옵션으로 커밋 메시지 지정 금지
 - **`--no-ff` 강제 (일반 타입)**: feature/bug/improvement/refactor 등 일반 작업 브랜치 → dev 병합 시 `git merge --no-ff {브랜치명}` 사용. fast-forward 병합 절대 금지. 머지 커밋이 없으면 작업 브랜치 삭제 후 분기 정보 영구 손실(90일 reflog GC 후 추적 불가).
+- **추적 변경 0 → 마커 빈커밋 (`--allow-empty` 금지의 유일 예외)**: 코드 변경 0 + `.project` gitignore로 작업 브랜치가 dev보다 앞선 커밋이 0개이면 `--no-ff`도 *Already up to date*가 되어 머지 커밋이 생성되지 않는다. 이 경우 `/task-close`가 추적 마커 빈커밋 1개(`--allow-empty`)를 생성해 분기·채번 정보를 보존한다 (상세: task-close Step 6-8). 그 외 빈커밋은 금지.
 - **plan/roadmap 임시 docs 브랜치 예외**: plan-init 단계의 단일 커밋(plan 신규/카피)에 한정 `--ff-only` 가능.
 - **task 진행 중 ROADMAP/플랜 문서 갱신은 별도 `docs/*` 브랜치 분리 절대 금지**: 해당 task의 작업 브랜치 (`feature/*` / `improve/*` 등) 안에서 수정 + 다른 구현 커밋과 함께 `--no-ff` 머지로 dev 병합 (분기 정보 손실 방지).
 
@@ -284,3 +285,4 @@ git -C "$MAIN_WT" branch --no-merged dev --list \
 | 2026-05-31 | 멀티세션 0.1.2 오버라이드 — 브랜치명에 출처(BL/RM/DR) 추가 / 케이스 2(TASK 없는 브랜치) 시스템 외 명시 / `/task-close` 자동 삭제 + 워크트리 제거 면제 조항 / 멀티세션 워크트리 정책 섹션 신규 (메인=dev 전용 / SSoT 조회 / 머지 락 직렬화) |
 | 2026-05-31 | 0.1.2 백로그 스킬 추가 정합 — 출처 표 `BL-NNN` 채번 주체 `/backlog-add` → `/add-backlog`로 갱신 + 버전별 경로(`.project/tasks/<vX.X>/BACKLOG.md`) 명시 |
 | 2026-06-02 | 0.1.3 F2·F3 정합 — §멀티세션 워크트리 정책 *메인 HEAD 떼기 금지* + *모호 발화 자의 해석 금지* / §git-guard.sh 5종 변형 인식 (-C / --git-dir / --work-tree) + 셸 prefix 금지 명시. stash FRICTION_LOG 2026-06-01 반영 |
+| 2026-06-24 | 추적 변경 0(코드 0 · `.project` gitignore) close 시 마커 빈커밋으로 분기·채번 정보 보존 — `--no-ff` 머지 커밋 미생성 케이스의 `--allow-empty` 유일 예외 명시 (상세: task-close Step 6-8). FRICTION 검토 F1 반영 |
