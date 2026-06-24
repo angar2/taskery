@@ -360,6 +360,7 @@ git -C "$MAIN_WT" worktree remove "$WT_PATH"
 - **민감 정보 staging X** — `.env` / `credentials.json` / API key 등 staging 절대 X.
 - **빈 commit 금지 (예외 1건)** — CHANGELOG 변경 없으면 6-7 단계 스킵, `--allow-empty` 사용 금지. **단 Step 6-8 추적 마커 빈커밋만 예외** — 워크트리 브랜치가 dev보다 앞선 커밋이 0개일 때 채번 보존용으로 1개 허용.
 - **`-m` 옵션 머지 커밋에 사용 금지** — git 기본 메시지 사용.
+- **검수 서버/터널 정리는 자기 것만** — 본 task가 검수용으로 띄운 서버·터널(자기 포트 것)만 종료. `pkill -f` 류 광역 종료 금지 (다른 세션 프로세스까지 죽임). 상세: GIT_RULE "멀티세션 검수 환경".
 
 ## 상태 전이
 
