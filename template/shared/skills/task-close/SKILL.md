@@ -376,4 +376,4 @@ git -C "$MAIN_WT" worktree remove "$WT_PATH"
 - **task 문서 단일 진실 소스** — `.gitignore` 케이스에 따라 메인 워크트리 또는 워크트리. 다른 세션의 충돌 해결 자료 정독 시 *SSoT 조회 → 워크트리 경로 산출* (미등록 케이스) 또는 *메인 워크트리 절대 경로* (등록 케이스).
 - **워크트리 + 브랜치 자동 제거** — GIT_RULE.md "작업 브랜치 삭제 정책" 면제 조항 (taskery 한정). 보존 키워드 시 양쪽 보존.
 - **safety net** — Step 14 복구 명령 출력. 사용자가 잘못 삭제 인지 시 즉시 복구 가능.
-- **BACKLOG.md 무관** — `.project/tasks/<vX.X>/BACKLOG.md` 체크 마킹은 `/task-init` Step 7.5가 처리(`[ ]` → `[x]` + `- TASK: TASK-NNN`). `[x]` = *task로 옮김* 의미라 close 시점에 추가 마킹 X. 완료 추적은 `git log dev --grep 'BL-NNN'` + `npx @angar2/taskery status`.
+- **BACKLOG.md 무관** — `.project/tasks/<vX.X>/BACKLOG.md` 체크 마킹은 `/task-init` Step 7.5가 처리(`[ ]` → `[x]` + `- TASK: TASK-NNN`). `[x]` = *task로 옮김* 의미라 close 시점에 추가 마킹 X. 완료 추적은 `npx @angar2/taskery status`(진행 중이면 dev 미머지가 정상) → 목록에 없을 때만 `git log dev --grep 'BL-NNN'` 순.
