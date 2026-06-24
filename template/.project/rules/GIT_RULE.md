@@ -303,6 +303,6 @@ git -C "$MAIN_WT" branch --no-merged dev --list \
 | 2026-05-31 | 멀티세션 0.1.2 오버라이드 — 브랜치명에 출처(BL/RM/DR) 추가 / 케이스 2(TASK 없는 브랜치) 시스템 외 명시 / `/task-close` 자동 삭제 + 워크트리 제거 면제 조항 / 멀티세션 워크트리 정책 섹션 신규 (메인=dev 전용 / SSoT 조회 / 머지 락 직렬화) |
 | 2026-05-31 | 0.1.2 백로그 스킬 추가 정합 — 출처 표 `BL-NNN` 채번 주체 `/backlog-add` → `/add-backlog`로 갱신 + 버전별 경로(`.project/tasks/<vX.X>/BACKLOG.md`) 명시 |
 | 2026-06-02 | 0.1.3 F2·F3 정합 — §멀티세션 워크트리 정책 *메인 HEAD 떼기 금지* + *모호 발화 자의 해석 금지* / §git-guard.sh 5종 변형 인식 (-C / --git-dir / --work-tree) + 셸 prefix 금지 명시. stash FRICTION_LOG 2026-06-01 반영 |
-| 2026-06-24 | 추적 변경 0(코드 0 · `.project` gitignore) close 시 마커 빈커밋으로 분기·채번 정보 보존 — `--no-ff` 머지 커밋 미생성 케이스의 `--allow-empty` 유일 예외 명시 (상세: task-close Step 6-8). FRICTION 검토 F1 반영 |
-| 2026-06-24 | §멀티세션 워크트리 정책에 "워크트리 실행 환경" 추가 — 워크트리에 의존성 심링크 금지(개발 서버 fs 접근 제한으로 로딩 실패), 실행·검수 task는 워크트리 안에 의존성 실제 마련. FRICTION 검토 F6 반영 |
-| 2026-06-24 | §멀티세션 워크트리 정책에 "멀티세션 검수 환경" 추가 — task별 dev 서버 포트 격리(메인=기준 포트, task=기준+TASK번호) + 터널 독립 + close 시 자기 것만 종료(광역 종료 금지) + 사용자 검수 시점 서버 자동 기동(task-test UNCERTAIN/PASS·task-dev 종료, FAIL 제외). FRICTION 검토 F7 반영 |
+| 2026-06-25 | 추적 변경 0(코드 0 · `.project` gitignore) close 시 마커 빈커밋으로 분기·채번 정보 보존 — `--no-ff` 머지 커밋 미생성 케이스의 `--allow-empty` 유일 예외 명시 (상세: task-close Step 6-8). FRICTION 검토 F1 반영 |
+| 2026-06-25 | §멀티세션 워크트리 정책에 "워크트리 실행 환경" 추가 — 워크트리에 의존성 심링크 금지(개발 서버 fs 접근 제한으로 로딩 실패), 실행·검수 task는 워크트리 안에 의존성 실제 마련. FRICTION 검토 F6 반영 |
+| 2026-06-25 | §멀티세션 워크트리 정책에 "멀티세션 검수 환경" 추가 — task별 dev 서버 포트 격리(메인=기준 포트, task=기준+TASK번호) + 터널 독립 + close 시 자기 것만 종료(광역 종료 금지) + 사용자 검수 시점 서버 자동 기동(task-test UNCERTAIN/PASS·task-dev 종료, FAIL 제외). FRICTION 검토 F7 반영 |
