@@ -66,7 +66,7 @@ LOCK_FILE="$HOME/.taskery/${PROJECT_ID}.merge.lock"
    git -C "$WT_PATH" status --porcelain
    ```
    - 결과 *있음* = 정상 흐름 (taskery 정책: `/task-dev` = *git 작업 X*). 본 변경분은 Step 6-3에서 *task-close가 자동 Phase 커밋 생성*으로 처리.
-   - 결과 *없음* = 변경분 0건 → Step 2 검증만 수행 후 Step 6-3 자동 커밋 단계 자연 스킵 (빈 커밋 X).
+   - 결과 *없음* = 변경분 0건 → Step 2 검증만 수행 후 Step 6-3 자동 커밋 단계 스킵. **단 6-7까지 거쳐도 워크트리 브랜치가 dev보다 앞선 커밋이 0개면 Step 6-8에서 추적 마커 빈커밋 1개 생성** (`.project` gitignore + docs/분석 전용 task → 채번 보존).
    - **차단 X** — 본 단계는 *상태 인지*용. close 중단 사유 X.
 4. **task 파일 + GIT_RULE 확인**:
    - task 문서 위치 분기 (`.gitignore` 케이스):
@@ -245,6 +245,22 @@ docs: [TASK-<NNN>] 태스크 문서 완료
   - 등록 — `$MAIN_WT/.project/changelog/<YYYY-MM>.md` `withMetaLock` 갱신 (커밋 X)
 - 본 task에서 변경분 없으면 본 단계 *완전히 스킵* (빈 commit 금지).
 
+#### 6-8. 추적 마커 빈커밋 (폴백 — 머지 커밋 미생성 케이스 한정)
+
+> **조건**: 6-3 ~ 6-7을 모두 거쳤는데도 워크트리 브랜치가 dev보다 앞선 커밋이 **0개**인 경우에만 발동.
+> **발생 케이스**: `.project`가 gitignore된 프로젝트에서 *코드 변경 0 + 산출물이 메인 워크트리 직접 수정 task 문서뿐*인 docs/분석 전용 task. 워크트리에 추적 가능한 변경이 없어 6-3 ~ 6-7이 전부 스킵된 상태.
+> **이유**: 이대로 Step 8 `--no-ff` 머지를 하면 브랜치가 dev와 동일 커밋이라 *Already up to date* → 머지 커밋이 생성되지 않는다. 그러면 dev 히스토리에 `TASK-NNN` 흔적이 남지 않고, 이후 작업 브랜치가 자동 삭제(Step 13)되면 `getNextTaskNumber`가 진행중 브랜치·dev 머지 양쪽에서 번호를 찾지 못해 **다음 task가 같은 번호를 재사용/충돌**한다.
+
+```sh
+if [ "$(git -C "$WT_PATH" rev-list --count dev..HEAD)" -eq 0 ]; then
+  git -C "$WT_PATH" commit --allow-empty \
+    -m "docs: [TASK-<NNN>] 추적 마커 — 코드 0·.project gitignore (채번 보존)"
+fi
+```
+
+- 마커 커밋으로 브랜치가 dev보다 1커밋 앞서게 되어, Step 8 `--no-ff` 머지가 정상 머지 커밋을 생성한다 (머지 커밋 메시지의 브랜치명에 `TASK-NNN`이 포함되어 grep 추적 가능).
+- 추적 변경이 하나라도 있는 일반 task는 조건(`-eq 0`)에 걸리지 않아 발동하지 않는다 — 기존 동작 그대로.
+
 ### Step 7 — 메인 워크트리 uncommitted 검증 (머지 직전)
 
 ```sh
@@ -342,8 +358,9 @@ git -C "$MAIN_WT" worktree remove "$WT_PATH"
 - **자료 한계 보고** — 충돌 분석 시 *2/3순위 fallback 사용했음*을 사용자에게 명시. 묵묵히 진행 X.
 - **destructive 명령 사용자 승인 필수** — `git reset --hard` / `git push --force` / `git branch -D` / `git clean -fd` 사용자 명시 승인 없이 절대 실행 X. (단 `/task-close` 자동 흐름 `git branch -d` + `worktree remove`는 §"작업 브랜치 삭제 정책 — 자동 삭제 면제 조항" 면제)
 - **민감 정보 staging X** — `.env` / `credentials.json` / API key 등 staging 절대 X.
-- **빈 commit 금지** — CHANGELOG 변경 없으면 6-7 단계 스킵. `--allow-empty` 사용 금지.
+- **빈 commit 금지 (예외 1건)** — CHANGELOG 변경 없으면 6-7 단계 스킵, `--allow-empty` 사용 금지. **단 Step 6-8 추적 마커 빈커밋만 예외** — 워크트리 브랜치가 dev보다 앞선 커밋이 0개일 때 채번 보존용으로 1개 허용.
 - **`-m` 옵션 머지 커밋에 사용 금지** — git 기본 메시지 사용.
+- **검수 서버/터널 정리는 자기 것만** — 본 task가 검수용으로 띄운 서버·터널(자기 포트 것)만 종료. `pkill -f` 류 광역 종료 금지 (다른 세션 프로세스까지 죽임). 상세: GIT_RULE "멀티세션 검수 환경".
 
 ## 상태 전이
 
@@ -359,4 +376,4 @@ git -C "$MAIN_WT" worktree remove "$WT_PATH"
 - **task 문서 단일 진실 소스** — `.gitignore` 케이스에 따라 메인 워크트리 또는 워크트리. 다른 세션의 충돌 해결 자료 정독 시 *SSoT 조회 → 워크트리 경로 산출* (미등록 케이스) 또는 *메인 워크트리 절대 경로* (등록 케이스).
 - **워크트리 + 브랜치 자동 제거** — GIT_RULE.md "작업 브랜치 삭제 정책" 면제 조항 (taskery 한정). 보존 키워드 시 양쪽 보존.
 - **safety net** — Step 14 복구 명령 출력. 사용자가 잘못 삭제 인지 시 즉시 복구 가능.
-- **BACKLOG.md 무관** — `.project/tasks/<vX.X>/BACKLOG.md` 체크 마킹은 `/task-init` Step 7.5가 처리(`[ ]` → `[x]` + `- TASK: TASK-NNN`). `[x]` = *task로 옮김* 의미라 close 시점에 추가 마킹 X. 완료 추적은 `git log dev --grep 'BL-NNN'` + `npx @angar2/taskery status`.
+- **BACKLOG.md 무관** — `.project/tasks/<vX.X>/BACKLOG.md` 체크 마킹은 `/task-init` Step 7.5가 처리(`[ ]` → `[x]` + `- TASK: TASK-NNN`). `[x]` = *task로 옮김* 의미라 close 시점에 추가 마킹 X. 완료 추적은 `npx @angar2/taskery status`(진행 중이면 dev 미머지가 정상) → 목록에 없을 때만 `git log dev --grep 'BL-NNN'` 순.
