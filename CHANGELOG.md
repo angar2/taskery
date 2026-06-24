@@ -7,6 +7,10 @@
 
 ## [Unreleased]
 
+### 변경
+
+- **백로그 완료 판정 룰 정비** — 백로그 체크박스 `[x]`를 두고 세션이 dev 머지 여부를 grep으로 대조하려다, `[x]`(처리됨)와 빈 grep(워크트리 진행 중이라 dev 미머지)의 충돌을 못 풀고 자기 grep을 의심해 재조회를 반복하는 마찰이 있었다. `CLAUDE.md`·`AGENTS.md` 백로그 섹션을 정비 — `[x]`는 *task로 옮김* 메모일 뿐 완료·머지와 무관함을 명시하고, 평소엔 완료 여부를 대조하지 않으며, 정말 필요한 경우에만 `taskery status`(진행 중이면 빈 grep이 정상) → dev grep 순으로 판정하도록 순서를 고정. (FRICTION 검토 F2)
+
 ### 수정
 
 - **추적 변경 0 task close 시 채번 누락 방지** — `.project`가 gitignore된 프로젝트에서 *코드 변경 0 + 산출물이 task 문서뿐*인 docs/분석 task를 close하면, 작업 브랜치가 dev보다 앞선 커밋이 0개라 `--no-ff` 머지가 *Already up to date*가 되어 머지 커밋이 생성되지 않았다. 이후 브랜치 자동 삭제 시 `getNextTaskNumber`가 번호를 추적하지 못해 다음 task가 번호를 재사용·충돌할 수 있었다. `/task-close`에 Step 6-8(추적 마커 빈커밋)을 추가 — 머지 커밋이 생기지 않는 경우에 한해 `--allow-empty` 마커 1개를 생성해 분기·채번 정보를 보존한다. GIT_RULE에 동일 예외 명시. (FRICTION 검토 F1)
