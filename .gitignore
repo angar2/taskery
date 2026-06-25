@@ -7,6 +7,9 @@ npm-debug.log*
 .env
 .env.local
 .env.*.local
+
+# npm 인증 토큰 — 절대 커밋 금지 (토큰은 ~/.npmrc 또는 GitHub Secret에만)
+.npmrc
 coverage/
 .nyc_output/
 
