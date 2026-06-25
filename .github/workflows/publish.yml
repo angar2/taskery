@@ -1,0 +1,37 @@
+# v* 태그 푸시 시 npm 자동 발행 — 로컬 npm 인증(키체인/2FA) 제거.
+# 사용: package.json version bump → 커밋 → main 머지 → `git tag vX.Y.Z && git push origin vX.Y.Z`
+# 사전 1회: npmjs.com Automation/Granular(write) 토큰 → GitHub repo Secrets에 NPM_TOKEN 으로 저장.
+name: Publish to npm
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Verify tag matches package.json version
+        run: |
+          PKG="v$(node -p "require('./package.json').version")"
+          if [ "$PKG" != "$GITHUB_REF_NAME" ]; then
+            echo "::error::태그($GITHUB_REF_NAME) != package.json 버전($PKG). 일치시켜 다시 태그하세요."
+            exit 1
+          fi
+
+      - name: Publish to npm
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
