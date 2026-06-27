@@ -200,7 +200,7 @@ my-app/
 |------|---------|---------|
 | `/project-init` | `.project/` | PROJECT.md / AGENT-GUIDE.md / LINKED-REPOS.md / GLOSSARY.md / .env + 제품 관통 문서(SERVICE-POLICY / TECH-STACK / ARCHITECTURE 작성, DATA-MODEL / API-SPEC / FEATURES / UX-UI 골격 — 타입 해당분) |
 | `/plan-init` | `.project/plans/<NNN_slug>/` | PLAN.md / ROADMAP.md + 제품 관통 문서 FEATURES/UX-UI에 기능 그룹 의도 추가 (제품 관통 문서 전체를 한꺼번에 만들지는 않음) |
-| `/task-init` | `.project/tasks/<NNN_slug>/` | `<NNN>_<slug>.md` (단일 파일) 또는 `TASK-<NNN>_<slug>/task.md` (규모 `large` 시 폴더 승격) |
+| `/task-init` | `.project/tasks/<NNN_slug>/` | `<NNN>_<slug>.md` (단일 파일) 또는 `TASK-<NNN>_<slug>/task.md` (사용자 명시 시 폴더 승격) |
 
 > 각 스킬의 호출 시점, 입력 처리 방식, 단계별 절차, 주의사항은 [SKILLS.md](https://github.com/angar2/taskery/blob/main/plan/SKILLS.md)에서 확인 가능
 
