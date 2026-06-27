@@ -7,7 +7,25 @@
 
 ## [Unreleased]
 
-(영역 없음 — 0.2.1 publish 후 누적 영역 박힐 예정)
+(영역 없음 — 0.3.0 publish 후 누적 영역 추가 예정)
+
+---
+
+## [0.3.0] - 2026-06-27
+
+### 변경
+
+- **plan 단위를 "버전(vX.X)"에서 "기능 그룹(NNN_slug)"으로 재정의** — 기존엔 `/plan-init`이 버전 단위로 제품 전체(기획 문서 9종)를 통째 생성하고, 새 버전 = 이전 폴더 통째 복제 후 수정하는 구조라 버전업이 너무 무거워 plan-init이 사실상 1회성 죽은 스킬이 되고 모든 task가 첫 버전 폴더에만 쌓였다. plan을 *작업 묶음(기능 그룹)* 단위로 바꿔 자주 호출되게 했다.
+  - **제품 관통 문서(SERVICE-POLICY · TECH-STACK · ARCHITECTURE · DATA-MODEL · API-SPEC · FEATURES · UX-UI) 위치를 plan 폴더 → `.project/` 루트로 이동** — 제품 문서는 plan에 귀속되지 않는 living 단일 홈. 기능 추적은 문서 내 *섹션 헤딩*으로 한다(plan 폴더로 역추적 X).
+  - **문서 작성 책임 3분할** — `/project-init`이 그룹 A(정책·스택·구조)를 인터뷰로 작성 + 그룹 B(데이터·API·기능·UX)를 빈 골격 생성(1회성). `/plan-init`은 그 기능 그룹의 PLAN/ROADMAP 생성 + FEATURES/UX-UI에 *의도 레벨* 섹션 추가. DATA-MODEL/API-SPEC의 스키마·엔드포인트 *상세*는 `/task-plan`·`/task-dev`가 *구현 동반*으로 채운다(선기획 금지 — anti-waterfall 정합).
+  - **plan 폴더 = `NNN_slug` 숫자 채번**(예: `001_mvp`, `002_compare-products`) — TASK-NNN과 결 맞춤. `bin/lib.js`에 `computeNextPlanNumber` 추가. 기존 `v*` 폴더 감지 시 plan-init이 새 plan 생성 전 경고 + 수동 이전 안내(legacy 게이트).
+  - **카피포워드(이전 버전 통째 복제) 폐기** — 제품 문서가 루트 living이라 불필요. plan-init은 단일 흐름(새 plan 생성 + 전역 delta)만.
+  - plan 규모는 가변 — 기능 그룹이 보편이나 MVP 같은 큰 묶음도 plan 하나로 가능.
+- **task 폴더 승격을 사용자 명시 한정으로 변경** — 규모 `large`면 자동으로 `TASK-NNN/` 폴더를 만들던 기본 동작 제거. 실사용에서 자동 폴더 승격이 한 번도 필요 없었고 경로·일관성만 복잡하게 했다. 기본은 항상 단일 파일 `NNN_slug.md`, 사용자가 *"폴더로 만들어줘"* 할 때만 승격. 폴더 승격 기능 자체는 유지.
+
+### 주의 (마이그레이션)
+
+- **forward-only** — 이미 `plans/v1.0/`에 기획 문서 9종이 깔린 기존 프로젝트는 `npx @angar2/taskery update`가 사용자 파일을 보존한다(자동 이전 X). `/plan-init`이 `v*` legacy 폴더를 감지하면 새 plan 생성 전 경고하므로 채번 충돌·활성 plan 갈림은 차단된다. 수동 이전 = 제품 문서를 `.project/` 루트로 이동 + plan 폴더를 `NNN_slug`로 리네임 + `AGENT-GUIDE.md`의 활성 plan 값 갱신.
 
 ---
 
