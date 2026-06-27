@@ -81,8 +81,9 @@
 - `.project/AGENT-GUIDE.md` — `/project-init` 생성 (메인 진입 가이드)
 - `.project/LINKED-REPOS.md` — `/project-init` 생성 (멀티리포 명세)
 - `.project/.env` — 사용자 직접 작성 (멀티리포 환경 변수, gitignore)
-- `.project/plans/<vX.X>/*` — `/plan-init` 생성 (기획 문서)
-- `.project/tasks/<vX.X>/*` — `/task-init` ~ `/task-close` 생성/갱신
+- `.project/<doc>.md` (루트 평평) — 제품 관통 문서: `/project-init` 작성(SERVICE-POLICY/TECH-STACK/ARCHITECTURE) / 골격(DATA-MODEL/API-SPEC/FEATURES/UX-UI) → plan-init·task가 채움
+- `.project/plans/<NNN_slug>/*` — `/plan-init` 생성 (PLAN.md / ROADMAP.md)
+- `.project/tasks/<NNN_slug>/*` — `/task-init` ~ `/task-close` 생성/갱신
 - `.project/flows/<module>.md` — `/task-dev` 갱신
 - `.project/changelog/<YYYY-MM>.md` — `/task-close` 갱신
 - `src/`, `package.json`, `README.md` — 사용자 코드

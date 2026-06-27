@@ -132,26 +132,27 @@ practice 영역에 hook을 강제하면 *합리적 변형 차단 사고*가 발�
 **차단 범위 (단순화 — task.md 본 파일만)**:
 | # | 패턴 | 잡음 |
 |---|------|------|
-| 1 | `.project/tasks/v*/<NNN>_<slug>.md` (단일 파일) — 헤더 status=`closed` | task 문서 자체 재수정 |
-| 2 | `.project/tasks/v*/TASK-<NNN>_<slug>/task.md` (폴더 승격) — 헤더 status=`closed` | task 문서 자체 재수정 |
+| 1 | `.project/tasks/<NNN_slug>/<NNN>_<slug>.md` (단일 파일) — 헤더 status=`closed` | task 문서 자체 재수정 |
+| 2 | `.project/tasks/<NNN_slug>/TASK-<NNN>_<slug>/task.md` (폴더 승격) — 헤더 status=`closed` | task 문서 자체 재수정 |
 
 **차단 안 함** (의도적):
-- `.project/tasks/v*/spec-diffs/*.md` — 역사적 자료, 자유 수정
-- `.project/tasks/v*/screenshots/*` — 자유 수정
-- `.project/tasks/v*/mockup/*.html` — UX/UI 목업, 자유 수정 (vX.X 공통)
-- 폴더 승격 task의 *추가 자료* (서브 문서 등) — 자유. mockup은 vX.X 공통이라 폴더 안 X
+- `.project/tasks/<NNN_slug>/spec-diffs/*.md` — 역사적 자료, 자유 수정
+- `.project/tasks/<NNN_slug>/screenshots/*` — 자유 수정
+- `.project/tasks/<NNN_slug>/mockup/*.html` — UX/UI 목업, 자유 수정 (`<NNN_slug>` 공통)
+- 폴더 승격 task의 *추가 자료* (서브 문서 등) — 자유. mockup은 `<NNN_slug>` 공통이라 폴더 안 X
 - closed task의 *관련 코드* 영역 — 새 task로 처리가 정상 흐름
 
 **왜 단순화**:
-- 이전 spec은 *폴더 승격 task의 spec-diffs/만* 보호하고 *vX.X 공통 spec-diffs는 미커버* — 비대칭
-- spec-diffs / screenshots / mockup 위치는 vX.X 공통으로 통일 (TASK_DOC_RULE §1.5 단일 진실 소스)
-- vX.X 공통 spec-diffs를 보호하려면 *NNN prefix로 부모 task.md 추적 로직* 필요 → 정규식 복잡 + 에러 위험
+- 이전 spec은 *폴더 승격 task의 spec-diffs/만* 보호하고 *`<NNN_slug>` 공통 spec-diffs는 미커버* — 비대칭
+- spec-diffs / screenshots / mockup 위치는 `<NNN_slug>` 공통으로 통일 (TASK_DOC_RULE §1.5 단일 진실 소스)
+- `<NNN_slug>` 공통 spec-diffs를 보호하려면 *NNN prefix로 부모 task.md 추적 로직* 필요 → 정규식 복잡 + 에러 위험
+- 매칭 정규식은 plan 폴더명을 한 세그먼트(`tasks/[^/]+/`)로 받는다 — NNN_slug 신규/구버전 vX.X 모두 보호 (PLAYBOOK §13 정합 시 `v[^/]+` → `[^/]+`로 완화. spec-diffs 등 하위 세그먼트는 여전히 제외)
 - 단순화: spec-diffs는 *역사적 자료*로 자유 수정. closed task의 spec-diff *재해석*은 자연스럽고 차단 없는 게 정상
 
 **우회 절차** (의도적으로 closed task를 풀어 다시 진행해야 하는 경우):
 ```bash
 # 1. 헤더 status를 closed에서 다른 상태로 직접 변경 (Bash 영역 — Write/Edit hook 우회)
-sed -i '' 's/| closed |/| developing |/' .project/tasks/v1.0/001_some-task.md
+sed -i '' 's/| closed |/| developing |/' .project/tasks/001_mvp/001_some-task.md
 
 # 2. 그 후 정상 Edit 가능
 # (closed-immutable hook은 status가 closed가 *아닌* 동안 통과)

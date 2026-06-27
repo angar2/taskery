@@ -237,7 +237,7 @@ draft → planned → developing → developed → testing → tested → closed
 | # | 주제 | 부활 검토 시점 |
 |---|------|----------|
 | 1 | 컨텍스트 격리 강화 (Task tool default 확장) | 30+ task 메인 컨텍스트 폭발 |
-| 2 | 압축 평가 기준 subagent (유사 RAG) | 9 기획 문서 / 코드 컨벤션 누적 부담 |
+| 2 | 압축 평가 기준 subagent (유사 RAG) | 제품 관통 문서 / 코드 컨벤션 누적 부담 |
 | 3 | Python orchestrator + `claude -p` 헤드리스 | task당 phase 100개 자동화 시나리오 (충돌 가능 — *현재 정신과 다름*) |
 | 4 | minimal form hook | 태스크 문서 형식 위반 5회 이상 |
 | 5 | `/plan-roadmap` 스킬 | 큰 묶음 작업 빈발 + ROADMAP.md 수동 부담 |
@@ -337,6 +337,26 @@ FRICTION_LOG 누적 → 사용자 직접 정독 → PLAYBOOK 항목 §방법 그
 
 ---
 
+### 12.2. plan = 기능 그룹 재정의 (PLAYBOOK §13 본구현, 2026-06-27)
+
+**트리거**: plan을 버전(vX.X) 단위로 둔 구조가 *버전 범프를 너무 무겁게* 만들어 plan-init이 사실상 1회성 죽은 스킬이 됨 — 모든 task가 첫 버전 폴더에만 누적. plan이 *두 축*(제품 스펙 스냅샷 + 작업 묶음 단위)을 겸한 것이 근본 원인.
+
+**결정**: plan = **기능 그룹(작업 묶음) 단위**로 재정의. 제품 관통 문서 생성 책임을 plan-init → project-init으로 이관하고, 문서를 3분할.
+
+| 결정 | 영역 | 사유 |
+|------|------|------|
+| 문서 3분할 (그룹 A 작성 / B 골격 / C plan 로컬) | project-init / plan-init SKILL | 제품 관통 문서(SERVICE-POLICY/TECH-STACK/ARCHITECTURE 작성 + DATA-MODEL/API-SPEC/FEATURES/UX-UI 골격)는 `.project/` 루트 평평. plan 폴더엔 PLAN.md/ROADMAP.md만. 기능 분류 = 루트 문서 섹션 구조가 단일 진실(plan 폴더로 역추적 X) |
+| plan 폴더 `NNN_slug` 채번 | bin/lib.js `computeNextPlanNumber` + plan-init | TASK-NNN과 결 맞춘 3자리 채번. legacy(NNN 아닌) 폴더 감지 게이트 — 채번 공존 시 활성 plan 갈림 차단 |
+| 분기 2(카피포워드) 폐기 | plan-init SKILL | 제품 문서가 루트 living이라 "이전 버전 통째 카피" 불필요. plan-init = 단일 흐름 |
+| delta 깊이/시점 분리 | plan-init / task-plan / task-dev SKILL | plan-init은 FEATURES/UX-UI *의도 stub*만. DATA-MODEL/API-SPEC 스키마·엔드포인트 본문은 task가 *구현 동반*으로 채움(선기획 함정 회피, anti-waterfall 정합) |
+| spec-diff = 변경된 *제품 문서(루트)* 추적 | TASK_DOC_RULE §1.5 | per-task 기록. 제품 문서의 정식 변경 이력은 git 단일 진실(별도 전역 인덱스 X) |
+| closed-immutable 정규식 완화 | .claude/.codex hooks | `tasks/v[^/]+/` → `tasks/[^/]+/`. 폴더명이 `v`로 시작 강제이던 것을 한 세그먼트 매칭으로 완화 — NNN_slug 신규/구버전 모두 보호. spec-diffs 등 하위 세그먼트는 여전히 제외 |
+| 제품 레벨 로드맵 = PROJECT.md 섹션 | project-init SKILL | 프로젝트 관통 거시 빌드 순서(구현/배포/보안)는 1회성이라 별도 living 파일 X. `PROJECT.md ## 초기 빌드 로드맵`에 둠 |
+
+**결과 위치**: bin/lib.js + bin/init.js + project-init/plan-init/task-init/task-plan/task-dev/task-close/task-test/add-backlog SKILL.md + TASK_DOC_RULE/GIT_RULE/MOCKUP_RULE + CLAUDE.md/AGENTS.md + README.md + .claude/.codex hooks/closed-immutable.sh + plan/OVERVIEW·TASK-DOC·SKILLS·DISTRIBUTION·HOOKS·PLAYBOOK
+
+---
+
 ## 13. 수정 이력
 
 | 날짜 | 변경 사항 |
@@ -349,3 +369,4 @@ FRICTION_LOG 누적 → 사용자 직접 정독 → PLAYBOOK 항목 §방법 그
 | 2026-05-30 | 정합 검증 후속 정정 (3차) — §12.1 #14+19 영향 표 + 결과 위치 본문에 `TASK_DOC_RULE.md` 누락분 추가 (양식 spec 단일 진실 소스 정합). |
 | 2026-05-30 | 정합 검증 후속 정정 (3차 추가) — §6 분산 원칙 표 보강: 스킬 본문 path `<skill>.md` → `<skill>/SKILL.md` (디렉토리 구조 마이그레이션 정합) + CHANGELOG_RULE / MOCKUP_RULE 행 추가 (신설 룰 정합) + 검증 명령 행 옆에 *테스트 명령* 행 신설 (두 섹션 분리 정합). |
 | 2026-05-31 | 정합 순회 1차 — §9 결정 본문 *8 스킬 중* → *9 스킬 중* 갱신 (0.1.2 add-backlog 스킬 추가 정합). 본 본문은 *현재 정신*을 명시하는 부분(시점 기록 X)이라 9 스킬로 갱신 필요. §12.1 결과 위치 본문은 *2026-05-30 stash 정합 시점 기록*이라 *8 스킬 SKILL.md* 그대로 유지(시점 기록 — 정정 X) |
+| 2026-06-27 | PLAYBOOK §13(plan = 기능 그룹) 본구현 — §12.2 신규 추가 (문서 3분할 + NNN 채번 + 카피포워드 폐기 + delta 깊이 분리 + spec-diff 재정의 + closed-immutable 정규식 완화 + 제품 로드맵 = PROJECT.md 섹션). |

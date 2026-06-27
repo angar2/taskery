@@ -10,20 +10,20 @@
 | 레벨 | 단위 | 위치 |
 |------|------|------|
 | **project** | 전체 프로젝트 | `.project/` 폴더 자체 (1회성 — `/project-init`이 골격 작성) |
-| **plan** | 묶음 기획 단위 (예: 인증 시스템 전체) | `.project/plans/<vX.X>/` 안 기획 문서 (PLAN/SERVICE-POLICY/FEATURES/UX-UI/TECH-STACK/ARCHITECTURE/DATA-MODEL/API-SPEC/ROADMAP) |
-| **task** | 기능/이슈 단위 (예: 로그인 로직 / 단일 버그) | `.project/tasks/<vX.X>/<NNN>_<slug>.md` (단일 파일) 또는 `TASK-<NNN>_<slug>/task.md` (폴더 승격) |
+| **plan** | 작업 묶음 = 기능 그룹 단위 (예: 내 상품 비교 / 인증 시스템) | plan 로컬 `.project/plans/<NNN_slug>/` (PLAN.md / ROADMAP.md). 제품 관통 기획 문서(SERVICE-POLICY/FEATURES/UX-UI/TECH-STACK/ARCHITECTURE/DATA-MODEL/API-SPEC)는 `.project/` 루트 평평 |
+| **task** | 기능/이슈 단위 (예: 로그인 로직 / 단일 버그) | `.project/tasks/<NNN_slug>/<NNN>_<slug>.md` (단일 파일) 또는 `TASK-<NNN>_<slug>/task.md` (폴더 승격) |
 | **phase** | task.md Dev Plan 안 sub-섹션 | task.md `## Dev Plan` 안 `### Phase 1`, `### Phase 2`, ... |
 
 **원칙**:
-- task가 너무 크면 → 폴더 승격 (`TASK-<NNN>_<slug>/task.md` — *추가 자료 보관* 용도, 서브 문서 / 디자인 자료 등. mockup은 vX.X 공통이라 폴더 안 X — §1.5 참조)
-- 더 크면 → plan으로 승격 (별도 plan 버전 또는 plan 안 묶음)
+- task가 너무 크면 → 폴더 승격 (`TASK-<NNN>_<slug>/task.md` — *추가 자료 보관* 용도, 서브 문서 / 디자인 자료 등. mockup은 `<NNN_slug>` 공통이라 폴더 안 X — §1.5 참조)
+- 더 크면 → plan으로 승격 (별도 기능 그룹 plan 또는 큰 묶음 plan)
 - waterfall phase 선제적 작성 금지 — *진행하면서 점진적 추가*
 
-**spec-diffs / screenshots / mockup 위치 — vX.X 공통 단일화**:
-- `.project/tasks/<vX.X>/spec-diffs/<NNN>_<slug>_spec-diff.md` — 단일 파일 task든 폴더 승격이든
-- `.project/tasks/<vX.X>/screenshots/<NNN>_*.png`
-- `.project/tasks/<vX.X>/mockup/<task-doc-name>-mockup.html` (UX/UI 구현 task 한정 — stash FRICTION_LOG #14+19 반영)
-- 폴더 승격 task도 *vX.X 공통* 사용 (task 폴더 안에 spec-diffs/screenshots/mockup 생성하지 않음)
+**spec-diffs / screenshots / mockup 위치 — `<NNN_slug>` 공통 단일화**:
+- `.project/tasks/<NNN_slug>/spec-diffs/<NNN>_<slug>_spec-diff.md` — 단일 파일 task든 폴더 승격이든 (변경된 *제품 문서(루트)* 추적 — 정식 변경 이력은 git)
+- `.project/tasks/<NNN_slug>/screenshots/<NNN>_*.png`
+- `.project/tasks/<NNN_slug>/mockup/<task-doc-name>-mockup.html` (UX/UI 구현 task 한정 — stash FRICTION_LOG #14+19 반영)
+- 폴더 승격 task도 *`<NNN_slug>` 공통* 사용 (task 폴더 안에 spec-diffs/screenshots/mockup 생성하지 않음)
 - 단일 진실 소스: [TASK_DOC_RULE.md §1.5](../template/.project/rules/TASK_DOC_RULE.md) + [MOCKUP_RULE.md](../template/.project/rules/MOCKUP_RULE.md)
 
 → [DECISIONS.md §6](DECISIONS.md)
@@ -34,12 +34,12 @@
 
 | 생성일 | 플랜 | 유형 | 규모 | 상태 |
 |--------|------|------|------|------|
-| 2026-05-08 | v1.0 | feature | medium | developing |
+| 2026-05-08 | 001_mvp | feature | medium | developing |
 
 | 컬럼 | 의미 |
 |------|------|
 | **생성일** | ISO 형식 (YYYY-MM-DD) |
-| **플랜** | 어느 plan 버전 하위인지 (예: v1.0, alpha) — `tasks/<vX.X>/` 디렉토리 명과 일치 |
+| **플랜** | 어느 plan(기능 그룹) 하위인지 (예: 001_mvp, 002_compare-products) — `tasks/<NNN_slug>/` 디렉토리 명과 일치 |
 | **유형** | `feature` / `bug` / `improvement` / `refactor` / `docs` / `chore` (git 브랜치 타입과 직결) |
 | **규모** | `micro` (1 phase) / `small` (2-3) / `medium` (4-7) / `large` (8+ 또는 분리 검토) |
 | **상태** | 7 상태 머신 (§3) |

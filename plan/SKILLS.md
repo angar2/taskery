@@ -9,19 +9,19 @@
 
 | 스킬 | 레벨 | 역할 | 상태 전이 | 호출 빈도 |
 |------|------|------|---------|----------|
-| `/project-init` | **project** | PROJECT.md / AGENT-GUIDE.md / LINKED-REPOS.md / .env / .project 골격 생성 | — | **1회성** (프로젝트 첫 셋업) |
-| `/plan-init` | **plan** | `.project/plans/<vX.X>/` 안 기획 문서 작성 | — | plan 버전마다 |
-| `/task-init` | **task** | **워크트리 분기** + task.md 6 섹션 placeholder + 헤더 status=draft. BL 출처 진행 시 `tasks/<vX.X>/BACKLOG.md` 항목 확인 마킹 (`[ ]` → `[x]` + TASK 마크) | — → `draft` | task마다 |
+| `/project-init` | **project** | 진입 문서(PROJECT/AGENT-GUIDE/LINKED-REPOS/GLOSSARY/.env) + 제품 관통 문서(그룹 A 작성 / 그룹 B 골격, `.project/` 루트) 생성 | — | **1회성** (프로젝트 첫 셋업) |
+| `/plan-init` | **plan** | `.project/plans/<NNN_slug>/` PLAN.md / ROADMAP.md + 제품 관통 문서 FEATURES/UX-UI 의도 delta | — | 기능 그룹마다 |
+| `/task-init` | **task** | **워크트리 분기** + task.md 6 섹션 placeholder + 헤더 status=draft. BL 출처 진행 시 `tasks/<NNN_slug>/BACKLOG.md` 항목 확인 마킹 (`[ ]` → `[x]` + TASK 마크) | — → `draft` | task마다 |
 | `/task-plan` | task | Requirements / Scope / Dev Plan / Test Plan 채우기 (워크트리 호출 default — 멀티세션. 호출 위치 자유, cwd 무관) | `draft` → `planned` | task마다 |
 | `/task-dev` | task | Phase 순서 구현 + self-check 게이트 (워크트리 호출 default. cwd 무관) | `planned`/`developing` → `developed` | task마다 |
 | `/task-test` | task | Task tool 격리 검증 (confirmation bias 회피. 워크트리 호출 default. cwd 무관) | `developed` → `tested` (또는 `developing`/`tested`+결함 명시) | task마다 |
 | `/task-close` | task | git 마무리 + 검증 명령 재실행 게이트 + **머지 락 직렬화** + dev `--no-ff` 병합 + **워크트리/브랜치 자동 정리**. BACKLOG.md 무관 (task-init이 처리) | `tested` → `closed` | task마다 |
-| `/add-backlog` | **meta** | 사용자 발화로 *버전별* `tasks/<vX.X>/BACKLOG.md`에 항목 1건 추가 — 얕은 분석(개요 / 대상 영역) + BL-NNN 채번 + `withMetaLock` 직렬화 (0.1.2+) | — | 사용자 호출 / 백로그 발화 캐치 |
+| `/add-backlog` | **meta** | 사용자 발화로 *plan(기능 그룹)별* `tasks/<NNN_slug>/BACKLOG.md`에 항목 1건 추가 — 얕은 분석(개요 / 대상 영역) + BL-NNN 채번 + `withMetaLock` 직렬화 (0.1.2+) | — | 사용자 호출 / 백로그 발화 캐치 |
 | `/log-friction` | **meta** | FRICTION_LOG.md에 사용자 불편 한 행 기록 | — | 사용자 호출 / 불만 발화 캐치 / task-close 자체 감지 |
 
 **위계 정신**:
 - `project` → 1회성 (프로젝트 셋업)
-- `plan` → plan 버전마다 (기획 문서 단위)
+- `plan` → 기능 그룹마다 (작업 묶음 단위)
 - `task` → task마다 (5 스킬 흐름)
 - `meta` → 백로그 누적 (`/add-backlog`) + 사용자 불편 등록 (`/log-friction`)
 
@@ -32,10 +32,10 @@
 | 스킬 | 입력 | 처리 |
 |------|------|------|
 | `/project-init` | (자동 분석 또는 질문) | 빈 프로젝트 → 질문 라운드 / 기존 코드 → 소스 분석 + 제안 + confirm. **1회성** — `.project/PROJECT.md` 있으면 경고 |
-| `/plan-init` | 버전명 (예: v1.0, alpha) | 인자 없으면 사용자에게 질문. **분기 1**(신규): vX.X/ 생성 + 기획 문서별 질문 라운드. **분기 2**(이어가기): 최신 카피 → 새 vY.Y/ + 변경 인터뷰 + 변경된 문서만 갱신 + AGENT-GUIDE.md 활성 버전 갱신 |
+| `/plan-init` | 기능 그룹 slug (예: mvp, compare-products) | 인자 없으면 사용자에게 질문. 단일 흐름: `computeNextPlanNumber`로 NNN 채번 → `plans/NNN_slug/` 생성 + PLAN.md/ROADMAP.md + 제품 관통 문서 FEATURES/UX-UI 의도 delta + AGENT-GUIDE 활성 plan 갱신. legacy(NNN 아닌) 폴더 감지 시 게이트 |
 | `/task-init` | 주제/유형/규모/플랜 | 직전 맥락 명확하면 메인 제안 + confirm. 맥락 부족 시 인터뷰. **자동 추정 진행 X** |
 | `/task-plan` ~ `/task-close` | TASK-NNN 인자 또는 자동 | 인자 없으면 *상태에 맞는 가장 최근 task* 자동 선택 + confirm |
-| `/add-backlog` | `<주제>` (예: "로그인 빈 화면 백로그에") 또는 백로그 발화 캐치 | 메인 워크트리/dev 검증 + 활성 버전(`AGENT-GUIDE.md`) 검출 + 얕은 분석(코드 탐색 X) + BL-NNN 채번 + append. 유형 모호 시 confirm |
+| `/add-backlog` | `<주제>` (예: "로그인 빈 화면 백로그에") 또는 백로그 발화 캐치 | 메인 워크트리/dev 검증 + 활성 plan(`AGENT-GUIDE.md`) 검출 + 얕은 분석(코드 탐색 X) + BL-NNN 채번 + append. 유형 모호 시 confirm |
 | `/log-friction` | `<불편 내용>` 또는 무인자 호출 | 사용자 합의 → FRICTION_LOG.md 한 행 추가 |
 
 **자동 추정 진행 X 정신** — `/task-init`이 가장 강조. 메인이 *추정한 메타로* 파일 생성하지 X. 사용자 답 받기 전 작성 금지.
@@ -101,10 +101,10 @@ draft → planned → developing → developed → testing → tested → closed
 
 ## 3.6 백로그 (0.1.2+)
 
-`/add-backlog`는 *버전별 백로그* `.project/tasks/<vX.X>/BACKLOG.md`에 task 후보를 1건씩 누적한다. 글로벌 `.project/BACKLOG.md`(plan 기획 후보 카탈로그)는 `/plan-init` 영역 — 별 차원.
+`/add-backlog`는 *plan(기능 그룹)별 백로그* `.project/tasks/<NNN_slug>/BACKLOG.md`에 task 후보를 1건씩 누적한다. 글로벌 `.project/BACKLOG.md`(다음 기능 그룹 후보 카탈로그)는 `/plan-init` 영역 — 별 차원.
 
 **흐름**:
-- 사용자 *"~ 백로그에"* 발화 → 메인 워크트리 검출 + dev 체크아웃 검증 + 활성 버전(`AGENT-GUIDE.md` 파싱) 검출
+- 사용자 *"~ 백로그에"* 발화 → 메인 워크트리 검출 + dev 체크아웃 검증 + 활성 plan(`AGENT-GUIDE.md` 파싱) 검출
 - 얕은 분석(코드 탐색 X, 추정 수준) — 유형 / 제목 / 개요 / 대상 영역
 - BL-NNN 채번(`BL-(\d+)` max + 1) + 결정적 슬러그(한국어 → 영어 의미 변환 → kebab-case 3 단어 이내)
 - `withMetaLock`으로 BACKLOG.md append (plan-init이 박은 placeholder 라인 치환 우선)
@@ -274,8 +274,8 @@ CLAUDE.md `## 검증 명령` 단일 섹션이 *4 시점에 분산 실행* (self-
 1. cd <user-project>
 2. npx @angar2/taskery init  # template/ 자산 카피 + manifest 생성
 3. claude code              # 메인 세션 진입 (CLAUDE.md 자동 정독)
-4. /project-init            # PROJECT/AGENT-GUIDE/LINKED-REPOS/.env 골격
-5. /plan-init v1.0          # 기획 문서 작성
+4. /project-init            # 진입 문서 + 제품 관통 문서(루트, 그룹 A 작성/B 골격)
+5. /plan-init mvp           # 기능 그룹 plan — PLAN/ROADMAP + 제품 문서 의도
 6. /task-init               # 첫 task — Requirements 인터뷰
 7. /task-plan TASK-001      # 4 섹션 채우기
 8. /task-dev TASK-001       # Phase 구현 + self-check
