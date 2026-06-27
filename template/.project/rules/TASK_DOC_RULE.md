@@ -94,7 +94,7 @@ draft → planned → developing → developed → testing → tested → closed
 | 항목 | 위치 | 작성 주체 |
 |------|------|---------|
 | 단일 파일 task | `.project/tasks/<NNN_slug>/<NNN>_<slug>.md` (예: `001_login-feature.md`) | `/task-init` |
-| 폴더 승격 task | `.project/tasks/<NNN_slug>/TASK-<NNN>_<slug>/task.md` | `/task-init` (규모 large 또는 사용자 명시 또는 추가 자료 다수) |
+| 폴더 승격 task | `.project/tasks/<NNN_slug>/TASK-<NNN>_<slug>/task.md` | `/task-init` (*사용자 명시 시에만* — 규모 large여도 자동 승격 X) |
 | spec-diffs (변경된 제품 문서(루트) 추적) | `.project/tasks/<NNN_slug>/spec-diffs/<NNN>_<slug>_spec-diff.md` (**`<NNN_slug>` 공통** — 단일/폴더 모두) | `/task-plan` Step 6 (Phase 0 변경 시) |
 | screenshots (UI 작업 자료) | `.project/tasks/<NNN_slug>/screenshots/<NNN>_*.png` (**`<NNN_slug>` 공통**) | `/task-test` 격리 세션 또는 메인 |
 | mockup (UX/UI HTML 목업) | `.project/tasks/<NNN_slug>/mockup/<task-doc-name>-mockup.html` (**`<NNN_slug>` 공통** — 단일/폴더 모두) | `/task-plan` Step 4.5 (UX/UI task 한정) — 단일 진실 소스 `MOCKUP_RULE.md` |
@@ -116,7 +116,7 @@ draft → planned → developing → developed → testing → tested → closed
 
 1. `tasks/<NNN_slug>/` 디렉토리 안 가장 큰 NNN+1로 task 번호 결정 (예: 기존 002까지 있으면 003)
 2. kebab-slug = 태스크 이름 한국어 → 영어 kebab-case (예: "로그인 기능 추가" → `login-feature`)
-3. 파일명 = `NNN_kebab-slug.md` (예: `003_login-feature.md`). 큰 작업이면 폴더 승격 (`TASK-003_login-feature/task.md`).
+3. 파일명 = `NNN_kebab-slug.md` (예: `003_login-feature.md`). *사용자 명시 시* 폴더 승격 (`TASK-003_login-feature/task.md`) — 규모 large여도 자동 승격 X.
 4. 파일 제목 작성: `# TASK-003 — 로그인 기능 추가`
 5. 헤더 표 작성 (5컬럼 모두 채움):
    - 생성일: 오늘 (YYYY-MM-DD)

@@ -149,7 +149,7 @@ git -C "$MAIN_WT" branch --no-merged dev --list \
 
 1. 파일 vs 폴더 분기 (기존 룰 유지):
    - **파일 default**: 단일 `NNN_<slug>.md`.
-   - **폴더 승격 조건**: (a) 규모 `large`, 또는 (b) 사용자 명시 *"폴더로 만들어줘"*, 또는 (c) task에 *추가 자료* 다수 예상.
+   - **폴더 승격 조건**: *사용자 명시* 시에만 (*"폴더로 만들어줘"* 류). 규모 large·추가 자료 다수여도 자동 승격하지 않는다 — 기본은 항상 단일 파일. 기능 자체는 유지(사용자가 원하면 그대로 사용).
    - **spec-diffs / screenshots / mockup은 `<NNN_slug>` 공통** — 단일/폴더 모두 `.project/tasks/<NNN_slug>/{spec-diffs,screenshots,mockup}/`에 위치. (TASK_DOC_RULE §1.5)
 2. 브랜치명 산출 (멀티세션 형식):
    ```
