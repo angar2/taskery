@@ -31,7 +31,7 @@ UX/UI 구현 task의 *시각 영역 사전 정합* + *task-test 시 USER 검수 
 
 ## 3. 파일 위치 / 네이밍
 
-- **경로**: `.project/tasks/<vX.X>/mockup/<task-doc-name>-mockup.html`
+- **경로**: `.project/tasks/<NNN_slug>/mockup/<task-doc-name>-mockup.html`
 - **네이밍**: task 문서 파일명 + `-mockup.html`
   - 예 1: `001_login-form.md` → `001_login-form-mockup.html`
   - 예 2: 폴더 승격 `TASK-007_payment-flow/task.md` → `TASK-007_payment-flow-mockup.html`

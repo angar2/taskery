@@ -11,10 +11,10 @@
 
 | 생성일 | 플랜 | 유형 | 규모 | 상태 |
 |--------|------|------|------|------|
-| 2026-05-08 | v1.0 | feature | medium | developing |
+| 2026-05-08 | 001_mvp | feature | medium | developing |
 
 - **생성일**: ISO 형식 (YYYY-MM-DD)
-- **플랜**: 어느 plan 버전 하위인지 (예: v1.0, v2.0, alpha) — `tasks/<vX.X>/` 디렉토리 명과 일치
+- **플랜**: 어느 plan(기능 그룹) 하위인지 (예: 001_mvp, 002_compare-products) — `tasks/<NNN_slug>/` 디렉토리 명과 일치
 - **유형**: `feature` / `bug` / `improvement` / `refactor` / `docs` / `chore` (git 브랜치 타입과 직결)
 - **규모**:
   - `micro` — 구현 파트 1개 (단일 함수/설정 수정)
@@ -93,16 +93,17 @@ draft → planned → developing → developed → testing → tested → closed
 
 | 항목 | 위치 | 작성 주체 |
 |------|------|---------|
-| 단일 파일 task | `.project/tasks/<vX.X>/<NNN>_<slug>.md` (예: `001_login-feature.md`) | `/task-init` |
-| 폴더 승격 task | `.project/tasks/<vX.X>/TASK-<NNN>_<slug>/task.md` | `/task-init` (규모 large 또는 사용자 명시 또는 추가 자료 다수) |
-| spec-diffs (변경된 plan 문서 추적) | `.project/tasks/<vX.X>/spec-diffs/<NNN>_<slug>_spec-diff.md` (**vX.X 공통** — 단일/폴더 모두) | `/task-plan` Step 6 (Phase 0 변경 시) |
-| screenshots (UI 작업 자료) | `.project/tasks/<vX.X>/screenshots/<NNN>_*.png` (**vX.X 공통**) | `/task-test` 격리 세션 또는 메인 |
-| mockup (UX/UI HTML 목업) | `.project/tasks/<vX.X>/mockup/<task-doc-name>-mockup.html` (**vX.X 공통** — 단일/폴더 모두) | `/task-plan` Step 4.5 (UX/UI task 한정) — 단일 진실 소스 `MOCKUP_RULE.md` |
+| 단일 파일 task | `.project/tasks/<NNN_slug>/<NNN>_<slug>.md` (예: `001_login-feature.md`) | `/task-init` |
+| 폴더 승격 task | `.project/tasks/<NNN_slug>/TASK-<NNN>_<slug>/task.md` | `/task-init` (규모 large 또는 사용자 명시 또는 추가 자료 다수) |
+| spec-diffs (변경된 제품 문서(루트) 추적) | `.project/tasks/<NNN_slug>/spec-diffs/<NNN>_<slug>_spec-diff.md` (**`<NNN_slug>` 공통** — 단일/폴더 모두) | `/task-plan` Step 6 (Phase 0 변경 시) |
+| screenshots (UI 작업 자료) | `.project/tasks/<NNN_slug>/screenshots/<NNN>_*.png` (**`<NNN_slug>` 공통**) | `/task-test` 격리 세션 또는 메인 |
+| mockup (UX/UI HTML 목업) | `.project/tasks/<NNN_slug>/mockup/<task-doc-name>-mockup.html` (**`<NNN_slug>` 공통** — 단일/폴더 모두) | `/task-plan` Step 4.5 (UX/UI task 한정) — 단일 진실 소스 `MOCKUP_RULE.md` |
 | 폴더 승격 task의 추가 자료 (서브 문서 등) | `TASK-<NNN>_<slug>/` 안 자유 | 메인 / `/task-dev` |
 
 **원칙**:
-- spec-diffs / screenshots / mockup은 *vX.X 공통* — 파일명 NNN prefix 또는 task 문서 파일명으로 task 식별. 폴더 승격 task도 동일 (별도 spec-diffs/screenshots/mockup 만들지 X).
-- vX.X 공통 디렉토리는 `/plan-init` Step 5가 mkdir.
+- spec-diffs / screenshots / mockup은 *`<NNN_slug>` 공통* — 파일명 NNN prefix 또는 task 문서 파일명으로 task 식별. 폴더 승격 task도 동일 (별도 spec-diffs/screenshots/mockup 만들지 X).
+- `<NNN_slug>` 공통 디렉토리는 `/plan-init`이 mkdir.
+- **spec-diff = per-task 기록** — 그 task가 어느 *제품 문서(`.project/` 루트)*를 NEW/MOD/DEL 했는지의 task 산출물. 제품 문서의 *정식 변경 이력은 git*이 단일 진실이며, 별도 전역 변경 인덱스는 두지 않는다.
 - 폴더 승격은 *task의 추가 자료*용 (서브 문서 / 디자인 자료 등) — *spec-diffs / screenshots / mockup 위치 X*.
 
 **closed-immutable hook 보호 범위** — task.md 본 파일만 (단일 파일 또는 폴더 승격 task.md). spec-diffs / screenshots / mockup / 폴더 승격 추가 자료는 *역사적 자료*로 자유 수정.
@@ -113,13 +114,13 @@ draft → planned → developing → developed → testing → tested → closed
 
 ### 2.1 헤더 작성 (`/task-init`)
 
-1. `tasks/<vX.X>/` 디렉토리 안 가장 큰 NNN+1로 task 번호 결정 (예: 기존 002까지 있으면 003)
+1. `tasks/<NNN_slug>/` 디렉토리 안 가장 큰 NNN+1로 task 번호 결정 (예: 기존 002까지 있으면 003)
 2. kebab-slug = 태스크 이름 한국어 → 영어 kebab-case (예: "로그인 기능 추가" → `login-feature`)
 3. 파일명 = `NNN_kebab-slug.md` (예: `003_login-feature.md`). 큰 작업이면 폴더 승격 (`TASK-003_login-feature/task.md`).
 4. 파일 제목 작성: `# TASK-003 — 로그인 기능 추가`
 5. 헤더 표 작성 (5컬럼 모두 채움):
    - 생성일: 오늘 (YYYY-MM-DD)
-   - 플랜: 현재 active plan 버전 (예: v1.0)
+   - 플랜: 현재 active plan (예: 001_mvp — `NNN_slug` 폴더명)
    - 유형: 사용자/메인 합의 (feature/bug/...)
    - 규모: 사용자/메인 합의 (micro/small/medium/large)
    - 상태: `draft` (고정)
@@ -285,7 +286,7 @@ Test Plan 작성 완료 후 *반드시* 점검. *"누적/리셋 안 함"* 같은
 
 | 생성일 | 플랜 | 유형 | 규모 | 상태 |
 |--------|------|------|------|------|
-| 2026-05-08 | v1.0 | feature | small | planned |
+| 2026-05-08 | 001_mvp | feature | small | planned |
 ```
 
 ### 4.2 Requirements
@@ -403,7 +404,7 @@ Test Plan 작성 완료 후 *반드시* 점검. *"누적/리셋 안 함"* 같은
 
 | 생성일 | 플랜 | 유형 | 규모 | 상태 |
 |--------|------|------|------|------|
-| 2026-05-08 | v1.0 | chore | micro | closed |
+| 2026-05-08 | 001_mvp | chore | micro | closed |
 
 ## Requirements
 사용자 요구:
@@ -449,7 +450,7 @@ Test Plan 작성 완료 후 *반드시* 점검. *"누적/리셋 안 함"* 같은
 
 | 생성일 | 플랜 | 유형 | 규모 | 상태 |
 |--------|------|------|------|------|
-| 2026-05-08 | v1.0 | feature | medium | tested |
+| 2026-05-08 | 001_mvp | feature | medium | tested |
 
 ## Requirements
 사용자 요구:
@@ -566,7 +567,7 @@ Test Plan 작성 완료 후 *반드시* 점검. *"누적/리셋 안 함"* 같은
 
 | 생성일 | 플랜 | 유형 | 규모 | 상태 |
 |--------|------|------|------|------|
-| 2026-05-08 | v1.0 | bug | small | tested |
+| 2026-05-08 | 001_mvp | bug | small | tested |
 
 ## Requirements
 사용자 보고:
@@ -638,3 +639,4 @@ Test Plan 작성 완료 후 *반드시* 점검. *"누적/리셋 안 함"* 같은
 | 2026-05-09 | 표현 정제 — 인명 / 경박 표현 / 스킬 용어 / 이전 버전 비교 단락 정리 |
 | 2026-05-30 | stash FRICTION_LOG 기반 정합 — §1.5 mockup 행 추가 (vX.X 공통, 단일 진실 소스 MOCKUP_RULE) + §2.5 Test Plan 본질 재정의 (실질 동작 시나리오 + `[AUTO]` / `[USER]` 분류 강제 + 카탈로그 7방식 + UX/UI 영역 분리 매트릭스 + 시각 fix 사이클 사전 예고 + 검증 / 테스트 명령 두 섹션 참조) + §4.5 / §5 완성 예시 3개 Test Plan 형식 갱신 (분류 표 + PASS 기준 명시. 기존 번호 매김 시나리오 + 검증 명령 나열은 옛 형식). (stash FRICTION_LOG #14+19 / #25 정합) |
 | 2026-06-02 | 0.1.3 F5 정합 — §2.5 가이드라인 안티패턴 3종 추가 (grep/Read-only 보조용 / 요구사항당 end-to-end 1개 이상 / 무거운 검증 회피 금지) + 요구사항 ↔ 시나리오 커버리지 점검 단계 신설 (stash FRICTION_LOG 2026-06-01 Test Plan 동어반복 + 누락 마찰 반영) |
+| 2026-06-27 | PLAYBOOK §13 정합 — plan = 기능 그룹. 헤더 *플랜* 컬럼 = `NNN_slug` 폴더명(예: 001_mvp). §1.5 경로 `tasks/<NNN_slug>/`, *`<NNN_slug>` 공통*으로 통일. spec-diff 정의 = *변경된 제품 문서(루트) 추적*(per-task 기록, 정식 변경 이력은 git 단일 진실) |

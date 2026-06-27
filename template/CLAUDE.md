@@ -54,7 +54,7 @@
 
 ## 백로그 (0.1.2+)
 
-> `.project/tasks/<vX.X>/BACKLOG.md` = *버전별 task 후보 누적*. 사용자 발화로 1건씩 얕은 분석(개요 / 대상 영역) 곁들여 추가.
+> `.project/tasks/<NNN_slug>/BACKLOG.md` = *plan(기능 그룹)별 task 후보 누적*. 사용자 발화로 1건씩 얕은 분석(개요 / 대상 영역) 곁들여 추가.
 
 - **`/add-backlog`**: 사용자 *"~ 백로그에 추가"* 발화 → 얕은 분석(코드 탐색 X, 추정 수준) → BL-NNN 채번 → BACKLOG.md append (`[ ]` 대기).
 - **`/task-init` 연동**: 사용자 *"백로그의 BL-NNN 진행"* 발화 → 해당 항목 *확인 마킹*. `[ ]` → `[x]` + `- TASK: TASK-NNN` 추가 (다회 진행 시 콤마).
@@ -63,7 +63,7 @@
 - **머지 여부를 직접 알아야 할 경우에만** 아래 순서로 작업 완료 여부를 확인한다:
   1. `taskery status` 진행중 목록에 그 TASK가 **있으면** → 아직 진행 중(dev 미머지)이므로 `git log dev --grep`이 비는 것이 정상이다. 재조회하지 않는다.
   2. 목록에 **없으면** → `git log dev --grep 'BL-NNN'` + 브랜치명으로 작업 완료 여부를 확인한다.
-- **글로벌 `.project/BACKLOG.md`** (plan 기획 후보 카탈로그) 는 본 흐름 무관 — `/plan-init` 영역.
+- **글로벌 `.project/BACKLOG.md`** (다음 기능 그룹 후보 카탈로그) 는 본 흐름 무관 — `/plan-init` 영역.
 
 상세: `.claude/skills/add-backlog/SKILL.md`.
 
@@ -125,14 +125,14 @@
 
 | 스킬 | 레벨 | 역할 |
 |------|------|------|
-| `/project-init` | project | PROJECT/AGENT-GUIDE/LINKED-REPOS/.env 골격 생성 (1회성) |
-| `/plan-init` | plan | `.project/plans/<vX.X>/` 안 기획 문서 작성 |
+| `/project-init` | project | 진입 문서(PROJECT/AGENT-GUIDE/LINKED-REPOS/GLOSSARY/.env) + 제품 관통 문서(그룹 A 작성 / 그룹 B 골격, `.project/` 루트) 생성 (1회성) |
+| `/plan-init` | plan | `.project/plans/<NNN_slug>/` PLAN/ROADMAP + 제품 관통 문서 FEATURES/UX-UI에 의도 추가 (plan = 기능 그룹 단위) |
 | `/task-init` | task | task.md 빈 골격 + status=draft |
 | `/task-plan` | task | Requirements/Scope/Dev Plan/Test Plan 작성 (draft → planned) |
 | `/task-dev` | task | Phase 순서 구현 + self-check (planned → developed) |
 | `/task-test` | task | Task tool 격리 검증 (developed → tested) |
 | `/task-close` | task | 검증 명령 게이트 + 커밋 + dev 병합 (tested → closed) |
-| `/add-backlog` | meta | 사용자 발화로 버전별 BACKLOG.md에 항목 1건 추가 (얕은 분석 + BL-NNN 채번 — 0.1.2+) |
+| `/add-backlog` | meta | 사용자 발화로 활성 plan BACKLOG.md에 항목 1건 추가 (얕은 분석 + BL-NNN 채번 — 0.1.2+) |
 | `/log-friction` | meta | FRICTION_LOG.md에 사용자 불편 한 행 기록 |
 
 본문은 `.claude/skills/<스킬>/SKILL.md` 참조.
@@ -163,7 +163,7 @@
 
 > taskery는 *plan/ ↔ template/ 자동 빌드 X*. 사용자가 직접 정합 유지.
 
-- **`.project/plans/<vX.X>/` 변경 시** → 관련 task의 `spec-diffs/` 갱신 (`/task-plan` Phase 0 흐름 — 진행 중 task 있으면)
+- **`.project/` 루트 제품 관통 문서 변경 시** → 관련 task의 `spec-diffs/` 갱신 (`/task-plan` Phase 0 흐름 — 진행 중 task 있으면)
 - **`CLAUDE.md` 검증 명령 변경 시** → 모든 스킬 + hook이 그대로 따름. 별도 동기화 불필요
 - **룰(`*.md` in `.project/rules/`) 변경 시** → 스킬 instruction이 다음 호출부터 변경 반영
 - **`*.local.md` 사용자 오버라이드** → `npx @angar2/taskery update`가 미터치. 코어 룰 갱신 시 `*.bak` 백업 후 사용자 confirm
@@ -184,5 +184,5 @@
 
 1. 본 파일(`CLAUDE.md`) 정독 — 검증 명령 + 룰 위치 + 스킬 목록 파악
 2. `.project/AGENT-GUIDE.md` 정독 — 활성 plan 버전 + 폴더 구조 + 작업 흐름
-3. `.project/plans/<활성버전>/PLAN.md` 정독 — 기획 문서 인덱스 + 진행 상태
+3. `.project/` 루트 제품 관통 문서(FEATURES / ARCHITECTURE 등) + `.project/plans/<활성 plan>/PLAN.md` 정독 — 활성 plan 인덱스 + 진행 상태
 4. 사용자 발화 받기 → 적절한 스킬 호출 또는 직접 작업
