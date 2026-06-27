@@ -172,7 +172,7 @@ async function main() {
   if (platforms.includes('codex')) {
     console.log(`  2. Codex 최초 1회 '/hooks'로 hook trust 승인 (.codex/config.toml — git-guard / closed-immutable)`);
   }
-  console.log(`  3. 에이전트 진입 → '/project-init' → '/plan-init <vX.X>' → '/task-init'\n`);
+  console.log(`  3. 에이전트 진입 → '/project-init' → '/plan-init <기능그룹>' → '/task-init'\n`);
 }
 
 main().catch((e) => {

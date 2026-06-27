@@ -74,8 +74,8 @@ taskery/                                  ← 본 리포 (시스템 자체)
         ├─ rules/                        ← 코어 룰 (TASK_DOC_RULE / GIT_RULE / CHANGELOG_RULE / MOCKUP_RULE)
         ├─ changelog/.gitkeep            ← 사용자 영역 빈 골격 (/task-close 갱신)
         ├─ flows/.gitkeep                ← 사용자 영역 빈 골격 (/task-dev 갱신)
-        ├─ plans/.gitkeep                ← 사용자 영역 빈 골격 (/plan-init이 vX.X/ 작성)
-        ├─ tasks/.gitkeep                ← 사용자 영역 빈 골격 (/plan-init이 vX.X/BACKLOG.md 빈 골격 + /task-init이 <NNN>_<slug>.md 작성)
+        ├─ plans/.gitkeep                ← 사용자 영역 빈 골격 (/plan-init이 NNN_slug/ PLAN·ROADMAP 작성)
+        ├─ tasks/.gitkeep                ← 사용자 영역 빈 골격 (/plan-init이 NNN_slug/BACKLOG.md 빈 골격 + /task-init이 <NNN>_<slug>.md 작성)
         └─ shared/                       ← 멀티리포 메시지 디렉토리
             ├─ sent/
             │   └─ completed/.gitkeep    ← 처리 완료 송신 메시지 보관
@@ -101,6 +101,9 @@ my-app/                                   ← 사용자 프로젝트
 │   ├─ AGENT-GUIDE.md                    ← /project-init 생성
 │   ├─ LINKED-REPOS.md                   ← /project-init 생성
 │   ├─ GLOSSARY.md                       ← /project-init 생성 (도메인 용어집, stash FRICTION_LOG #3)
+│   ├─ SERVICE-POLICY.md / TECH-STACK.md / ARCHITECTURE.md  ← /project-init 작성 (제품 관통 — 정적 그룹 A)
+│   ├─ FEATURES.md / UX-UI.md                            ← /project-init 골격 → plan-init 의도 + task 상세 (성장 그룹 B)
+│   ├─ DATA-MODEL.md / API-SPEC.md                        ← /project-init 골격 → task가 구현 동반으로 상세 (성장 그룹 B, plan-init 미관여)
 │   ├─ .env                              ← 사용자 직접 (멀티리포 환경 변수)
 │   ├─ rules/
 │   │   ├─ TASK_DOC_RULE.md              ← 코어 (npx 갱신, *.bak 백업)
@@ -108,8 +111,8 @@ my-app/                                   ← 사용자 프로젝트
 │   │   ├─ CHANGELOG_RULE.md             ← 코어 (npx 갱신)
 │   │   ├─ MOCKUP_RULE.md                ← 코어 (npx 갱신)
 │   │   └─ *.local.md                    ← (옵션) 사용자 오버라이드 (npx 미갱신)
-│   ├─ plans/                            ← .gitkeep (template에서) → /plan-init이 vX.X/ + 기획 문서 작성
-│   ├─ tasks/                            ← .gitkeep (template에서) → /plan-init이 vX.X/BACKLOG.md 빈 골격 + /task-init이 <NNN>_<slug>.md 작성
+│   ├─ plans/                            ← .gitkeep (template에서) → /plan-init이 NNN_slug/ PLAN·ROADMAP 작성
+│   ├─ tasks/                            ← .gitkeep (template에서) → /plan-init이 NNN_slug/BACKLOG.md 빈 골격 + /task-init이 <NNN>_<slug>.md 작성
 │   ├─ flows/                            ← .gitkeep (template에서) → /task-dev이 <module>.md 작성
 │   ├─ changelog/                        ← .gitkeep (template에서) → /task-close가 <YYYY-MM>.md 작성
 │   ├─ shared/                           ← 멀티리포 메시지
@@ -205,8 +208,8 @@ my-app/                                   ← 사용자 프로젝트
 **사용자 프로젝트에서 작업 시 정독 순서** (npx @angar2/taskery init 후):
 
 1. `<user-project>/CLAUDE.md` (메인 세션 자동 정독)
-2. `<user-project>/.project/AGENT-GUIDE.md` (활성 plan 버전 + 폴더 구조)
-3. `<user-project>/.project/plans/<활성버전>/PLAN.md` (기획 문서 진입)
+2. `<user-project>/.project/AGENT-GUIDE.md` (활성 plan + 폴더 구조)
+3. `<user-project>/.project/plans/<활성 plan>/PLAN.md` (활성 plan 인덱스 진입)
 4. 스킬 호출 시 메인이 해당 `<user-project>/.claude/skills/<skill>/SKILL.md` 정독
 
 **글로벌 룰** (`~/.claude/CLAUDE.md`)은 모든 세션에서 자동 적용 — 사용자 닉네임 / 반말 대화 / md 수정 이력 의무 등.
