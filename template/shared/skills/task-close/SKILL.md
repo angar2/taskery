@@ -73,8 +73,8 @@ LOCK_FILE="$HOME/.taskery/${PROJECT_ID}.merge.lock"
      ```sh
      git -C "$MAIN_WT" check-ignore -q "$MAIN_WT/.project/dummy"
      ```
-     - exit 0 (등록됨): `$MAIN_WT/.project/tasks/<vX.X>/...` (단일 소스)
-     - exit 1 (미등록): `$WT_PATH/.project/tasks/<vX.X>/...` (워크트리 안)
+     - exit 0 (등록됨): `$MAIN_WT/.project/tasks/<NNN_slug>/...` (단일 소스)
+     - exit 1 (미등록): `$WT_PATH/.project/tasks/<NNN_slug>/...` (워크트리 안)
    - 상태 = `tested` 검증. 그 외면 종료 (단 알려진 결함 *"OK 마무리"*는 status=tested로 명시되어 있어야 함).
    - GIT_RULE Read 우선순위:
      - `$MAIN_WT/.project/rules/GIT_RULE.md` (프로젝트별 — 우선)
@@ -123,12 +123,12 @@ git -C "$WT_PATH" rebase dev
 
 | 순위 | 자료 | 위치 |
 |------|------|------|
-| 1 | 태스크 문서 + plan 문서 (양쪽 정독 후 의도 종합) | 태스크: `$MAIN_WT/.project/tasks/<vX.X>/...` (등록 케이스) / `~/.taskery/worktrees/<projectId>/TASK-...` 다른 워크트리 (미등록 케이스, SSoT 조회로 경로 산출). plan: `$MAIN_WT/.project/plans/<vX.X>/` (ROADMAP / FEATURES / ARCHITECTURE / TECH-STACK 등) |
+| 1 | 태스크 문서 + 제품/plan 문서 (양쪽 정독 후 의도 종합) | 태스크: `$MAIN_WT/.project/tasks/<NNN_slug>/...` (등록 케이스) / `~/.taskery/worktrees/<projectId>/TASK-...` 다른 워크트리 (미등록 케이스, SSoT 조회로 경로 산출). 제품 관통 문서(FEATURES / ARCHITECTURE / TECH-STACK / DATA-MODEL / API-SPEC 등) = `$MAIN_WT/.project/<doc>.md` (루트 평평). plan 로컬(ROADMAP / PLAN) = `$MAIN_WT/.project/plans/<NNN_slug>/` |
 | 2 | 커밋 메시지 | `git log dev --grep` (GIT_RULE 풍부 메시지) |
 | 3 | diff | 변경 코드 자체 |
 
 - 1순위 부재 시 2/3순위 자동 fallback + 사용자에게 *자료 한계* 보고
-- 태스크 문서 = 본 task의 *세부 의도* / plan 문서 = *전체 의도* (Stage 순 / 의존 그래프 / 의도된 위치 분리). 충돌 영역의 *그림 전체*는 plan 문서가 더 명확한 경우 많음 (Stage 순서로 *먼저 머지된 쪽 다음 줄에 추가* 등)
+- 태스크 문서 = 본 task의 *세부 의도* / 제품·plan 문서 = *전체 의도* (Stage 순 / 의존 그래프 / 의도된 위치 분리). 충돌 영역의 *그림 전체*는 제품 문서(FEATURES/ARCHITECTURE)·ROADMAP이 더 명확한 경우 많음 (Stage 순서로 *먼저 머지된 쪽 다음 줄에 추가* 등)
 - 정독 후 *의미 의도 추출* → 충돌 해결 → `git rebase --continue`
 
 #### 4-c. 판단 불가 → 사용자 호출
@@ -144,8 +144,8 @@ git -C "$WT_PATH" rebase dev
 
 | 케이스 | 위치 | 흐름 |
 |--------|------|------|
-| 미등록 | `$WT_PATH/.project/tasks/<vX.X>/...` | 워크트리 안 task 문서 수정 → Step 6 Phase 커밋에 *코드 + 문서 = 한 커밋*에 포함 |
-| 등록 | `$MAIN_WT/.project/tasks/<vX.X>/...` | 워크트리 안 코드만 한 커밋 + 메인 워크트리 절대 경로 task 문서를 **proper-lockfile**로 별도 수정 (`bin/lib.js` `withMetaLock` — 머지 커밋 미포함, 메인 로컬 보존) |
+| 미등록 | `$WT_PATH/.project/tasks/<NNN_slug>/...` | 워크트리 안 task 문서 수정 → Step 6 Phase 커밋에 *코드 + 문서 = 한 커밋*에 포함 |
+| 등록 | `$MAIN_WT/.project/tasks/<NNN_slug>/...` | 워크트리 안 코드만 한 커밋 + 메인 워크트리 절대 경로 task 문서를 **proper-lockfile**로 별도 수정 (`bin/lib.js` `withMetaLock` — 머지 커밋 미포함, 메인 로컬 보존) |
 
 기록 형식 (task.md Result 섹션 안):
 ```markdown
@@ -233,7 +233,7 @@ closed-immutable.sh hook *허용* 영역 (status=closed 적용된 *후* 재수�
 docs: [TASK-<NNN>] 태스크 문서 완료
 ```
 
-- 대상: `$WT_PATH/.project/tasks/<vX.X>/<NNN>_<slug>.md` (단일) 또는 `.../TASK-<NNN>_<slug>/task.md` (폴더 승격) + spec-diffs / screenshots / mockup (vX.X 공통, TASK_DOC_RULE §1.5).
+- 대상: `$WT_PATH/.project/tasks/<NNN_slug>/<NNN>_<slug>.md` (단일) 또는 `.../TASK-<NNN>_<slug>/task.md` (폴더 승격) + spec-diffs / screenshots / mockup (`<NNN_slug>` 공통, TASK_DOC_RULE §1.5).
 - **등록 케이스**: Step 6-5에서 메인 워크트리 직접 수정으로 처리 — 별도 커밋 X (워크트리 머지에 포함 X).
 
 #### 6-7. CHANGELOG 커밋 (해당 시)
@@ -376,4 +376,4 @@ git -C "$MAIN_WT" worktree remove "$WT_PATH"
 - **task 문서 단일 진실 소스** — `.gitignore` 케이스에 따라 메인 워크트리 또는 워크트리. 다른 세션의 충돌 해결 자료 정독 시 *SSoT 조회 → 워크트리 경로 산출* (미등록 케이스) 또는 *메인 워크트리 절대 경로* (등록 케이스).
 - **워크트리 + 브랜치 자동 제거** — GIT_RULE.md "작업 브랜치 삭제 정책" 면제 조항 (taskery 한정). 보존 키워드 시 양쪽 보존.
 - **safety net** — Step 14 복구 명령 출력. 사용자가 잘못 삭제 인지 시 즉시 복구 가능.
-- **BACKLOG.md 무관** — `.project/tasks/<vX.X>/BACKLOG.md` 체크 마킹은 `/task-init` Step 7.5가 처리(`[ ]` → `[x]` + `- TASK: TASK-NNN`). `[x]` = *task로 옮김* 의미라 close 시점에 추가 마킹 X. 완료 추적은 `npx @angar2/taskery status`(진행 중이면 dev 미머지가 정상) → 목록에 없을 때만 `git log dev --grep 'BL-NNN'` 순.
+- **BACKLOG.md 무관** — `.project/tasks/<NNN_slug>/BACKLOG.md` 체크 마킹은 `/task-init` Step 7.5가 처리(`[ ]` → `[x]` + `- TASK: TASK-NNN`). `[x]` = *task로 옮김* 의미라 close 시점에 추가 마킹 X. 완료 추적은 `npx @angar2/taskery status`(진행 중이면 dev 미머지가 정상) → 목록에 없을 때만 `git log dev --grep 'BL-NNN'` 순.

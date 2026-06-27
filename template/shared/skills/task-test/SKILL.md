@@ -23,8 +23,8 @@ MAIN_WT=$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")
 
 | 케이스 | task 문서 위치 | 격리 세션 작업 디렉토리 |
 |--------|--------------|---------------------|
-| 등록 (퍼블릭 리포 default) | `$MAIN_WT/.project/tasks/<vX.X>/...` | `$WT_PATH` (워크트리 — 코드 변경 위치) |
-| 미등록 | `$WT_PATH/.project/tasks/<vX.X>/...` (워크트리 안) | `$WT_PATH` (워크트리) |
+| 등록 (퍼블릭 리포 default) | `$MAIN_WT/.project/tasks/<NNN_slug>/...` | `$WT_PATH` (워크트리 — 코드 변경 위치) |
+| 미등록 | `$WT_PATH/.project/tasks/<NNN_slug>/...` (워크트리 안) | `$WT_PATH` (워크트리) |
 
 격리 세션은 *워크트리 안*에서 검증/테스트 명령 실행 (`$MAIN_WT/CLAUDE.md`의 `## 검증 명령` / `## 테스트 명령` 단일 진실 소스).
 
@@ -122,7 +122,7 @@ Task tool로 sub-agent spawn. prompt는 *자기완결적* — task.md 경로 + �
 ```
 
 **구현 디테일**:
-- `<ABSOLUTE_PATH_TO_TASK_MD>` 자리에 `.project/tasks/<vX.X>/<NNN>_<slug>.md` (또는 폴더 승격 시 `<...>/task.md`)의 절대 경로 삽입.
+- `<ABSOLUTE_PATH_TO_TASK_MD>` 자리에 `.project/tasks/<NNN_slug>/<NNN>_<slug>.md` (또는 폴더 승격 시 `<...>/task.md`)의 절대 경로 삽입.
 - Task tool의 `subagent_type`: `general-purpose` (도구 풀 다 필요).
 - Task tool의 `description`: `Isolated test for TASK-<NNN>`.
 

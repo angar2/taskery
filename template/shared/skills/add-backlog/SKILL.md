@@ -1,13 +1,13 @@
 ---
 name: add-backlog
-description: 사용자 발화로 *버전별* tasks/<vX.X>/BACKLOG.md에 task 후보 1건 추가 — 얕은 분석(개요/대상 영역) + BL-NNN 채번 + withMetaLock 직렬화 (0.1.2+)
+description: 사용자 발화로 *plan(기능 그룹)별* tasks/<NNN_slug>/BACKLOG.md에 task 후보 1건 추가 — 얕은 분석(개요/대상 영역) + BL-NNN 채번 + withMetaLock 직렬화 (0.1.2+)
 ---
 
 # /add-backlog
 
 ## 개요
 
-`/add-backlog`는 사용자 발화를 받아 *버전별 백로그* `.project/tasks/<vX.X>/BACKLOG.md`에 task 후보를 1건씩 누적한다. 멀티세션 환경에서 `withMetaLock`으로 동시 쓰기 직렬화. **얕은 분석**만 — 코드 직접 탐색 X, 추정 수준. 본격 분석은 다음 단계 `/task-plan`에서.
+`/add-backlog`는 사용자 발화를 받아 *plan(기능 그룹)별 백로그* `.project/tasks/<NNN_slug>/BACKLOG.md`에 task 후보를 1건씩 누적한다. 멀티세션 환경에서 `withMetaLock`으로 동시 쓰기 직렬화. **얕은 분석**만 — 코드 직접 탐색 X, 추정 수준. 본격 분석은 다음 단계 `/task-plan`에서.
 
 글로벌 `.project/BACKLOG.md` (plan 기획 후보 카탈로그) 는 `/plan-init` 영역으로 본 스킬 무관.
 
@@ -30,8 +30,8 @@ description: 사용자 발화로 *버전별* tasks/<vX.X>/BACKLOG.md에 task 후
   MAIN_WT=$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")
   ```
 - 메인 워크트리 dev 체크아웃 검증 — 위배 시 사용자 호출 + 중단
-- 활성 버전 검출 — `$MAIN_WT/.project/AGENT-GUIDE.md` `## 활성 plan 버전` 섹션 다음 비어 있지 않은 첫 줄에서 `vX.X` 패턴 추출
-- BACKLOG.md 경로 = `$MAIN_WT/.project/tasks/<vX.X>/BACKLOG.md`. 부재 시 사용자 호출: *"`/plan-init` 먼저 호출해 활성 버전 디렉토리 + 빈 BACKLOG.md 생성 필요"* + 중단
+- 활성 plan 검출 — `$MAIN_WT/.project/AGENT-GUIDE.md` `## 활성 plan 버전` 섹션 다음 비어 있지 않은 첫 줄에서 활성 plan 식별자(첫 토큰 — `NNN_slug` 폴더명) 추출
+- BACKLOG.md 경로 = `$MAIN_WT/.project/tasks/<NNN_slug>/BACKLOG.md`. 부재 시 사용자 호출: *"`/plan-init` 먼저 호출해 활성 plan 디렉토리 + 빈 BACKLOG.md 생성 필요"* + 중단
 
 ### Step 2 — 백로그 항목 후보 추출
 
@@ -82,7 +82,7 @@ const blNum = await lib.appendBacklogItem(MAIN_WT, {
 ### Step 6 — 결과 보고
 
 ```
-✅ BL-<NNN> [<유형>] <제목> — <vX.X> 백로그 추가됐어.
+✅ BL-<NNN> [<유형>] <제목> — <NNN_slug> 백로그 추가됐어.
    - 개요: <개요>
    - 대상 영역: <대상 영역>
    - 슬러그: <slug>
@@ -92,7 +92,7 @@ const blNum = await lib.appendBacklogItem(MAIN_WT, {
 ## 도구 가이드
 
 - **Bash**: 메인 워크트리 검출 / dev 체크아웃 검증
-- **Read**: `$MAIN_WT/.project/AGENT-GUIDE.md` (활성 버전 검출) / 기존 BACKLOG.md 정독 (중복 / 유사 항목 사전 확인)
+- **Read**: `$MAIN_WT/.project/AGENT-GUIDE.md` (활성 plan 검출) / 기존 BACKLOG.md 정독 (중복 / 유사 항목 사전 확인)
 - **bin/lib.js**: `getActiveVersion` / `getBacklogPath` / `appendBacklogItem` 호출
 - **AskUserQuestion**: 유형 모호 시 confirm — 한 번에 한 질문
 
@@ -101,9 +101,9 @@ const blNum = await lib.appendBacklogItem(MAIN_WT, {
 - **얕은 분석만** — 본 스킬에서 도메인 코드 Read · Grep 금지. 본격 분석은 `/task-plan`
 - **유형 자동 추정 + 모호 시 confirm** — *"메뉴 검색 개선"* 같이 feature/improve 모호 시 사용자 결정 받기
 - **메인 워크트리 dev 검증 누락 X** — 위배 시 즉시 중단. 워크트리 안에서 호출돼도 메인 절대 경로의 BACKLOG.md에 쓰기
-- **활성 버전 부재 시 즉시 중단** — `AGENT-GUIDE.md` 부재 / `## 활성 plan 버전` 섹션 부재 / vX.X 패턴 추출 실패 모두 명확한 에러 메시지 후 사용자 호출
+- **활성 plan 부재 시 즉시 중단** — `AGENT-GUIDE.md` 부재 / `## 활성 plan 버전` 섹션 부재 / plan 식별자 미설정(`<예: …>` 자리표시자) 모두 명확한 에러 메시지 후 사용자 호출
 - **결정적 슬러그 best-effort** — LLM 비결정성 수용. race 차단 본체는 SSoT 2층(`/task-init` §4.4)이 담당. 슬러그 변형 발생 시 사용자 confirm
-- **글로벌 BACKLOG.md (plan 기획 후보)** 와 혼동 X — 본 스킬은 *버전별*만 다룸. 글로벌은 `/plan-init` 영역
+- **글로벌 BACKLOG.md (plan 기획 후보)** 와 혼동 X — 본 스킬은 *활성 plan(기능 그룹)별*만 다룸. 글로벌은 `/plan-init` 영역
 - **자동 추정 진행 X** — 유형 / 제목 / 개요 / 대상 영역 모두 사용자 OK 또는 명백한 발화 매칭 후에만 BACKLOG.md 쓰기
 
 ## 상태 전이
