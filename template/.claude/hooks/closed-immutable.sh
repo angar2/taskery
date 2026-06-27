@@ -3,14 +3,14 @@
 # PreToolUse(Write|Edit) 훅 — closed 상태 task.md 재수정 차단
 #
 # 잡는 것 (단순화 — task.md 본 파일만 보호):
-#   1. .project/tasks/<vX.X>/<NNN>_<slug>.md (단일 파일)
-#   2. .project/tasks/<vX.X>/TASK-<NNN>_<slug>/task.md (폴더 승격)
+#   1. .project/tasks/<NNN_slug>/<NNN>_<slug>.md (단일 파일)
+#   2. .project/tasks/<NNN_slug>/TASK-<NNN>_<slug>/task.md (폴더 승격)
 #   → 헤더 status가 'closed'면 차단
 #
 # 차단 안 함 (의도적):
-#   - .project/tasks/<vX.X>/spec-diffs/*.md — 역사적 자료, 자유 수정
-#   - .project/tasks/<vX.X>/screenshots/* — 자유
-#   - .project/tasks/<vX.X>/mockup/*.html — UX/UI 목업, 자유 수정 (vX.X 공통)
+#   - .project/tasks/<NNN_slug>/spec-diffs/*.md — 역사적 자료, 자유 수정
+#   - .project/tasks/<NNN_slug>/screenshots/* — 자유
+#   - .project/tasks/<NNN_slug>/mockup/*.html — UX/UI 목업, 자유 수정 (<NNN_slug> 공통)
 #   - 폴더 승격 task 폴더 안 추가 자료 (서브 문서 등) — 자유
 #   - 코드 영역 — closed task 코드 재수정은 *새 task로 처리*가 정상 흐름
 #
@@ -33,10 +33,10 @@ except Exception:
 " 2>/dev/null)
 
 # task.md 본 파일 매칭 (단일 + 폴더 승격)
-# - 단일: .project/tasks/v*/<NNN>_<slug>.md (NNN_<slug> 패턴 — vX.X 직속, spec-diffs/screenshots/mockup 하위 X)
-# - 폴더: .project/tasks/v*/TASK-<NNN>_<slug>/task.md
-# spec-diffs/ + screenshots/ + mockup/ 직속 파일은 매칭 안 됨 (보호 대상 X)
-if ! echo "$FILE_PATH" | grep -qE '\.project/tasks/v[^/]+/([0-9]+_[^/]+\.md|TASK-[^/]+/task\.md)$'; then
+# - 단일: .project/tasks/<NNN_slug>/<NNN>_<slug>.md (NNN_<slug> 패턴 — plan 폴더 직속, spec-diffs/screenshots/mockup 하위 X)
+# - 폴더: .project/tasks/<NNN_slug>/TASK-<NNN>_<slug>/task.md
+# plan 폴더명은 한 세그먼트([^/]+)면 무엇이든 매칭 (NNN_slug 신규 / 구버전 vX.X 모두). spec-diffs/screenshots/mockup 직속 파일은 추가 세그먼트라 매칭 안 됨 (보호 대상 X)
+if ! echo "$FILE_PATH" | grep -qE '\.project/tasks/[^/]+/([0-9]+_[^/]+\.md|TASK-[^/]+/task\.md)$'; then
   exit 0
 fi
 

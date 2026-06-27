@@ -10,8 +10,8 @@
 #     경로를 정규식 추출해 각각 검사한다. matcher = "apply_patch".
 #
 # 잡는 것:
-#   1. .project/tasks/<vX.X>/<NNN>_<slug>.md (단일 파일)
-#   2. .project/tasks/<vX.X>/TASK-<NNN>_<slug>/task.md (폴더 승격)
+#   1. .project/tasks/<NNN_slug>/<NNN>_<slug>.md (단일 파일)
+#   2. .project/tasks/<NNN_slug>/TASK-<NNN>_<slug>/task.md (폴더 승격)
 #   → 헤더 status가 'closed'면 차단 (exit 2)
 #
 # 차단 안 함 (의도적): spec-diffs / screenshots / mockup — 역사적 자료 자유 수정.
@@ -38,7 +38,7 @@ PATHS=$(echo "$CMD" | grep -oE '^\*\*\* (Update|Add) File: .+$' | sed -E 's/^\*\
 
 while IFS= read -r FILE_PATH; do
   # task.md 본 파일 패턴만 검사 (spec-diffs/screenshots/mockup 직속은 보호 대상 X)
-  echo "$FILE_PATH" | grep -qE '\.project/tasks/v[^/]+/([0-9]+_[^/]+\.md|TASK-[^/]+/task\.md)$' || continue
+  echo "$FILE_PATH" | grep -qE '\.project/tasks/[^/]+/([0-9]+_[^/]+\.md|TASK-[^/]+/task\.md)$' || continue
   # 존재하는 파일만 (Add File 신규 생성은 통과)
   [ -f "$FILE_PATH" ] || continue
 

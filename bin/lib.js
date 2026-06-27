@@ -27,8 +27,8 @@
  *   - assertDevExists(mainWtPath): dev 브랜치 존재 검증
  *
  * 백로그 (0.1.2+):
- *   - getActiveVersion(mainWtPath): .project/AGENT-GUIDE.md에서 활성 plan 버전(vX.X) 추출
- *   - getBacklogPath(mainWtPath, activeVersion?): .project/tasks/<vX.X>/BACKLOG.md 절대 경로
+ *   - getActiveVersion(mainWtPath): .project/AGENT-GUIDE.md에서 활성 plan 식별자(버전 또는 기능 그룹명) 추출
+ *   - getBacklogPath(mainWtPath, activeVersion?): .project/tasks/<활성 plan>/BACKLOG.md 절대 경로
  *   - parseBacklogItem(mainWtPath, blId): BL-NNN 항목 메타 파싱 ({ status, type, title, slug, summary, target, taskNums })
  *   - appendBacklogItem(mainWtPath, meta): withMetaLock + BL-NNN 채번 + 항목 append (placeholder 치환 우선)
  *   - markBacklogChecked(mainWtPath, blId, taskNum): withMetaLock + [ ] → [x] + TASK 마크 (다회 진행 시 콤마 추가)
@@ -369,13 +369,35 @@ function getNextTaskNumber(mainWtPath) {
   return Math.max(...all) + 1;
 }
 
+function computeNextPlanNumber(mainWtPath) {
+  // .project/plans/ 하위 'NNN_<slug>' 디렉토리 스캔 → NNN max+1, 3자리 zero-pad 문자열 반환.
+  // plan = 기능 그룹 단위, 폴더명 앞 3자리 채번(TASK-NNN과 결 맞춤). slug은 호출측(plan-init)이 결합.
+  // legacy 가드: 'NNN_' 패턴이 아닌 폴더(구버전 vX.X 등)는 legacyDirs로 수집 → plan-init이
+  //   새 plan 생성 전 경고·수동 이전 안내에 사용(채번 공존 시 활성 plan 갈림 = 원 문제 재발 차단).
+  const plansDir = path.join(mainWtPath, '.project', 'plans');
+  if (!fs.existsSync(plansDir)) {
+    return { next: '001', legacyDirs: [] };
+  }
+  const nums = [];
+  const legacyDirs = [];
+  for (const ent of fs.readdirSync(plansDir, { withFileTypes: true })) {
+    if (!ent.isDirectory()) continue;
+    const m = ent.name.match(/^(\d{3})_/);
+    if (m) nums.push(parseInt(m[1], 10));
+    else legacyDirs.push(ent.name);
+  }
+  const next = nums.length === 0 ? 1 : Math.max(...nums) + 1;
+  return { next: String(next).padStart(3, '0'), legacyDirs };
+}
+
 // ─── 백로그 (0.1.2+) ────────────────────────────────────────────────
 
 const BACKLOG_PLACEHOLDER =
   '(사용자 발화 또는 task-close 직후 메인 감지로 한 행씩 추가. 빈 상태 default.)';
 
 function getActiveVersion(mainWtPath) {
-  // .project/AGENT-GUIDE.md '## 활성 plan 버전' 섹션 다음 비어 있지 않은 첫 줄에서 vX.X 추출
+  // .project/AGENT-GUIDE.md '## 활성 plan 버전' 섹션 다음 비어 있지 않은 첫 줄에서 활성 plan 식별자 추출.
+  // plan = 기능 그룹 단위 → 식별자는 vX.X 버전명 또는 기능 그룹 slug(compare-products 등) 모두 가능.
   const guidePath = path.join(mainWtPath, '.project', 'AGENT-GUIDE.md');
   if (!fs.existsSync(guidePath)) {
     throw new Error(`.project/AGENT-GUIDE.md 부재. /project-init 먼저 호출.`);
@@ -385,13 +407,14 @@ function getActiveVersion(mainWtPath) {
   if (!sec) {
     throw new Error(`.project/AGENT-GUIDE.md '## 활성 plan 버전' 섹션 부재.`);
   }
-  const m = sec[1].match(/\bv[\d.]+(?:[-\w]*)?/);
-  if (!m) {
+  // 첫 토큰 = plan 폴더 이름(' — 설명' 앞부분). '<예: ...>' 자리표시자는 미설정으로 간주.
+  const firstLine = sec[1].trim();
+  if (!firstLine || firstLine.startsWith('<')) {
     throw new Error(
-      `'## 활성 plan 버전' 값에서 vX.X 패턴 추출 실패: ${sec[1].trim()} — /plan-init으로 활성 버전 갱신 필요.`,
+      `'## 활성 plan 버전' 값 미설정(${firstLine || '빈 줄'}) — /plan-init으로 활성 plan 갱신 필요.`,
     );
   }
-  return m[0];
+  return firstLine.split(/\s+/)[0];
 }
 
 function getBacklogPath(mainWtPath, activeVersion) {
@@ -573,6 +596,7 @@ module.exports = {
   parseBranchName,
   getActiveTasks,
   getNextTaskNumber,
+  computeNextPlanNumber,
   // 백로그 (0.1.2+)
   BACKLOG_PLACEHOLDER,
   getActiveVersion,
