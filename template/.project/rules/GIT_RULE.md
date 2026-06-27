@@ -50,7 +50,7 @@
 
 | 출처 | 의미 | 채번 주체 |
 |------|------|---------|
-| `BL-NNN` | 백로그 항목 | `/add-backlog` 스킬 (0.1.2). 버전별 `.project/tasks/<vX.X>/BACKLOG.md`에 누적 |
+| `BL-NNN` | 백로그 항목 | `/add-backlog` 스킬 (0.1.2). plan(기능 그룹)별 `.project/tasks/<NNN_slug>/BACKLOG.md`에 누적 |
 | `RM-NNN` | 로드맵 항목 | `/plan-init` (RM-NNN 채번 자동화는 후속 — 1차는 사용자 수동 명시) |
 | `DR` | 직접 요구사항 (별도 ID 없음) | 사용자 발화 → `/task-init` |
 
@@ -134,7 +134,7 @@ docs: [TASK-{NNN}] CHANGELOG 업데이트
 - `-m` 옵션으로 커밋 메시지 지정 금지
 - **`--no-ff` 강제 (일반 타입)**: feature/bug/improvement/refactor 등 일반 작업 브랜치 → dev 병합 시 `git merge --no-ff {브랜치명}` 사용. fast-forward 병합 절대 금지. 머지 커밋이 없으면 작업 브랜치 삭제 후 분기 정보 영구 손실(90일 reflog GC 후 추적 불가).
 - **추적 변경 0 → 마커 빈커밋 (`--allow-empty` 금지의 유일 예외)**: 코드 변경 0 + `.project` gitignore로 작업 브랜치가 dev보다 앞선 커밋이 0개이면 `--no-ff`도 *Already up to date*가 되어 머지 커밋이 생성되지 않는다. 이 경우 `/task-close`가 추적 마커 빈커밋 1개(`--allow-empty`)를 생성해 분기·채번 정보를 보존한다 (상세: task-close Step 6-8). 그 외 빈커밋은 금지.
-- **plan/roadmap 임시 docs 브랜치 예외**: plan-init 단계의 단일 커밋(plan 신규/카피)에 한정 `--ff-only` 가능.
+- **plan/roadmap 임시 docs 브랜치 예외**: plan-init 단계의 단일 커밋(plan 신규 생성 — PLAN/ROADMAP + 제품 관통 문서 delta)에 한정 `--ff-only` 가능.
 - **task 진행 중 ROADMAP/플랜 문서 갱신은 별도 `docs/*` 브랜치 분리 절대 금지**: 해당 task의 작업 브랜치 (`feature/*` / `improve/*` 등) 안에서 수정 + 다른 구현 커밋과 함께 `--no-ff` 머지로 dev 병합 (분기 정보 손실 방지).
 
 ---

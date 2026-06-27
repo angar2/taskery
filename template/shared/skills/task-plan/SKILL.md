@@ -21,10 +21,10 @@ MAIN_WT=$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")
 
 `.gitignore` 케이스 분기:
 
-| 케이스 | task 문서 위치 | 9 기획 문서 위치 | 동시 쓰기 |
+| 케이스 | task 문서 위치 | 제품 관통 문서 위치 | 동시 쓰기 |
 |--------|--------------|----------------|----------|
-| 등록 (퍼블릭 리포 default) | `$MAIN_WT/.project/tasks/<vX.X>/...` | `$MAIN_WT/.project/plans/<vX.X>/...` | `withMetaLock` (`bin/lib.js`) |
-| 미등록 | `$WT_PATH/.project/tasks/<vX.X>/...` (워크트리 안, 머지 시 dev 반영) | `$MAIN_WT/.project/plans/<vX.X>/...` (plan 문서는 여전히 단일 소스) | 단일 세션 가정 (워크트리 내부) |
+| 등록 (퍼블릭 리포 default) | `$MAIN_WT/.project/tasks/<NNN_slug>/...` | `$MAIN_WT/.project/<doc>.md` (루트 평평) | `withMetaLock` (`bin/lib.js`) |
+| 미등록 | `$WT_PATH/.project/tasks/<NNN_slug>/...` (워크트리 안, 머지 시 dev 반영) | `$MAIN_WT/.project/<doc>.md` (제품 문서는 여전히 단일 소스) | 단일 세션 가정 (워크트리 내부) |
 
 본문 모든 `.project/...` 경로는 *위 분기에 따라* 적용. spec-diff / mockup / screenshots는 task 문서와 같은 위치.
 
@@ -38,8 +38,8 @@ MAIN_WT=$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")
 인자 = (선택) `TASK-NNN` 또는 자동 선택.
 
 분기:
-- **인자 명시**: `.project/tasks/<vX.X>/<NNN>_*.md` 또는 `TASK-<NNN>_*/task.md` 찾아서 진행.
-- **인자 없음**: 활성 plan 버전의 `.project/tasks/<vX.X>/` 안 *상태=draft인 가장 최근 task* 자동 선택 + confirm.
+- **인자 명시**: `.project/tasks/<NNN_slug>/<NNN>_*.md` 또는 `TASK-<NNN>_*/task.md` 찾아서 진행.
+- **인자 없음**: 활성 plan의 `.project/tasks/<NNN_slug>/` 안 *상태=draft인 가장 최근 task* 자동 선택 + confirm.
 
 ## 단계
 
@@ -48,7 +48,7 @@ MAIN_WT=$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")
 1. `.project/AGENT-GUIDE.md` Read → 활성 plan 버전 확인.
 2. task 파일 Read:
    - 인자 있음 → 해당 파일.
-   - 인자 없음 → `ls .project/tasks/<vX.X>/` 결과 중 status=draft인 가장 최근 파일. 발견 시 *"TASK-<NNN> 진행할까요?"* confirm. 없으면 *"draft 상태 task가 없네요. `/task-init` 먼저 호출하세요."* + 종료.
+   - 인자 없음 → `ls .project/tasks/<NNN_slug>/` 결과 중 status=draft인 가장 최근 파일. 발견 시 *"TASK-<NNN> 진행할까요?"* confirm. 없으면 *"draft 상태 task가 없네요. `/task-init` 먼저 호출하세요."* + 종료.
 3. 상태 = `draft` 검증. 다른 상태면 종료 + 안내.
 
 ### Step 2 — Requirements 인터뷰 + 증폭
@@ -112,8 +112,9 @@ MAIN_WT=$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")
    - **어떻게**: 구현 방법 1~3줄
    - **완료 기준**: 끝났다고 판단할 기준 (예: *"API endpoint 200 반환"*)
    - **진행**: `[ ]`
-4. **Phase 0 (선택) — plan 문서 변경 검토**:
-   - 본 task가 `.project/plans/<vX.X>/` 9 기획 문서 중 어느 것을 *수정/추가/삭제*해야 하는지 검토.
+4. **Phase 0 (선택) — 제품 관통 문서 변경 검토**:
+   - 본 task가 `.project/` 루트 제품 관통 문서(FEATURES / UX-UI / DATA-MODEL / API-SPEC / SERVICE-POLICY / TECH-STACK / ARCHITECTURE) 중 어느 것을 *수정/추가/삭제*해야 하는지 검토.
+   - **DATA-MODEL / API-SPEC 상세는 여기가 채우는 주체** — plan-init은 의도/빈 헤더까지만 두고 미뤘다. 본 task가 스키마·엔드포인트를 *구현 동반*으로 확정해 본문을 채운다(선기획 금지의 귀결).
    - 변경 있음 → Phase 0에 명시 + `spec-diffs/<NNN>_<slug>_spec-diff.md` 파일 생성 (Step 6).
    - 변경 없음 → Phase 0 생략.
 5. **Phase 점진 작성 OK** — 처음부터 모든 Phase 일괄 작성 금지. 지금 명확한 Phase만 작성하고 진행 중 추가 가능.
@@ -121,8 +122,8 @@ MAIN_WT=$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")
 ```markdown
 ## Dev Plan
 
-### Phase 0 — plans/<vX.X>/ 기획 문서 변경 (선택)
-- 변경 문서: <FEATURES.md / API-SPEC.md / ...>
+### Phase 0 — 제품 관통 문서(.project/ 루트) 변경 (선택)
+- 변경 문서: <FEATURES.md / API-SPEC.md / DATA-MODEL.md / ...>
 - 변경 내용: <요약>
 - spec-diff: `spec-diffs/<NNN>_<slug>_spec-diff.md`
 - 진행: [ ]
@@ -167,12 +168,12 @@ Step 2 Requirements 인터뷰 결과로 본 task가 *UX/UI 구현 (페이지/컴
 1. 메인이 HTML 목업 생성 — 정적 HTML/CSS (외부 라이브러리 X, 단일 파일 안 inline style + 필요 시 vanilla JS):
    - 시각 영역 (레이아웃 / 색상 / 간격 / 타이포 / 호버 효과)
    - 인터랙션 (가능한 범위 — 클릭 / 호버 시뮬)
-2. 사용자에게 *"브라우저로 `.project/tasks/<vX.X>/mockup/<task-doc-name>-mockup.html` 열어 확인 후 ✓/✗ 응답"*.
+2. 사용자에게 *"브라우저로 `.project/tasks/<NNN_slug>/mockup/<task-doc-name>-mockup.html` 열어 확인 후 ✓/✗ 응답"*.
 3. 사용자 ✓ → 승인 완료, 4 진행. ✗ → 메인이 수정 후 재승인 요청.
 
 #### 4. 파일 위치 / 네이밍
 
-- 위치: `.project/tasks/<vX.X>/mockup/<task-doc-name>-mockup.html`
+- 위치: `.project/tasks/<NNN_slug>/mockup/<task-doc-name>-mockup.html`
   - 예: `001_login-form.md` → `001_login-form-mockup.html`
 - **task 1개 = 목업 1개**. multi-file 예외 영구 X. 복잡해도 한 파일 안 섹션 분리 (`<section id="popover">` `<section id="settings">` 등).
 
@@ -225,7 +226,7 @@ Test Plan = *본 task에서 구현한 요구사항이 정상 동작하는지* �
 | 1 | <한 줄 설명> | [AUTO] / [USER] | <카탈로그 방식> | <명확한 기대값> |
 | 2 | ... | ... | ... | ... |
 
-(UX/UI task — 목업 있으면) 시각 USER 시나리오 기준: `.project/tasks/<vX.X>/mockup/<task-doc-name>-mockup.html`
+(UX/UI task — 목업 있으면) 시각 USER 시나리오 기준: `.project/tasks/<NNN_slug>/mockup/<task-doc-name>-mockup.html`
 ```
 
 #### 시각 영역 fix 사이클 사전 예고 (stash FRICTION_LOG #14 반영)
@@ -271,13 +272,13 @@ Test Plan 작성 완료 후 *반드시* 점검 단계 수행. *"누적/리셋 �
 
 ### Step 6 — spec-diff 처리 (Phase 0 변경 있을 시)
 
-1. `.project/tasks/<vX.X>/spec-diffs/` 디렉토리 존재 확인 (없으면 `mkdir -p`).
+1. `.project/tasks/<NNN_slug>/spec-diffs/` 디렉토리 존재 확인 (없으면 `mkdir -p`).
 2. `spec-diffs/<NNN>_<slug>_spec-diff.md` Write — 형식:
 
 ```markdown
 # Spec Diff — TASK-<NNN> <제목>
 
-## <plans/<vX.X>/<문서명>.md> [NEW|MOD|DEL]
+## <.project/<문서명>.md> [NEW|MOD|DEL]
 
 +++
 + <추가/변경 내용>
@@ -308,7 +309,7 @@ Test Plan 작성 완료 후 *반드시* 점검 단계 수행. *"누적/리셋 �
 
 ## 도구 가이드
 
-- **Read**: task 파일 / 활성 plan 9 기획 문서 / 관련 코드 정독
+- **Read**: task 파일 / `.project/` 루트 제품 관통 문서 / 관련 코드 정독
 - **Grep / Glob**: Scope 코드 서치 (관련 함수/파일 탐색)
 - **Edit**: task 파일 4 섹션 채우기 + status 전환
 - **Write**: spec-diff 파일 (Phase 0 변경 시)

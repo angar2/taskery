@@ -1,106 +1,141 @@
 ---
 name: plan-init
-description: plan 버전 단위 9 기획 문서 작성 — 신규 vX.X/ 또는 기존 카피 후 변경 인터뷰
+description: plan(기능 그룹) 생성 — NNN 채번 폴더 + PLAN.md/ROADMAP.md + 제품 관통 문서(FEATURES/UX-UI) 의도 레벨 delta
 ---
 
 # /plan-init
 
 ## 개요
 
-plan 버전(vX.X)마다 호출. `.project/plans/<vX.X>/` 안에 9 기획 문서 생성. 사용자 결정 버전명(v1.0 / alpha / mvp 등 자유).
+plan(기능 그룹)마다 호출. **plan = 작업을 묶는 기능 그룹 단위** — 제품 전체 스냅샷(버전)이 아니다. 규모는 가변: 기능 그룹 하나가 보편이나, 첫 plan(MVP처럼 여러 기능 그룹을 묶은 큰 plan)도 같은 흐름으로 처리한다(특례 없음).
 
-9 기획 문서:
-- PLAN.md (진입 인덱스 + 체크리스트)
-- SERVICE-POLICY.md (백엔드/풀스택)
-- FEATURES.md
-- UX-UI.md (프론트엔드/풀스택)
-- TECH-STACK.md
-- ARCHITECTURE.md
-- DATA-MODEL.md (백엔드/풀스택)
-- API-SPEC.md
-- ROADMAP.md
+본 스킬이 만드는 것:
+- **plan 로컬(그룹 C)** — `.project/plans/<NNN_slug>/`에 `PLAN.md` + `ROADMAP.md` 생성.
+- **제품 관통 문서(그룹 B) delta — 의도 레벨만** — `.project/FEATURES.md` / `.project/UX-UI.md`에 이 기능 그룹의 *섹션 헤더 + 의도 스텁* append.
+
+본 스킬이 만들지 *않는* 것:
+- **제품 관통 문서 전체 생성** — SERVICE-POLICY/TECH-STACK/ARCHITECTURE/DATA-MODEL/API-SPEC/FEATURES/UX-UI 7종은 `/project-init`이 루트에 작성/골격화 완료. plan-init은 부수적 add/mod만.
+- **DATA-MODEL/API-SPEC 상세 본문** — 스키마·엔드포인트는 *선기획 금지*. 구현 동반으로 task 진행(`/task-plan` Phase 0 / `/task-dev`)이 채운다. plan-init은 빈 섹션 헤더만 둘 수 있다.
+
+> plan 폴더명은 `NNN_<slug>` 형식(3자리 채번 + 기능 그룹 slug). 예: `001_mvp`, `002_compare-products`. tasks 폴더도 동일명.
 
 ## 호출 시점
 
-- `/project-init` 직후 첫 plan 생성 시.
-- 새 plan 버전(예: v1.0 → v1.1) 시작 시.
-- 기존 plan 분기/리비전 시.
+- `/project-init` 직후 첫 plan(보통 MVP) 생성 시.
+- 새 기능 그룹(예: `compare-products` 다음 `auth-system`) 착수 시.
+
+> **자투리는 plan 없이** — 급한 버그·오타·의존성 업데이트 같은 단발 작업은 어느 기능 그룹에도 안 묶인다. plan-init 호출 없이 `/task-init`로 바로 진행(무소속). 전역 TASK-NNN이 순서를 보장하므로 소속과 무관하다.
 
 ## 입력 처리
 
-인자 = 버전명 (예: `/plan-init v1.0`). 인자 없으면 사용자에게 *"어느 버전?"* 질문.
-
-두 분기:
-- **분기 1 (신규)**: `.project/plans/v*/` 없음 → 새 vX.X/ 생성 + 9 문서별 질문 라운드.
-- **분기 2 (이어가기)**: 기존 plans/vY.Y/ 있음 → 가장 최신 카피 → 새 vX.X/ 생성 → 변경 인터뷰 → 변경된 문서만 갱신 → AGENT-GUIDE.md 활성 버전 갱신.
+인자 = plan slug (예: `/plan-init compare-products`). 인자 없으면 사용자에게 *"어느 plan(기능 그룹)? slug 알려줘 (예: mvp, compare-products)"* 질문. 형식: 한국어면 영어 *의미 변환* → kebab-case(공백 불가, 3 단어 이내 권장).
 
 ## 단계
 
-### Step 1 — 분기 판단
+### Step 1 — 사전 검증 + 메인 워크트리 검출
 
-1. `.project/plans/` 디렉토리 존재 확인.
-2. 하위 vX.X 폴더 목록 추출 (`ls .project/plans/`).
-3. 비어 있음 → 분기 1 (신규).
-4. 1개 이상 있음 → 분기 2 (이어가기).
+1. **메인 워크트리 검출**:
+   ```sh
+   MAIN_WT=$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")
+   ```
+2. 메인 워크트리 dev 체크아웃 검증 — 위배 시 사용자 호출 + 중단.
+3. `$MAIN_WT/.project/PROJECT.md` 존재 확인 — 없으면 *"`/project-init` 먼저 호출 필요"* + 중단.
 
-### Step 2 — 버전명 확정
+### Step 2 — plan slug 확정 + NNN 채번 + legacy 게이트
 
-1. 인자로 들어왔으면 그대로 사용 (단 기존 충돌 시 사용자 confirm).
-2. 인자 없으면 사용자에게 질문:
-   - 분기 1: *"첫 plan 버전명? (예: v1.0, alpha, mvp)"*
-   - 분기 2: *"기존 최신은 vY.Y. 새 버전명? (예: vY.Y+1)"*
-3. 형식 강제 X. 사용자 자유.
+1. slug 확정 (인자 또는 사용자 질문 — 위 입력 처리).
+2. **다음 plan 번호 + legacy 검출** — `bin/lib.js`의 `computeNextPlanNumber(MAIN_WT)` 호출:
+   ```js
+   const lib = require('@angar2/taskery/bin/lib');
+   const { next, legacyDirs } = lib.computeNextPlanNumber(MAIN_WT);
+   // next = '001'/'002'/... (3자리 zero-pad), legacyDirs = NNN_ 패턴 아닌 기존 폴더 목록
+   ```
+   bash 등가(참고):
+   ```sh
+   ls -1 "$MAIN_WT/.project/plans" 2>/dev/null | grep -E '^[0-9]{3}_' \
+     | sed -E 's/^([0-9]{3})_.*/\1/' | sort -n | tail -1
+   ```
+3. **legacy 게이트** — `legacyDirs`가 비어 있지 않으면(예: 구버전 `v1.0`, `alpha` 폴더 잔존):
+   - 즉시 사용자 호출 + 경고: *"`plans/`에 NNN 채번이 아닌 폴더(<legacyDirs>)가 있어. 새 plan을 NNN로 채번하면 활성 plan이 갈려 원래 문제가 재발해. 먼저 수동 이전(문서 루트 이동 + 폴더 `NNN_slug` 리네임 + AGENT-GUIDE 활성 plan 갱신)을 끝낸 뒤 진행할지, 그래도 진행할지 결정해줘."*
+   - 사용자 명시 confirm 전 폴더 생성 금지.
+4. plan 폴더명 = `${next}_${slug}` (예: `001_mvp`).
 
-### Step 3 — 분기 1 처리 (신규)
+### Step 3 — plan 폴더 생성 + ROADMAP.md 작성
 
-1. `.project/plans/<vX.X>/` 디렉토리 생성.
-2. 프로젝트 타입(PROJECT.md에서 추출) 확인:
-   - frontend → SERVICE-POLICY/DATA-MODEL 제외 가능 (선택)
-   - backend → UX-UI 제외 가능 (선택)
-   - fullstack → 9개 모두
-3. 9 문서별 질문 라운드 — *한 문서씩, 핵심 질문 1~3개*:
-   - **SERVICE-POLICY.md** (해당 시): 사용자 권한 / 데이터 보존 / 결제 정책 등
-   - **FEATURES.md**: 핵심 기능 목록 (기능 단위 — 짧게)
-   - **UX-UI.md** (해당 시): 페이지/화면 목록 + 핵심 인터랙션
-   - **TECH-STACK.md**: 언어/프레임워크/주요 라이브러리 + 선택 이유
-   - **ARCHITECTURE.md**: 시스템 구조 (멀티 리포 / 레이어드 / 마이크로서비스 등)
-   - **DATA-MODEL.md** (해당 시): 주요 엔티티 + 관계
-   - **API-SPEC.md**: 엔드포인트 목록 + 인증 방식
-   - **ROADMAP.md**: 마일스톤 + 시기 + 우선순위. *ROADMAP 작성 4룰* (stash FRICTION_LOG #1 반영):
-     1. ROADMAP은 *현재 버전 한정* — 미래 버전 후보는 별도 `BACKLOG.md` (글로벌) 분리
-     2. 진행 순서에 task 번호(TASK-NNN) 강제 금지 — *Stage(영역) 단위*로만 명시 (예측 불가 task 합류 시 번호 어긋남 방지)
-     3. Stage 안 *작업 단위 명시* 필요 (한 task 분량 권장 — 다음 task 진행 시 메인 세션이 ROADMAP 보고 작업 범위 판단 가능)
-     4. 작업 단위에 task 번호 컬럼 추가 X / *상태 컬럼만* (⏳ 대기 / 🔧 진행 중 / ✅ 완료 / ❌ 폐기) — Living document
-4. 받은 답 기반으로 각 문서 작성.
-5. 마지막에 **PLAN.md** 작성 — 9 문서 인덱스 + 체크리스트.
-6. **`.project/AGENT-GUIDE.md`의 활성 plan 버전 vX.X로 갱신** (신규도 동일 — 분기 2와 일관).
-
-### Step 4 — 분기 2 처리 (이어가기)
-
-1. 가장 최신 vY.Y/ 디렉토리 전체 카피 → vX.X/.
-2. 변경 인터뷰 — 사용자에게 *"이번 버전에서 어느 문서가 변경되나? (다중 선택)"*:
-   - SERVICE-POLICY / FEATURES / UX-UI / TECH-STACK / ARCHITECTURE / DATA-MODEL / API-SPEC / ROADMAP
-3. 선택된 문서별 변경 사항 인터뷰 — *"이 문서에서 무엇이 달라지나?"*.
-4. 받은 답으로 해당 문서만 수정. 나머지는 카피 그대로.
-5. PLAN.md 갱신 — 변경 문서 표시.
-6. **`.project/AGENT-GUIDE.md`의 활성 plan 버전 vX.X로 갱신**.
-
-### Step 5 — `tasks/<vX.X>/` 디렉토리 준비
-
-1. `.project/tasks/<vX.X>/` 디렉토리 생성 (빈 폴더).
-2. `.project/tasks/<vX.X>/spec-diffs/`, `.project/tasks/<vX.X>/screenshots/`, `.project/tasks/<vX.X>/mockup/` 빈 폴더 미리 생성.
-3. `.project/tasks/<vX.X>/BACKLOG.md` 빈 골격 Write (stash FRICTION_LOG #17 반영) — *버전별 task 후보 누적용*, 글로벌 `.project/BACKLOG.md`와 별개:
+1. `$MAIN_WT/.project/plans/<NNN_slug>/` 디렉토리 생성.
+2. **ROADMAP.md** 작성 — *현재 plan(기능 그룹) 한정* task 단계 로드맵. *ROADMAP 작성 4룰*:
+   1. ROADMAP은 *현재 plan 한정* — 다른 기능 그룹 후보는 글로벌 `.project/BACKLOG.md`. 프로젝트 전체 거시 빌드 순서는 `PROJECT.md ## 초기 빌드 로드맵`(별개).
+   2. 진행 순서에 task 번호(TASK-NNN) 강제 금지 — *Stage(영역) 단위*로만 명시 (예측 불가 task 합류 시 번호 어긋남 방지).
+   3. Stage 안 *작업 단위 명시* 필요 (한 task 분량 권장 — 다음 task 진행 시 메인 세션이 ROADMAP 보고 작업 범위 판단 가능).
+   4. 작업 단위에 task 번호 컬럼 추가 X / *상태 컬럼만* (⏳ 대기 / 🔧 진행 중 / ✅ 완료 / ❌ 폐기) — Living document.
 
 ```markdown
-# BACKLOG — <vX.X>
+# ROADMAP — <NNN_slug>
 
-> 본 파일은 *<vX.X> plan 진행 중 누적되는 후속 task 후보* 추적용.
-> 글로벌 `.project/BACKLOG.md` (plan 기획 후보 카탈로그) 와 별개.
+> 본 plan(기능 그룹) 한정 task 단계. Stage 단위(task 번호 강제 X), 상태 컬럼만 Living.
+> 프로젝트 거시 빌드 순서는 PROJECT.md, 다음 기능 그룹 후보는 글로벌 BACKLOG.md.
+
+## Stage 1 — <영역명>
+| 작업 단위 | 상태 |
+|-----------|------|
+| <한 task 분량 작업> | ⏳ 대기 |
+```
+
+### Step 4 — PLAN.md 작성 (얇은 인덱스 — 하드룰)
+
+PLAN.md는 *얇은 인덱스*다. 이 기능 그룹이 건드린 루트 문서 요약 + task 체크리스트만 둔다.
+
+**하드룰 (중복 차단):**
+- **각 항목 = 루트 문서 섹션 *링크 1줄*. 본문 복제 금지.** 기능 상세는 `.project/` 루트 문서에만 존재(단일 홈).
+- `## 활성 task 버전` 류 *자기선언 라인 작성 금지* — 활성 plan의 단일 진실은 `AGENT-GUIDE.md`뿐. plan 로컬이 중복 선언하지 않는다.
+
+```markdown
+# PLAN — <NNN_slug>
+
+> 이 plan(기능 그룹)의 얇은 인덱스. 각 항목은 루트 문서 섹션 링크 1줄 — 본문은 복제하지 않는다.
+
+## 이 기능 그룹이 건드리는 루트 문서
+- [FEATURES.md › <이 그룹 섹션>](../../FEATURES.md) — <한 줄 요약>
+- [UX-UI.md › <이 그룹 섹션>](../../UX-UI.md) — <한 줄 요약>
+- (DATA-MODEL / API-SPEC — task 진행이 구현 동반으로 채움)
+
+## task 체크리스트
+- [ ] <작업 단위> (ROADMAP Stage N)
+```
+
+### Step 5 — 제품 관통 문서(그룹 B) 의도 레벨 delta
+
+`.project/` 루트 제품 관통 문서에 이 기능 그룹의 *의도*를 명시한다. **의도 레벨만 — 상세 선작성 금지.**
+
+- **FEATURES.md / UX-UI.md (필수)**: 이 기능 그룹의 *섹션 헤더 + 의도 스텁* append. "이 기능이 무엇 / 어떤 화면" — 구현 전에도 선언 가능(그게 기능 그룹 기획의 본질). 섹션은 *기능/도메인 자기기술* — 어느 plan이 추가했는지 태그하지 않는다(기능 분류 = 제품 관통 문서 섹션 구조가 단일 진실).
+  ```markdown
+  ## <기능 그룹 이름>
+  <의도 1~3줄: 무엇을 / 누구를 위해 / 핵심 화면·동작. 상세 스펙은 task 진행에서.>
+  ```
+- **DATA-MODEL.md / API-SPEC.md (선택 — 빈 헤더까지만)**: 이 그룹이 데이터/엔드포인트를 도입할 거면 *빈 섹션 헤더*만 둘 수 있다. **스키마·엔드포인트 본문 선작성 금지** — 구현 동반으로 `/task-plan` Phase 0 / `/task-dev`가 채운다(taskery anti-waterfall: TASK_DOC_RULE §1.4 / DEV_RULE §2 정합).
+
+타입 조건부: project-init이 만들지 않은 문서(예: frontend의 DATA-MODEL)는 delta도 없음.
+
+### Step 6 — 그룹 A 점검 (부수적 add/mod)
+
+이 기능 그룹이 *새 정책 / 새 스택 / 새 구조*를 도입하면 해당 루트 문서(SERVICE-POLICY / TECH-STACK / ARCHITECTURE)를 수정한다. 도입 없으면 건너뜀. (그룹 A는 project-init이 작성한 정적 제품 관통 문서 — plan-init은 부수적 변경만.)
+
+### Step 7 — `tasks/<NNN_slug>/` 디렉토리 준비
+
+1. `$MAIN_WT/.project/tasks/<NNN_slug>/` 디렉토리 생성 (빈 폴더).
+2. `tasks/<NNN_slug>/spec-diffs/`, `screenshots/`, `mockup/` 빈 폴더 미리 생성.
+3. `tasks/<NNN_slug>/BACKLOG.md` 빈 골격 Write — *plan(기능 그룹)별 task 후보 누적용*, 글로벌 `.project/BACKLOG.md`와 별개:
+
+```markdown
+# BACKLOG — <NNN_slug>
+
+> 본 파일은 *<NNN_slug> plan 진행 중 누적되는 후속 task 후보* 추적용.
+> 글로벌 `.project/BACKLOG.md` (다음 기능 그룹 후보 카탈로그) 와 별개.
 
 | 위치 | 영역 | 역할 |
 |------|------|------|
-| `.project/BACKLOG.md` (글로벌) | plan 기획 후보 카탈로그 (다음 plan 버전에서 검토) | Living document |
-| `.project/tasks/<vX.X>/BACKLOG.md` (본 파일) | 현재 plan 진행 중 누적된 후속 task 후보 | 한 버전 내 task close 직후 후보 누적 |
+| `.project/BACKLOG.md` (글로벌) | 다음 기능 그룹 후보 카탈로그 (다음 plan에서 검토) | Living document |
+| `.project/tasks/<NNN_slug>/BACKLOG.md` (본 파일) | 현재 plan 진행 중 누적된 후속 task 후보 | 한 plan 내 task close 직후 후보 누적 |
 
 ## 후속 task 후보
 
@@ -109,55 +144,37 @@ plan 버전(vX.X)마다 호출. `.project/plans/<vX.X>/` 안에 9 기획 문서 
 
 빈 골격만 작성. 본문은 task 진행하면서 사용자 발화 또는 메인 감지로 누적.
 
-### Step 6 — `PLAN.md` 작성/갱신
+### Step 8 — `AGENT-GUIDE.md` 활성 plan 갱신
 
-```markdown
-# PLAN <vX.X>
+`$MAIN_WT/.project/AGENT-GUIDE.md`의 `## 활성 plan 버전` 섹션 다음 줄을 `<NNN_slug>`로 갱신 (헤딩 텍스트 자체는 변경 X — lib.js/스킬이 의존). **반드시** — 누락 시 메인 세션이 옛 plan 보고 헤맴.
 
-## 9 기획 문서 인덱스
+### Step 9 — 결과 보고
 
-- [x] SERVICE-POLICY.md (해당 / 미해당)
-- [x] FEATURES.md
-- [x] UX-UI.md (해당 / 미해당)
-- [x] TECH-STACK.md
-- [x] ARCHITECTURE.md
-- [x] DATA-MODEL.md (해당 / 미해당)
-- [x] API-SPEC.md
-- [x] ROADMAP.md
-
-## 변경 이력
-| 버전 | 날짜 | 변경 문서 | 요약 |
-|------|------|----------|------|
-| <vX.X> | <YYYY-MM-DD> | <목록 또는 "전체 (신규)"> | <요약> |
-
-## 활성 task 버전
-- `.project/tasks/<vX.X>/` 사용
-```
-
-### Step 7 — 결과 보고
-
-작성/갱신된 문서 목록 + 다음 단계 안내:
-- *"<vX.X>/ 9 기획 문서 작성 완료. AGENT-GUIDE.md 활성 버전 <vX.X>로 갱신. 다음은 `/task-init`으로 첫 task 생성."*
+작성된 산출물 목록 + 다음 단계 안내:
+- *"`<NNN_slug>/` plan 생성 완료 — PLAN.md / ROADMAP.md + 제품 관통 문서 FEATURES/UX-UI 의도 stub 추가. AGENT-GUIDE.md 활성 plan `<NNN_slug>`로 갱신. 다음은 `/task-init`으로 첫 task 생성 (스키마/엔드포인트 상세는 task 진행에서 구현 동반)."*
 
 **결과 commit 흐름** (GIT_RULE 정합):
 - dev 직접 commit *금지* (git-guard.sh 차단). 두 가지 default 흐름:
-  1. **첫 task에 묶기 (권장)**: 분기 1(신규)에서 `/project-init` 직후 본 스킬 호출이면 `/project-init` 산출물과 같은 작업 브랜치(보통 TASK-001 부트스트랩 chore)에 함께 commit. 분기 2(이어가기)면 새 task 브랜치 또는 임시 docs 브랜치에서.
-  2. **임시 docs 브랜치**: `git checkout -b docs/{개발자}_plan-{vX.X}` 후 commit → dev에 `--no-ff` 머지. 다음 task 생성 *전*에 plan 산출물을 깔끔히 기록하고 싶을 때.
+  1. **첫 task에 묶기 (권장)**: `/project-init` 직후 본 스킬 호출이면 init 산출물과 같은 작업 브랜치(보통 TASK-001 부트스트랩 chore)에 함께 commit. 새 기능 그룹 착수면 새 task 브랜치 또는 임시 docs 브랜치에서.
+  2. **임시 docs 브랜치**: `git checkout -b docs/{개발자}_plan-{NNN_slug}` 후 commit → dev에 `--no-ff` 머지. 다음 task 생성 *전*에 plan 산출물을 깔끔히 기록하고 싶을 때.
 
 ## 도구 가이드
 
-- **Read**: PROJECT.md / 기존 plans/vY.Y/ 정독
-- **Bash**: `ls .project/plans/`, `cp -r plans/vY.Y plans/vX.X`, `mkdir -p plans/<vX.X> tasks/<vX.X>/{spec-diffs,screenshots,mockup}`
-- **Write/Edit**: 9 기획 문서 작성/갱신
-- **AskUserQuestion**: 9 문서별 핵심 질문 + 변경 인터뷰
+- **Read**: PROJECT.md / `.project/` 루트 제품 관통 문서(FEATURES/UX-UI 등 delta 대상)
+- **Bash**: `MAIN_WT` 검출, `mkdir -p plans/<NNN_slug> tasks/<NNN_slug>/{spec-diffs,screenshots,mockup}`
+- **bin/lib.js**: `computeNextPlanNumber`(채번 + legacy 검출)
+- **Write/Edit**: PLAN.md / ROADMAP.md 작성, 제품 관통 문서 FEATURES/UX-UI delta append, AGENT-GUIDE 활성 plan 갱신
+- **AskUserQuestion**: slug 확정 / legacy 게이트 confirm
 
 ## 주의사항
 
-- 9 문서 *전부 강제 X*. 프로젝트 타입에 따라 일부 제외 가능 (frontend → SERVICE-POLICY/DATA-MODEL 미해당 등).
-- 분기 2(이어가기)에서 *전체 재작성 금지*. 변경된 문서만 갱신.
-- 질문 라운드는 *한 번에 한 문서씩*. 한꺼번에 9 문서 질문 X.
-- 답 받기 전 자동 추정 진행 X. 단 PROJECT.md / 기존 plans 정보로 *제안*은 OK (사용자 confirm 후).
-- AGENT-GUIDE.md 활성 버전 갱신 *반드시*. 누락 시 메인 세션이 옛 plan 보고 헤맴.
+- **plan-init은 *제품 관통 문서 전체를 만드는 스킬이 아니다*** — 7종은 project-init 영역. 본 스킬은 plan 로컬(PLAN/ROADMAP) + 제품 관통 문서 delta(의도)만.
+- **delta는 의도 레벨까지만** — FEATURES/UX-UI 의도 스텁은 두되, DATA-MODEL/API-SPEC 스키마·엔드포인트 *본문 선작성 금지*. 상세는 구현 동반(task).
+- **제품 관통 문서에 plan 태그 금지** — 기능 섹션은 자기기술. 어느 plan이 만들었는지 표기하지 않는다(plan은 작업 묶음이지 영구 기능 분류 단위가 아님).
+- **PLAN.md 본문 복제 금지** — 각 항목 = 루트 문서 섹션 링크 1줄. `## 활성 task 버전` 자기선언 라인 작성 X.
+- **legacy 폴더 감지 시 진행 보류** — NNN 아닌 폴더 잔존 시 사용자 confirm 전 새 plan 생성 금지.
+- **AGENT-GUIDE 활성 plan 갱신 *반드시*** — 값 = `NNN_slug`. 헤딩 텍스트 변경 X.
+- 답 받기 전 자동 추정 진행 X. 단 PROJECT.md / 기존 루트 문서 정보로 *제안*은 OK (사용자 confirm 후).
 
 ## 상태 전이
 

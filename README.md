@@ -118,14 +118,16 @@ my-app/
     ├─ LINKED-REPOS.md                    # 관계 리포지토리 정보
     ├─ GLOSSARY.md                        # 도메인 용어집 (영문/한글 표기 일관성)
     ├─ .env                               # 사용자 설정 환경변수 (관계 리포지토리 환경변수 등)
+    ├─ SERVICE-POLICY.md / TECH-STACK.md / ARCHITECTURE.md   # 제품 관통 문서 — 정적 (project-init 작성)
+    ├─ DATA-MODEL.md / API-SPEC.md / FEATURES.md / UX-UI.md  # 제품 관통 문서 — 성장 (골격 → plan·task가 채움)
     ├─ rules/
     │   ├─ TASK_DOC_RULE.md               # task 문서 작성 규칙
     │   ├─ GIT_RULE.md                    # 로컬 깃 운영 규칙
     │   ├─ CHANGELOG_RULE.md              # CHANGELOG 작성 규칙
     │   ├─ MOCKUP_RULE.md                 # UX/UI HTML 목업 규칙
     │   └─ *.local.md                     # 사용자 오버라이드 규칙 (패키지 업데이트 대상 제외)
-    ├─ plans/                             # plan 문서
-    ├─ tasks/                             # task 문서 (vX.X/BACKLOG.md / spec-diffs / screenshots / mockup 포함)
+    ├─ plans/                             # plan(기능 그룹)별 PLAN.md / ROADMAP.md (<NNN_slug>/)
+    ├─ tasks/                             # task 문서 (<NNN_slug>/BACKLOG.md / spec-diffs / screenshots / mockup 포함)
     ├─ flows/                             # 서비스 로직 플로우 정보
     ├─ changelog/                         # 수정사항 정보
     ├─ shared/                            # 관계 리포지토리 소통 메세지함
@@ -160,12 +162,12 @@ my-app/
 
 ## 백로그 메모
 
-작업 흐름 중 발견되는 추가 기능과 버그를 *그 자리에서 짧게 적어 둔다*. 메인 세션이 사용자 발화를 받아 `/add-backlog`로 1건씩 활성 plan 버전의 `tasks/<vX.X>/BACKLOG.md`에 누적한다.
+작업 흐름 중 발견되는 추가 기능과 버그를 *그 자리에서 짧게 적어 둔다*. 메인 세션이 사용자 발화를 받아 `/add-backlog`로 1건씩 활성 plan(기능 그룹)의 `tasks/<NNN_slug>/BACKLOG.md`에 누적한다.
 
 - 항목 형식: 체크박스 + 식별자(BL-NNN) + 유형 + 제목 + 슬러그. 그 아래 *개요*(추정 원인 / 구상)와 *대상 영역*(관여할 파일·모듈) 2줄.
 - 시작 시점: 사용자가 *"BL-NNN 진행"*이라고 말하면 `/task-init`이 그 항목 메타로 task를 분기하고 BACKLOG.md 항목을 *확인* 마킹(`[x]`)하며 `- TASK: TASK-NNN`을 함께 남긴다. *완료*가 아니라 *task로 옮겼다*는 의미만 담는다.
 - 완료 추적: git 머지 히스토리와 `taskery status`. BACKLOG.md는 메모지 역할만 한다.
-- plan 후보 카탈로그(글로벌 `.project/BACKLOG.md`)는 다음 plan 버전 기획용으로 분리 관리한다.
+- 다음 기능 그룹 후보 카탈로그(글로벌 `.project/BACKLOG.md`)는 다음 plan 기획용으로 분리 관리한다.
 
 ---
 
@@ -174,20 +176,20 @@ my-app/
 스킬은 호출 시점에 따라 4 카테고리(`project` / `plan` / `task` / `meta`)로 분류된다.
 
 - `project` — 프로젝트 첫 도입 시 1회만 호출
-- `plan` — 새 기획 버전 시작 시 호출
+- `plan` — 새 기능 그룹(작업 묶음) 시작 시 호출
 - `task` — 새 task 작업 진행 단계에서 호출
 - `meta` — 그 외 taskery 관리
 
 | 스킬 | 레벨 | 역할 |
 |------|------|------|
-| `/project-init` | project | 프로젝트 첫 도입 시 메타 문서와 디렉토리 골격 생성 (1회성) |
-| `/plan-init` | plan | 새 기획 버전의 기획 문서 작성 |
+| `/project-init` | project | 프로젝트 첫 도입 시 메타 문서 + 제품 관통 기획 문서(정책/스택/구조 작성, 데이터/API/기능/UI 골격) 생성 (1회성) |
+| `/plan-init` | plan | 새 기능 그룹의 PLAN.md / ROADMAP.md + 제품 관통 문서(FEATURES/UX-UI)에 기능 의도 추가 |
 | `/task-init` | task | 새 task의 빈 문서 생성 |
 | `/task-plan` | task | task의 요구사항·범위·개발 계획·테스트 계획 작성 |
 | `/task-dev` | task | 계획에 따른 단계별 구현 + 자가 검증 |
 | `/task-test` | task | 별도 격리 세션에서 독립 검증 (메인 가정 차단) |
 | `/task-close` | task | 최종 검증 후 git 커밋 + dev 브랜치 `--no-ff` 병합 |
-| `/add-backlog` | meta | 사용자 발화로 버전별 `tasks/<vX.X>/BACKLOG.md`에 task 후보 1건씩 추가 (0.1.2+) |
+| `/add-backlog` | meta | 사용자 발화로 plan(기능 그룹)별 `tasks/<NNN_slug>/BACKLOG.md`에 task 후보 1건씩 추가 (0.1.2+) |
 | `/log-friction` | meta | 사용자 불편을 `.project/FRICTION_LOG.md`에 한 행 기록 |
 
 각 스킬은 슬래시로 직접 호출하거나, 사용자 발화의 의미가 스킬의 frontmatter description과 매칭되면 메인 세션이 자동으로 발동시킨다.
@@ -196,9 +198,9 @@ my-app/
 
 | 스킬 | 생성 위치 | 생성 문서 |
 |------|---------|---------|
-| `/project-init` | `.project/` | PROJECT.md / AGENT-GUIDE.md / LINKED-REPOS.md / .env |
-| `/plan-init` | `.project/plans/<plan-name>/` | 9 기획 문서 — PLAN.md / SERVICE-POLICY.md / FEATURES.md / UX-UI.md / TECH-STACK.md / ARCHITECTURE.md / DATA-MODEL.md / API-SPEC.md / ROADMAP.md (프로젝트 타입에 따라 일부 제외) |
-| `/task-init` | `.project/tasks/<plan-name>/` | `<NNN>_<slug>.md` (단일 파일) 또는 `TASK-<NNN>_<slug>/task.md` (규모 `large` 시 폴더 승격) |
+| `/project-init` | `.project/` | PROJECT.md / AGENT-GUIDE.md / LINKED-REPOS.md / GLOSSARY.md / .env + 제품 관통 문서(SERVICE-POLICY / TECH-STACK / ARCHITECTURE 작성, DATA-MODEL / API-SPEC / FEATURES / UX-UI 골격 — 타입 해당분) |
+| `/plan-init` | `.project/plans/<NNN_slug>/` | PLAN.md / ROADMAP.md + 제품 관통 문서 FEATURES/UX-UI에 기능 그룹 의도 추가 (제품 관통 문서 전체를 한꺼번에 만들지는 않음) |
+| `/task-init` | `.project/tasks/<NNN_slug>/` | `<NNN>_<slug>.md` (단일 파일) 또는 `TASK-<NNN>_<slug>/task.md` (사용자 명시 시 폴더 승격) |
 
 > 각 스킬의 호출 시점, 입력 처리 방식, 단계별 절차, 주의사항은 [SKILLS.md](https://github.com/angar2/taskery/blob/main/plan/SKILLS.md)에서 확인 가능
 
@@ -229,7 +231,7 @@ npx @angar2/taskery init
 
 ```
 /project-init                  # 진입 메타 문서와 디렉토리 골격 생성
-/plan-init v1.0                # v1.0 기획 문서 작성
+/plan-init mvp                 # 첫 plan(기능 그룹) — PLAN/ROADMAP + 제품 문서에 기능 의도 추가
 /task-init                     # draft : 첫 task의 빈 문서 생성
 /task-plan TASK-001            # draft → planned : 요구사항·범위·개발 계획·테스트 계획 작성
 /task-dev TASK-001             # planned → developed : 단계별 구현과 자체 검증

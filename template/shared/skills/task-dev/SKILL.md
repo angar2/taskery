@@ -23,8 +23,8 @@ MAIN_WT=$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")
 
 | 케이스 | task 문서 / Result 갱신 위치 | CLAUDE.md (검증 명령) |
 |--------|---------------------------|----------------------|
-| 등록 (퍼블릭 리포 default) | `$MAIN_WT/.project/tasks/<vX.X>/...` (`bin/lib.js` `withMetaLock`) | `$MAIN_WT/CLAUDE.md` |
-| 미등록 | `$WT_PATH/.project/tasks/<vX.X>/...` (워크트리 안, 머지 시 dev 반영) | `$MAIN_WT/CLAUDE.md` (CLAUDE.md는 단일 소스) |
+| 등록 (퍼블릭 리포 default) | `$MAIN_WT/.project/tasks/<NNN_slug>/...` (`bin/lib.js` `withMetaLock`) | `$MAIN_WT/CLAUDE.md` |
+| 미등록 | `$WT_PATH/.project/tasks/<NNN_slug>/...` (워크트리 안, 머지 시 dev 반영) | `$MAIN_WT/CLAUDE.md` (CLAUDE.md는 단일 소스) |
 
 self-check 명령은 워크트리(`$WT_PATH`)에서 실행 — 코드 변경이 워크트리 안에 있으므로 검증 대상도 거기.
 
@@ -49,7 +49,7 @@ self-check 명령은 워크트리(`$WT_PATH`)에서 실행 — 코드 변경이 
 1. `.project/AGENT-GUIDE.md` Read → 활성 plan 버전 확인.
 2. task 파일 Read:
    - 인자 있음 → 해당 파일.
-   - 인자 없음 → `ls .project/tasks/<vX.X>/` 결과 중 status=`planned` 또는 `developing`인 가장 최근 파일. 발견 시 *"TASK-<NNN> 진행할까요?"* confirm. 없으면 *"진행할 task 없음. `/task-plan` 먼저 호출."* + 종료.
+   - 인자 없음 → `ls .project/tasks/<NNN_slug>/` 결과 중 status=`planned` 또는 `developing`인 가장 최근 파일. 발견 시 *"TASK-<NNN> 진행할까요?"* confirm. 없으면 *"진행할 task 없음. `/task-plan` 먼저 호출."* + 종료.
 3. 상태 검증:
    - `planned` → 신규 진행 (Step 2 status 전환).
    - `developing` → 이어가기 (Step 2 skip — 이미 developing).
@@ -76,9 +76,9 @@ self-check 명령은 워크트리(`$WT_PATH`)에서 실행 — 코드 변경이 
 
 ### Step 4 — Phase 0 처리 (있을 시)
 
-Dev Plan에 Phase 0(plan 문서 변경)이 있으면:
-1. `.project/plans/<vX.X>/<문서>.md` Edit.
-2. `.project/tasks/<vX.X>/spec-diffs/<NNN>_<slug>_spec-diff.md` 이미 `/task-plan`에서 만들어졌으면 그대로. 없으면 작성 (TASK_DOC_RULE §spec-diff 형식 참조).
+Dev Plan에 Phase 0(제품 관통 문서 변경)이 있으면:
+1. `.project/<문서>.md` (루트 제품 관통 문서) Edit. **DATA-MODEL/API-SPEC 상세는 구현 동반으로 여기서 확정** — plan-init이 미룬 스키마·엔드포인트 본문을 실제 구현 기준으로 채운다.
+2. `.project/tasks/<NNN_slug>/spec-diffs/<NNN>_<slug>_spec-diff.md` 이미 `/task-plan`에서 만들어졌으면 그대로. 없으면 작성 (TASK_DOC_RULE §spec-diff 형식 참조).
 3. Phase 0 `진행: [x]` Edit.
 
 ### Step 5 — flows/ 업데이트 (해당 시)
@@ -188,7 +188,7 @@ stash FRICTION_LOG #14+19 / #25 반영 — 유닛 테스트는 본 단계에서 
 - **Phase 순서 건너뛰기 X** — Phase 1 끝나기 전 Phase 2 진행 X. 의존 관계 깨짐 + 디버깅 어려워짐.
 - **계획 외 스코프 확장 X** — Dev Plan에 없는 파일 다루기 전 사용자 confirm. *"이 부분 같이 작업해야 할 것 같은데 OK?"* 합의 후 진행.
 - **모호 발화 confirm 룰 (stash FRICTION_LOG #21+22 반영)** — 사용자 발화가 코드/문서/기능 영역에서 *복수 매칭* 가능할 때 자율 추정 영구 금지. 메인 *자체 안 1개* + *"X 의미 맞아?"* 한 줄 confirm 후 진행. 옵션 4개 늘어놓기 금지 (메인 판단 위임 회피 패턴). 예: 사용자 *"환경설정 아이콘"* 발화 → popover 톱니 / Settings 탭바 아이콘 둘 다 가능 → 어느 영역인지 한 줄 confirm 필수.
-- **디자인 산출 정독 의무 (stash FRICTION_LOG #14+19 / #12 일반화)** — task에 디자인 산출 (HTML 목업 / Figma / 디자인 파일 등) 있으면 메인이 *직접 Read* 후 구현. sub-agent 위임 금지 (요약만 받아 디자인 정합 깨짐). 구현 = 디자인 산출 기준 (역방향 X — 코드 편의로 디자인 어김 절대 X). 목업 위치 = `.project/tasks/<vX.X>/mockup/<task-doc-name>-mockup.html`.
+- **디자인 산출 정독 의무 (stash FRICTION_LOG #14+19 / #12 일반화)** — task에 디자인 산출 (HTML 목업 / Figma / 디자인 파일 등) 있으면 메인이 *직접 Read* 후 구현. sub-agent 위임 금지 (요약만 받아 디자인 정합 깨짐). 구현 = 디자인 산출 기준 (역방향 X — 코드 편의로 디자인 어김 절대 X). 목업 위치 = `.project/tasks/<NNN_slug>/mockup/<task-doc-name>-mockup.html`.
 - **self-check FAIL 시 `developed` 전환 X** — 무리하게 상태 갱신 금지. 메인 자체 수정 시도 → 안 되면 사용자에게 보고. *"잘 될 거야"* 가정 금지.
 - **로그 심기 잊지 X** — Dev Plan 작성 시 `[로그]` 항목 명시되어 있으면 *반드시* 실제 로그 코드 삽입. 격리 세션 / 운영 디버깅 모두 의존.
 - **Result 섹션 진행만** — 테스트 결과는 `/task-test`가 기록. 메인이 *"잘 됐을 거야"* 가정 작성 금지.

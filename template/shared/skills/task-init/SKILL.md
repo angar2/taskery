@@ -66,30 +66,30 @@ description: task 시작 — 워크트리 분기 + 6 섹션 빈 골격 + 헤더 
 
 ### Step 2 — active plan 버전 확인
 
-1. `$MAIN_WT/.project/AGENT-GUIDE.md` Read → *활성 plan 버전* 추출 (예: `v1.0`).
-2. AGENT-GUIDE.md 없거나 활성 버전 누락 시 → 사용자에게 *"활성 plan 버전이 없는데 `/plan-init` 먼저 실행할까요?"* 묻고 중단.
-3. `$MAIN_WT/.project/plans/<vX.X>/` 디렉토리 존재 확인. 없으면 동일하게 `/plan-init` 안내 + 중단.
+1. `$MAIN_WT/.project/AGENT-GUIDE.md` Read → *활성 plan* 추출 (예: `001_mvp` — `NNN_slug` 폴더명).
+2. AGENT-GUIDE.md 없거나 활성 plan 누락 시 → 사용자에게 *"활성 plan 버전이 없는데 `/plan-init` 먼저 실행할까요?"* 묻고 중단.
+3. `$MAIN_WT/.project/plans/<NNN_slug>/` 디렉토리 존재 확인. 없으면 동일하게 `/plan-init` 안내 + 중단.
 
 ### Step 3 — 분기 판단 + 메타 수집
 
 직전 대화 정독:
 - 작업 주제 / 유형 / 출처 / 규모 추정 가능?
   - **추정 가능** → 분기 1 (제안):
-    *"직전 맥락 보니 다음 task 만들까요? 주제: <X> / 유형: <Y> / 출처: <Z> / 규모: <W> / 플랜: <vX.X>. 어떠세요?"*
+    *"직전 맥락 보니 다음 task 만들까요? 주제: <X> / 유형: <Y> / 출처: <Z> / 규모: <W> / plan: <NNN_slug>. 어떠세요?"*
     사용자 답 — *"OK"* / *"규모는 large야"* / *"유형은 bug야"* 등 부분 수정 받음.
   - **추정 불가** → 분기 2 (인터뷰): 한 번에 한 질문씩.
     - Q1: *"무슨 작업인가요? (한 줄로)"*
     - Q2: *"유형? (feature / bug / improvement / refactor / docs / chore)"*
     - Q3: *"출처? (백로그 BL-NNN / 로드맵 RM-NNN / 직접 요구사항 DR)"*
     - Q4: *"규모? (micro / small / medium / large) — 잘 모르겠으면 추정 알려드림."*
-    - (필요 시) Q5: *"플랜 버전 `<vX.X>` 맞나요?"*
+    - (필요 시) Q5: *"plan `<NNN_slug>` 맞나요?"*
 
 수집 항목 (모두 확정되어야 진행):
 - 주제 (한국어 — kebab-slug 변환은 Step 4)
 - 유형: `feature` / `bug` / `improvement` / `refactor` / `docs` / `chore`
 - 출처: `BL-NNN` / `RM-NNN` / `DR`
 - 규모: `micro` / `small` / `medium` / `large`
-- 플랜 버전: 활성 버전 그대로 (Step 2에서 가져온 값)
+- plan: 활성 plan 그대로 (Step 2에서 가져온 `NNN_slug` 값)
 
 ### Step 4 — TASK 번호 결정 + 결정적 슬러그 + SSoT 안전망
 
@@ -116,8 +116,8 @@ NEXT=$((MAX + 1))
 
 #### 4.2 메타 가져오기 (BL/RM)
 
-- BL: `$MAIN_WT/.project/tasks/<활성버전>/BACKLOG.md` Read → `BL-NNN` 블록 파싱 → `{ status, type, title, slug, summary, target, taskNums }` (활성 버전은 `AGENT-GUIDE.md`에서 검출. `bin/lib.js`의 `parseBacklogItem(mainWtPath, blId)` 호출 권장). 개요 / 대상 영역 → task.md §1 Requirements 초안에 자동 복사 (얕은 분석이 task 문서 시작점)
-- RM: `$MAIN_WT/.project/plans/<활성버전>/ROADMAP.md` Read → `RM-NNN` grep → 항목 메타 파싱
+- BL: `$MAIN_WT/.project/tasks/<활성 plan>/BACKLOG.md` Read → `BL-NNN` 블록 파싱 → `{ status, type, title, slug, summary, target, taskNums }` (활성 plan은 `AGENT-GUIDE.md`에서 검출. `bin/lib.js`의 `parseBacklogItem(mainWtPath, blId)` 호출 권장). 개요 / 대상 영역 → task.md §1 Requirements 초안에 자동 복사 (얕은 분석이 task 문서 시작점)
+- RM: `$MAIN_WT/.project/plans/<활성 plan>/ROADMAP.md` Read → `RM-NNN` grep → 항목 메타 파싱
 - DR: 사용자 발화에서 주제 그대로
 
 #### 4.2.5 이미 `[x]` BL 재진행 케이스
@@ -149,8 +149,8 @@ git -C "$MAIN_WT" branch --no-merged dev --list \
 
 1. 파일 vs 폴더 분기 (기존 룰 유지):
    - **파일 default**: 단일 `NNN_<slug>.md`.
-   - **폴더 승격 조건**: (a) 규모 `large`, 또는 (b) 사용자 명시 *"폴더로 만들어줘"*, 또는 (c) task에 *추가 자료* 다수 예상.
-   - **spec-diffs / screenshots / mockup은 vX.X 공통** — 단일/폴더 모두 `.project/tasks/<vX.X>/{spec-diffs,screenshots,mockup}/`에 위치. (TASK_DOC_RULE §1.5)
+   - **폴더 승격 조건**: *사용자 명시* 시에만 (*"폴더로 만들어줘"* 류). 규모 large·추가 자료 다수여도 자동 승격하지 않는다 — 기본은 항상 단일 파일. 기능 자체는 유지(사용자가 원하면 그대로 사용).
+   - **spec-diffs / screenshots / mockup은 `<NNN_slug>` 공통** — 단일/폴더 모두 `.project/tasks/<NNN_slug>/{spec-diffs,screenshots,mockup}/`에 위치. (TASK_DOC_RULE §1.5)
 2. 브랜치명 산출 (멀티세션 형식):
    ```
    {타입}/{개발자}_TASK-NNN_{출처}_{슬러그}
@@ -184,8 +184,8 @@ git -C "$MAIN_WT" check-ignore -q "$MAIN_WT/.project/dummy"
 
 | 결과 | 케이스 | 작성 위치 |
 |------|--------|----------|
-| exit 0 | **등록됨** (퍼블릭 리포 default) | **메인 워크트리** (`$MAIN_WT/.project/tasks/<vX.X>/`) — proper-lockfile로 안전 쓰기. 멀티세션 공유 단일 소스. dev untracked (git 자동 무시) |
-| exit 1 | **미등록** | **워크트리 안** (`$WT_PATH/.project/tasks/<vX.X>/`) — 워크트리 커밋 + 머지 시 dev에 반영 |
+| exit 0 | **등록됨** (퍼블릭 리포 default) | **메인 워크트리** (`$MAIN_WT/.project/tasks/<NNN_slug>/`) — proper-lockfile로 안전 쓰기. 멀티세션 공유 단일 소스. dev untracked (git 자동 무시) |
+| exit 1 | **미등록** | **워크트리 안** (`$WT_PATH/.project/tasks/<NNN_slug>/`) — 워크트리 커밋 + 머지 시 dev에 반영 |
 
 빈 골격 형식 (TASK_DOC_RULE §1.3 참조):
 
@@ -194,7 +194,7 @@ git -C "$MAIN_WT" check-ignore -q "$MAIN_WT/.project/dummy"
 
 | 생성일 | 플랜 | 유형 | 규모 | 상태 |
 |--------|------|------|------|------|
-| <YYYY-MM-DD> | <vX.X> | <유형> | <규모> | draft |
+| <YYYY-MM-DD> | <NNN_slug> | <유형> | <규모> | draft |
 
 ## Requirements
 
@@ -242,7 +242,7 @@ git -C "$MAIN_WT" check-ignore -q "$MAIN_WT/.project/dummy"
 - 워크트리: <WT_PATH>
 - 브랜치: <BRANCH>
 - task 문서: <TASK_DOC_PATH> (메인 워크트리 / 워크트리 안 — 위 케이스에 따라)
-- 헤더: <생성일> / <vX.X> / <유형> / <규모> / draft
+- 헤더: <생성일> / <NNN_slug> / <유형> / <규모> / draft
 - BL 마킹: BL-<NNN> [x] (BL 출처 시. RM/DR이면 생략)
 - 다음: /task-plan TASK-<NNN> 으로 기획 채우기 (워크트리 폴더에서 새 세션 열어 진행 / 메인 세션 그대로 진행 / 메인이 서브 세션 spawn 등 운영 모델 자유)
 ```
@@ -250,7 +250,7 @@ git -C "$MAIN_WT" check-ignore -q "$MAIN_WT/.project/dummy"
 ## 도구 가이드
 
 - **Bash**: 메인 워크트리 검출 / 사전 검증 / `git worktree add` / SSoT 조회 / TASK-NNN 계산
-- **Read**: `$MAIN_WT/.project/AGENT-GUIDE.md` / `$MAIN_WT/.project/tasks/<활성버전>/BACKLOG.md` / `$MAIN_WT/.project/plans/<활성버전>/ROADMAP.md`
+- **Read**: `$MAIN_WT/.project/AGENT-GUIDE.md` / `$MAIN_WT/.project/tasks/<활성 plan>/BACKLOG.md` / `$MAIN_WT/.project/plans/<활성 plan>/ROADMAP.md`
 - **Write**: task.md 빈 골격 작성 (위치는 .gitignore 케이스에 따라)
 - **AskUserQuestion**: 분기 2 인터뷰 (한 번에 한 질문)
 
@@ -258,8 +258,8 @@ git -C "$MAIN_WT" check-ignore -q "$MAIN_WT/.project/dummy"
 
 - **워크트리 생성 + task 문서 작성만 담당** — 본문 채우기 금지. Requirements / Scope / Dev Plan / Test Plan 본문은 *반드시* `/task-plan`에서.
 - **단계 경계 — 허용/금지 명시 (stash FRICTION_LOG #11 반영)**:
-  - **허용 (화이트리스트)**: `$MAIN_WT/.project/plans/<활성버전>/ROADMAP.md` §4(다음 작업 영역) 확인 / SSoT 조회 / TASK-NNN 계산 / 빈 골격 Write
-  - **금지 (블랙리스트)**: ARCHITECTURE.md / API-SPEC.md / FEATURES.md 등 9 기획 문서 본문 Read / 도메인 코드 Read · Grep / 기존 task 본문 Read
+  - **허용 (화이트리스트)**: `$MAIN_WT/.project/plans/<활성 plan>/ROADMAP.md` §4(다음 작업 영역) 확인 / SSoT 조회 / TASK-NNN 계산 / 빈 골격 Write
+  - **금지 (블랙리스트)**: ARCHITECTURE.md / API-SPEC.md / FEATURES.md 등 `.project/` 루트 제품 관통 문서 본문 Read / 도메인 코드 Read · Grep / 기존 task 본문 Read
   - 본문 정보 수집은 *다음 단계 `/task-plan`*에서 수행.
 - **자동 추정 진행 X** — 직전 맥락 명확해도 *제안 + 사용자 OK* 거친 후 워크트리/파일 생성.
 - **상태는 `draft` 고정** — `/task-init` 끝의 상태는 `draft` 외 작성 금지.
