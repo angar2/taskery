@@ -156,6 +156,7 @@ taskery 도입 직후 **1회성**으로 호출. 사용자 또는 동료가 새 �
 5. `.project/GLOSSARY.md` — 도메인 용어집 (영문/한글 표기 일관성 단일 진실 소스)
 6. `.project/tasks/<활성 plan>/BACKLOG.md` — 현재 plan 진행 중 누적된 후속 task 후보 (사용자 발화 *"이건 다음 task로"* / task-close 직후 메인 감지로 추가)
 7. `.project/AGENT-GUIDE.md` — 본 파일 (그대로)
+8. `.project/TEST-GUIDE.md` — 검증 방법 문서 (각 테스트 방식의 이 프로젝트 실제 실행 경로). 매 세션 통독 아니라 *`/task-plan`·`/task-test` 시 참조* — 발견성 위해 등재
 
 ## 작업 흐름
 - task 시작: `/task-init` 또는 `/task-plan`
@@ -171,6 +172,7 @@ taskery 도입 직후 **1회성**으로 호출. 사용자 또는 동료가 새 �
 - `.project/shared/` — 멀티리포 메시지
 - `.project/changelog/` — 월별 변경 이력
 - `.project/FRICTION_LOG.md` — 불편 데이터
+- `.project/TEST-GUIDE.md` — 검증 방법 문서 (각 테스트 방식의 이 프로젝트 실제 실행 경로. 제품 관통 문서 아님)
 
 ## 멀티리포
 <단일 리포면 "단일 리포. LINKED-REPOS.md 빈 템플릿."
@@ -282,7 +284,7 @@ git branch -a                                        # main(또는 master) + dev
 ### Step 8 — 결과 보고
 
 작성된 파일 목록 + 다음 단계 안내:
-- *"PROJECT.md(초기 빌드 로드맵 포함) / AGENT-GUIDE.md / LINKED-REPOS.md / GLOSSARY.md / .env + 제품 관통 문서(그룹 A 작성: SERVICE-POLICY·TECH-STACK·ARCHITECTURE / 그룹 B 골격: DATA-MODEL·API-SPEC·FEATURES·UX-UI, 타입 해당분) 생성. (FRICTION_LOG.md / 빈 골격 폴더는 npx init이 이미 카피한 것 그대로). **빈 폴더 케이스라 git init + dev 분기까지 완료** (이미 git 리포면 건너뜀). 다음은 `/plan-init <기능그룹>`으로 첫 plan(MVP면 여러 기능 그룹을 묶은 큰 plan) 작성."*
+- *"PROJECT.md(초기 빌드 로드맵 포함) / AGENT-GUIDE.md / LINKED-REPOS.md / GLOSSARY.md / .env + 제품 관통 문서(그룹 A 작성: SERVICE-POLICY·TECH-STACK·ARCHITECTURE / 그룹 B 골격: DATA-MODEL·API-SPEC·FEATURES·UX-UI, 타입 해당분) 생성. (FRICTION_LOG.md / TEST-GUIDE.md(검증 방법 문서, 빈 골격) / 빈 골격 폴더는 npx init이 이미 카피한 것 그대로 — project-init이 생성 X). **빈 폴더 케이스라 git init + dev 분기까지 완료** (이미 git 리포면 건너뜀). 다음은 `/plan-init <기능그룹>`으로 첫 plan(MVP면 여러 기능 그룹을 묶은 큰 plan) 작성."*
 
 **결과 commit 흐름** (GIT_RULE 정합):
 - dev 직접 commit *금지* (git-guard.sh 차단). 두 가지 default 흐름:
