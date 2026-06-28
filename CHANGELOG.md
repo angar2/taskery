@@ -18,6 +18,13 @@
   - **Claude 전용** — agent teams가 Codex에 없어 `template/.claude/skills/run-team/`에 직접 배치(`platformOf`가 `.claude/`를 claude로 분류 → Claude 선택 시에만 설치, Codex 미포함). `AGENTS.md`에 Codex 미지원 가드(단일 태스크 흐름 권유). 코어 카피 파일은 Claude 설치 시 +1.
   - 정합: `CLAUDE.md`(agent teams 섹션 + 스킬표) / `AGENTS.md`(가드) / `plan/SKILLS.md`·`OVERVIEW.md`·`PLATFORMS.md` / `README.md` / `PLAYBOOK.md` §15 적용 완료 표기.
 
+### 수정
+
+- **task-init TASK 번호 채번 레이스 차단 — `fork` 명령 신설 (병렬 task-init 안전)** — `/task-init`이 번호 읽기(Step 4.1)와 워크트리·브랜치 생성(Step 6)을 분리해 수행하던 탓에, 병렬 task-init(예: `/run-team` 팀원 동시 분기) 시 둘 사이 락이 없어 같은 번호를 읽고 각자 브랜치를 만드는 TOCTOU 레이스가 있었다(잠복 버그 — 1세션 1태스크에선 안 드러남, agent teams 병렬이 최초 노출: `TASK-001` 3중복). 상위 에이전트 생태계가 taskery를 *병렬 개발 도구*로 호출하려면 필수 차단 대상.
+  - **`npx @angar2/taskery fork <type> <dev> <src> <slug>` 신설** (`bin/fork.js` + `lib.forkTask`) — 채번 → 워크트리·브랜치 생성을 `~/.taskery/<projectId>.init.lock`(기존 `withMetaLock`) 안에서 **원자 실행**. 동시 호출은 직렬화돼 각자 늘어난 번호를 본다. SSoT 안전망(같은 출처 진행중 거부)도 같은 락 안으로 일원화(racy 중복검사 제거).
+  - **`/task-init` 정합** — Step 4.1 인라인 채번 셸 + Step 6 직접 `git worktree add` 제거 → `fork` 호출로 교체. 확정 NNN은 fork 반환 JSON에서 수령(confirm 시점엔 미정). `run-team`·`GIT_RULE`(template) 충돌 차단/생성 메커니즘 설명 정합.
+  - 검증: 병렬 `fork` 5건 → 번호 `1~5` 유일 + 워크트리·브랜치 각 5 (락 없는 동시 읽기는 `[1,1,1,1,1]`로 레이스 재현 확인).
+
 ---
 
 ## [0.3.1] - 2026-06-28
