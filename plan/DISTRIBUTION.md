@@ -123,7 +123,7 @@
     },
     ".claude/hooks/git-guard.sh": { ... },
     ".project/rules/TASK_DOC_RULE.md": { ... }
-    // ... 26 파일 (0.1.2+ — 스킬 9종 + 룰 4종 + hook 2종 + settings.json + CLAUDE.md + FRICTION_LOG.md + TEST-GUIDE.md + 빈 골격 .gitkeep 6 + .gitignore)
+    // ... 26 파일 (0.1.2+ — 스킬 9종 + 룰 4종 + hook 2종 + settings.json + CLAUDE.md + FRICTION_LOG.md + TEST-GUIDE.md + 빈 골격 .gitkeep 6 + .gitignore). Claude 설치 시 + Claude 전용 run-team 1 = 27 (Codex 26)
   }
 }
 ```
@@ -330,3 +330,4 @@ npm publish --tag beta       # beta tag로 publish
 | 2026-05-31 | 정합 순회 2차 후속 정정 — §5 manifest 예시 필드 순서를 실제 `bin/init.js:100~107` / `bin/update.js:164~172` 출력 순서(version → installed_at → updated_at → projectId → stale_days → lock_timeout_ms → files)와 일치시킴 (1차 정정 시 `projectId` 등을 `files` 뒤에 박았던 표기 정합 X 정정) + version 예시 0.1.0 → 0.1.2 갱신 / §11 동작 검증 표 *appendBacklogItem 동시 직렬화* / *markBacklogChecked 중복 방지* 행 본 세션 미실행 검증 결과 수치(P2 BL-001 6ms 등) 인용 제거 → 단순 *통과 ✅* 표기로 변경 (이전 세션 보고 수치를 본 세션이 직접 재현하지 않았으므로 수치 명시 부적절) |
 | 2026-05-31 | 정합 순회 5차 후속 정정 — §3 표 `bin/taskery.js` 분량 *1,694 B* → *1,870 B* (2차 commit에서 헤더 주석에 `status` / `prune` 서브커맨드 2행 추가했으나 분량 표 갱신 누락분 정합) + §8 `package.json` 메타 예시: `"version": "0.1.0"` → *0.1.2* / `"engines"`에 `"git": ">=2.31.0"` 추가 / `"dependencies": { "proper-lockfile": "^4.1.2" }` 신규 추가 (실제 package.json 0.1.2 본문과 일치). 단순 수치/필드 정합, 행위 변경 X |
 | 2026-06-02 | 0.1.3 발행 후속 — §5 manifest 예시 `"version": "0.1.2"` → *0.1.3* 단순 수치 정합. 행위 변경 X |
+| 2026-06-28 | `/run-team` (Claude 전용) 추가 반영 — §5 manifest files 예시 주석에 *Claude 설치 시 + run-team = 27 (Codex 26)* 명시. run-team은 `.claude/skills/`에 직접 배치돼 `platformOf`가 claude로 분류 → Claude 선택 시에만 설치. §6 스모크 *26 unchanged*는 과거 실측 시점 기록이라 보존. PLAYBOOK §15 본구현. |

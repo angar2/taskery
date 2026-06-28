@@ -7,7 +7,16 @@
 
 ## [Unreleased]
 
-(누적 영역 없음 — 다음 변경 시 추가)
+### 추가
+
+- **`/run-team` 스킬 — agent teams 자동 병렬 멀티태스크 (Claude 전용 · PLAYBOOK §15 본구현)** — 다건 태스크를 리더 메인 세션 1개가 Claude의 agent teams 기능으로 팀원(독립 세션)에게 1건씩 분배해 자동 병렬 처리하는 고기능. 기존엔 사용자가 작업마다 세션을 직접 띄워 지시해야 했고, 세션 간 컨텍스트 격벽으로 충돌·중복 위험이 있었다. 상위 에이전트 생태계가 taskery를 *병렬 개발 도구*로 호출하기 위한 전제이기도 하다.
+  - **세션 오케스트레이션만 추가** — 워크트리 격리는 `/task-init`이, 머지 직렬화·충돌 3단계는 `/task-close`가 그대로 담당. `/run-team`은 태스크 묶기 판단 + 팀원 분배 + 중단점 관리 + 머지 조율만 한다. `bin/` 코드 변경 0.
+  - **팀원 = agent teams 팀원** (독립 세션·자체 컨텍스트·사용자 직접 접근). Task tool 서브에이전트 대체를 스킬 본문에서 영구 금지 — 둘은 다르다(서브에이전트는 리더 컨텍스트 내 워커라 사용자 직접 접근·독립 컨텍스트 불가).
+  - **트리거 한정 발동** — 기본 플로우(1세션 1태스크)를 침범하지 않음. *"백로그 한 번에 진행해"* / *"팀에게 전부 독립으로 맡겨"* 류 발화에서만.
+  - **두 가드** — 플랫폼(Claude) + 활성화(`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`). 미충족 시 팀을 만들지 말고 안내 후 중단(꺼진 채 헛도는 것 방지).
+  - **중단점 = taskery 단계 경계** — 기본은 단계별 정지(팀원이 한 단계 후 idle → 리더 자동 통지), 사용자 지시 시 구간 자동. 되돌릴 수 없는 `/task-close`(dev 병합)는 게이트로 두기 권장. 각 팀원이 물리적으로 분리된 워크트리에서 작업하므로 agent teams의 "같은 파일 동시 편집 → 덮어쓰기" 제약이 구조적으로 회피된다.
+  - **Claude 전용** — agent teams가 Codex에 없어 `template/.claude/skills/run-team/`에 직접 배치(`platformOf`가 `.claude/`를 claude로 분류 → Claude 선택 시에만 설치, Codex 미포함). `AGENTS.md`에 Codex 미지원 가드(단일 태스크 흐름 권유). 코어 카피 파일은 Claude 설치 시 +1.
+  - 정합: `CLAUDE.md`(agent teams 섹션 + 스킬표) / `AGENTS.md`(가드) / `plan/SKILLS.md`·`OVERVIEW.md`·`PLATFORMS.md` / `README.md` / `PLAYBOOK.md` §15 적용 완료 표기.
 
 ---
 
