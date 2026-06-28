@@ -63,7 +63,7 @@
 
 `bin/init.js`는 *`template/` 디렉토리 안 모든 파일*을 사용자 cwd로 카피.
 
-**카피 대상 (코어 영역 — npx 갱신)** — 25 파일:
+**카피 대상 (코어 영역 — npx 갱신)** — 26 파일:
 | 카테고리 | 파일 |
 |---------|------|
 | 메인 instruction | `CLAUDE.md` |
@@ -72,6 +72,7 @@
 | Hook 등록 (1) | `.claude/settings.json` |
 | 룰 (4) | `.project/rules/{TASK_DOC_RULE,GIT_RULE,CHANGELOG_RULE,MOCKUP_RULE}.md` |
 | 불편 누적 빈 템플릿 | `.project/FRICTION_LOG.md` |
+| 검증 방법 빈 템플릿 | `.project/TEST-GUIDE.md` |
 | 사용자 영역 빈 골격 (4) | `.project/{changelog,flows,plans,tasks}/.gitkeep` |
 | 멀티리포 골격 (2) | `.project/shared/{sent,received}/completed/.gitkeep` |
 | 루트 .gitignore | `.gitignore` |
@@ -122,7 +123,7 @@
     },
     ".claude/hooks/git-guard.sh": { ... },
     ".project/rules/TASK_DOC_RULE.md": { ... }
-    // ... 25 파일 (0.1.2+ — 스킬 9종 + 룰 4종 + hook 2종 + settings.json + CLAUDE.md + FRICTION_LOG.md + 빈 골격 .gitkeep 6 + .gitignore)
+    // ... 26 파일 (0.1.2+ — 스킬 9종 + 룰 4종 + hook 2종 + settings.json + CLAUDE.md + FRICTION_LOG.md + TEST-GUIDE.md + 빈 골격 .gitkeep 6 + .gitignore)
   }
 }
 ```
@@ -168,7 +169,7 @@
 ```
 
 **검증 완료** (스모크 테스트):
-- ✅ no-change 시나리오: 25 unchanged (0.1.2+ 9 스킬 + 4 룰 + 2 hook + settings.json + CLAUDE.md + FRICTION_LOG.md + .gitkeep 6 + .gitignore)
+- ✅ no-change 시나리오: 26 unchanged (0.1.2+ 9 스킬 + 4 룰 + 2 hook + settings.json + CLAUDE.md + FRICTION_LOG.md + TEST-GUIDE.md + .gitkeep 6 + .gitignore)
 - ✅ 충돌 시나리오 'n' 응답: 사용자 보존
 - ✅ 충돌 시나리오 'y' 응답: .bak 생성 + 새 코어 덮어쓰기
 - ✅ 0.1.1 → 0.1.2 마이그레이션: manifest에 `projectId` / `stale_days` / `lock_timeout_ms` 자동 추가
@@ -237,7 +238,7 @@ npm publish --tag beta       # beta tag로 publish
 
 **`files` 배열 — npm publish 포함 대상**:
 - `bin/` — 7 스크립트 모두 (멀티세션 0.1.2+ status.js / prune.js 포함)
-- `template/` — 사용자 카피 대상 25 파일 (백로그 0.1.2+ add-backlog/SKILL.md 포함)
+- `template/` — 사용자 카피 대상 26 파일 (백로그 0.1.2+ add-backlog/SKILL.md 포함, 0.3.1+ TEST-GUIDE.md 포함)
 - `README.md` — npm 첫 화면
 - `LICENSE` — MIT 라이선스
 
@@ -295,8 +296,8 @@ npm publish --tag beta       # beta tag로 publish
 |---------|------|
 | Node syntax check (`node --check`) — 7 스크립트 | 통과 ✅ |
 | `node bin/taskery.js help` 출력 | 정상 ✅ |
-| `bin/init.js` → smoke test 25 파일 카피 + manifest 생성 (`projectId` / `stale_days` / `lock_timeout_ms` 자동 생성) | 통과 ✅ |
-| `bin/update.js` no-change | 25 unchanged ✅ |
+| `bin/init.js` → smoke test 26 파일 카피 + manifest 생성 (`projectId` / `stale_days` / `lock_timeout_ms` 자동 생성) | 통과 ✅ |
+| `bin/update.js` no-change | 26 unchanged ✅ |
 | `bin/update.js` 충돌 시나리오 'n' | 사용자 보존 (CLAUDE.md "customized" 라인 그대로) ✅ |
 | `bin/update.js` 충돌 시나리오 'y' | .bak 백업 + 새 코어 덮어쓰기 (CLAUDE.md.bak 생성) ✅ |
 | `bin/update.js` 0.1.1 → 0.1.2 마이그레이션 | manifest에 `projectId` / `stale_days` / `lock_timeout_ms` 자동 추가 ✅ |
