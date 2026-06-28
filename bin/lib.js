@@ -19,10 +19,12 @@
  *   - getWorktreesRoot(projectId): ~/.taskery/worktrees/<projectId>
  *   - getWorktreePath(projectId, { taskNum, src, slug }): 특정 task 워크트리 경로
  *   - getMergeLockPath(projectId): ~/.taskery/<projectId>.merge.lock
+ *   - getInitLockPath(projectId): ~/.taskery/<projectId>.init.lock (task 분기 직렬화용)
  *   - withMergeLock(projectId, fn, opts): proper-lockfile로 머지 락 + fn 실행 + 자동 release
  *   - withMetaLock(filePath, fn, opts): 메타 파일 쓰기 락 + fn 실행
  *   - getActiveTasks(mainWtPath): SSoT 조회 (git branch --no-merged dev --list 'feature/*_TASK-*' ...)
  *   - getNextTaskNumber(mainWtPath): (진행중 ∪ dev 머지 히스토리) 최대 + 1
+ *   - forkTask(mainWtPath, {type,dev,src,slug}): init 락 안에서 채번+워크트리·브랜치 생성 원자 실행
  *   - assertMainWorktreeOnDev(mainWtPath): 메인 워크트리가 dev 체크아웃 상태인지 검증
  *   - assertDevExists(mainWtPath): dev 브랜치 존재 검증
  *
@@ -254,6 +256,10 @@ function getMergeLockPath(projectId) {
   return path.join(TASKERY_HOME, `${projectId}.merge.lock`);
 }
 
+function getInitLockPath(projectId) {
+  return path.join(TASKERY_HOME, `${projectId}.init.lock`);
+}
+
 async function withMergeLock(projectId, fn, opts = {}) {
   const lockfile = require('proper-lockfile');
   const lockPath = getMergeLockPath(projectId);
@@ -367,6 +373,34 @@ function getNextTaskNumber(mainWtPath) {
   const all = [...activeNums, ...merged];
   if (all.length === 0) return 1;
   return Math.max(...all) + 1;
+}
+
+async function forkTask(mainWtPath, { type, dev, src, slug }) {
+  // task 분기 — [채번 → 워크트리·브랜치 생성]을 init 락(withMetaLock)으로 원자화.
+  // 병렬 task-init이 같은 번호를 읽고 각자 브랜치를 만들던 레이스(TOCTOU)를 차단: 락 안에서
+  // getNextTaskNumber 직후 worktree add까지 끝내므로 다음 호출은 늘어난 번호를 본다.
+  const projectId = getProjectId(mainWtPath);
+  return withMetaLock(getInitLockPath(projectId), () => {
+    assertDevExists(mainWtPath);
+    assertMainWorktreeOnDev(mainWtPath);
+    // SSoT 안전망 — 같은 출처(BL-NNN/RM-NNN)가 이미 진행중이면 거부. DR은 별도 ID 없어 검사 제외.
+    if (src !== 'DR') {
+      const dup = getActiveTasks(mainWtPath).find((t) => t.src === src);
+      if (dup) {
+        throw new Error(`${src} 이미 진행중 (${dup.branch}) — 다른 세션이 같은 항목 진행`);
+      }
+    }
+    const taskNum = getNextTaskNumber(mainWtPath); // 락 안 → TOCTOU 차단
+    const nnn = String(taskNum).padStart(3, '0');
+    const branch = `${type}/${dev}_TASK-${nnn}_${src}_${slug}`;
+    const wtPath = getWorktreePath(projectId, { taskNum, src, slug });
+    mkdirp(getWorktreesRoot(projectId));
+    // 동일 브랜치명은 git이 거부(같은 항목 동시 분기 차단). 실패 시 throw → fork.js가 사용자 보고.
+    execFileSync('git', ['-C', mainWtPath, 'worktree', 'add', wtPath, '-b', branch, 'dev'], {
+      stdio: 'pipe',
+    });
+    return { taskNum, nnn, branch, wtPath, projectId };
+  });
 }
 
 function computeNextPlanNumber(mainWtPath) {
@@ -589,6 +623,7 @@ module.exports = {
   getWorktreesRoot,
   getWorktreePath,
   getMergeLockPath,
+  getInitLockPath,
   withMergeLock,
   withMetaLock,
   assertDevExists,
@@ -596,6 +631,7 @@ module.exports = {
   parseBranchName,
   getActiveTasks,
   getNextTaskNumber,
+  forkTask,
   computeNextPlanNumber,
   // 백로그 (0.1.2+)
   BACKLOG_PLACEHOLDER,
