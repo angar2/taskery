@@ -101,13 +101,13 @@ draft → planned → developing → developed → testing → tested → closed
 | `validate-task-state.sh` | 합리적 변형 차단 사고의 핵심 | `taskery-prototype/.taskestra/hooks/` |
 | `post-state-sync.sh` | 자기 행 검증 + 검토 결과 검증 — practice 영역 | `taskery-prototype/.taskestra/hooks/` |
 
-**채택 taskery hook 2종 (§12 변경 이력 참조)**:
+**채택 taskery hook 2종 (§13 변경 이력 참조)**:
 | Hook | 영역 | 잡는 것 |
 |------|------|--------|
 | `git-guard.sh` | git catastrophic | main/dev 직접 커밋, force, no-verify, branch -D, reset --hard, clean -fd |
 | `closed-immutable.sh` | 완료 보호 catastrophic | closed task.md 본 파일 재수정 차단 (spec-diffs / screenshots / mockup은 자유) |
 
-> `pre-commit-verify.sh` 폐기 — task-close Step 2 게이트와 *동일 검증 명령 / 동일 working tree* 결정론적 redundant. 5 커밋 task 풀 검증 8회 (의도 2 + redundant 6) 시간 낭비 누적. 상세: §12 변경 이력.
+> `pre-commit-verify.sh` 폐기 — task-close Step 2 게이트와 *동일 검증 명령 / 동일 working tree* 결정론적 redundant. 5 커밋 task 풀 검증 8회 (의도 2 + redundant 6) 시간 낭비 누적. 상세: §13 변경 이력.
 
 **채택 기준**: *잘 지키면 hook 작동 0회 (무해). 안 지키면 차단 (catastrophic 막음)*. hook이 *작동하면* = 사고 직전.
 
@@ -281,13 +281,40 @@ FRICTION_LOG 누적 → 사용자 직접 정독 → PLAYBOOK 항목 §방법 그
 
 ---
 
-## 12. 변경 이력
+## 12. 결정: task-test 거짓 PASS → 오라클 강제 (증거 기반 검증)
+
+**결정**: task-test가 *반증 가능한 합격 기준(오라클)* 없이 PASS를 찍던 문제를 토대부터 고친다. PLAYBOOK §12 본구현 (2026-06-28).
+
+**문제**: LLM 테스터는 *틀렸는지 실제로 걸러낼 기준*이 없으면 코드를 읽고 "맞는 것 같음 → PASS"로 낙관한다. 특히 UX/UI에서 목업과 동떨어진 낮은 품질 구현에 PASS가 찍혀, 사용자가 한 task에 재순회 10회+의 *실제 QA* 노동을 떠안았다. 그간의 fix(유닛 카운트 금지 / grep 금지)는 구멍을 하나씩 때운 반창고였고 토대가 없었다.
+
+**구현 (문서/스킬만, 코드 자산 0)**:
+1. **시험문제 형태 강제** (`task-plan` + `TASK_DOC_RULE` §2.5) — 모든 `[AUTO]` 시나리오 = [실행 명령/입력] + [구체적·관측 가능한 기대값] 한 쌍. 소원("정상 동작") 금지, 장면 쪼개기, "고장 시 어떻게 걸리나" 잣대.
+2. **방식↔정답지 매핑** — 요구사항 성격 → 필수 방식(재량 0) + 방식마다 다른 정답지·검사 주체 컬럼.
+3. **③B 실행 경로** — 방식을 *이 프로젝트에서 실제로 어떻게 돌리나*를 신설 `.project/TEST-GUIDE.md`(FRICTION_LOG 모델 — init 자동 카피)에 기록. 모르면 task-plan이 사용자에게 묻고, 알면 파일에서 재사용.
+4. **격리 세션 강제** (`task-test` 펜스 내부) — ④ 문 앞 검사(자격 미달 시나리오 = 시험문제 결함 반려) / 증거 일치 시만 PASS(코드 정독 PASS 금지) / ⑤ UNCERTAIN 2종.
+5. **UNCERTAIN 2종** — (사람 검수) 정답지가 주관 / (검증 불가) [AUTO]인데 기대값 구성 불가 = 시험문제 결함. PASS 반올림·도망 방지(근거 의무).
+6. **시각 = 캡처-목업 자동 대조** — 승인 목업 = 사용자가 이미 승인한 정답지. 격리 세션이 화면 캡처 → 대조 → *어긋남 목록* → FAIL. 사용자는 흠 사냥 대신 "고쳐" 게이트만. 객관 깨짐=자동, 미세 취향만 사람.
+7. **상태전이 3갈래** — PASS→`tested` / 코드 결함→`developing`(사용자 "고쳐") / 시험문제 결함→Test Plan 보수(`task-plan`, 코드·status 보존, `testing` 유지)→재검사.
+8. **플랫폼 패리티 (클로드 = 코덱스)** — 위 룰은 전부 `task-test` 격리 펜스(플랫폼 중립)에 들어가 양 플랫폼에 동일 전달된다(클로드 = `general-purpose` 서브에이전트 + 펜스 / 코덱스 = `task-tester` 서브에이전트 + 펜스). 코덱스 `task-tester.toml`의 `developer_instructions`는 같은 룰의 코덱스 기준선 미러 — 펜스 룰 변경 시 함께 갱신(SKILL.md 구현 디테일에 미러 규율 명시).
+
+**대안 기각**:
+- *plan-time hook으로 시험문제 형태 미리 차단* — hook은 글자 모양만 보고 의미를 못 봐 얇다("출력이 나온다"도 통과). task-test 문 앞 검사가 의미를 보므로 중복 → hook 안 단다(코드 자산 0 유지).
+- *무인 자동 시각 수렴 루프(사용자 없이 dev↔test)* — taskery 코어 불변식 "FAIL은 사용자 발화 필수" 위반. 사용자가 짜증낸 건 흠 사냥 노동이지 "고쳐" 한 번이 아니므로, 기존 FAIL→developing 흐름 재사용으로 노동만 제거(라운드 상한 3).
+- *되돌림용 새 status 신설* — 7상태 -ing/-ed 페어·`closed-immutable.sh` 화이트리스트와 충돌. `testing` 유지로 해소.
+
+**얻는 것**: "통과" = "코드 보니 될 듯"(공허) → "실제 동작/화면을 정답지와 대조했고 일치"(믿을 수 있음). taskery 핵심(메인 confirmation bias 차단)이 검증 단계에서 실제로 작동.
+
+**링크**: [PLAYBOOK.md](PLAYBOOK.md) §12 (카탈로그 출처). 본 문서 §4(11→7 상태)·§9(Task tool 격리 default)의 토대 위에 선다. 회귀-안전 2차 재검증 근거는 플랜 문서 §9 참조.
+
+---
+
+## 13. 변경 이력
 
 결정이 *진짜 데이터*로 부분 뒤집어진 경우 추가.
 
 ---
 
-### 12.1. stash FRICTION_LOG 기반 정합 (2026-05-30)
+### 13.1. stash FRICTION_LOG 기반 정합 (2026-05-30)
 
 **트리거 데이터**: 사이드 프로젝트 `stash` (macOS 데스크톱 앱, v1.0 풀스택 — 80+ task 진행) `.project/FRICTION_LOG.md` 17건 누적. 그 중 일부는 stash 자체에서 정합 완료, 본체 적용 보류 상태였음.
 
@@ -337,7 +364,7 @@ FRICTION_LOG 누적 → 사용자 직접 정독 → PLAYBOOK 항목 §방법 그
 
 ---
 
-### 12.2. plan = 기능 그룹 재정의 (PLAYBOOK §13 본구현, 2026-06-27)
+### 13.2. plan = 기능 그룹 재정의 (PLAYBOOK §13 본구현, 2026-06-27)
 
 **트리거**: plan을 버전(vX.X) 단위로 둔 구조가 *버전 범프를 너무 무겁게* 만들어 plan-init이 사실상 1회성 죽은 스킬이 됨 — 모든 task가 첫 버전 폴더에만 누적. plan이 *두 축*(제품 스펙 스냅샷 + 작업 묶음 단위)을 겸한 것이 근본 원인.
 
@@ -357,7 +384,7 @@ FRICTION_LOG 누적 → 사용자 직접 정독 → PLAYBOOK 항목 §방법 그
 
 ---
 
-## 13. 수정 이력
+## 14. 수정 이력
 
 | 날짜 | 변경 사항 |
 |------|----------|
@@ -370,3 +397,4 @@ FRICTION_LOG 누적 → 사용자 직접 정독 → PLAYBOOK 항목 §방법 그
 | 2026-05-30 | 정합 검증 후속 정정 (3차 추가) — §6 분산 원칙 표 보강: 스킬 본문 path `<skill>.md` → `<skill>/SKILL.md` (디렉토리 구조 마이그레이션 정합) + CHANGELOG_RULE / MOCKUP_RULE 행 추가 (신설 룰 정합) + 검증 명령 행 옆에 *테스트 명령* 행 신설 (두 섹션 분리 정합). |
 | 2026-05-31 | 정합 순회 1차 — §9 결정 본문 *8 스킬 중* → *9 스킬 중* 갱신 (0.1.2 add-backlog 스킬 추가 정합). 본 본문은 *현재 정신*을 명시하는 부분(시점 기록 X)이라 9 스킬로 갱신 필요. §12.1 결과 위치 본문은 *2026-05-30 stash 정합 시점 기록*이라 *8 스킬 SKILL.md* 그대로 유지(시점 기록 — 정정 X) |
 | 2026-06-27 | PLAYBOOK §13(plan = 기능 그룹) 본구현 — §12.2 신규 추가 (문서 3분할 + NNN 채번 + 카피포워드 폐기 + delta 깊이 분리 + spec-diff 재정의 + closed-immutable 정규식 완화 + 제품 로드맵 = PROJECT.md 섹션). |
+| 2026-06-28 | PLAYBOOK §12(task-test 오라클 강제) 본구현 — 신규 결정 §12 추가(오라클·시험문제 형태 강제·UNCERTAIN 2종·시각 캡처-목업 대조·상태전이 3갈래·TEST-GUIDE 신설). 기존 변경 이력 §12 → §13, 수정 이력 §13 → §14로 밀고 본문 교차참조(§12 변경 이력 → §13) 2곳 정정. 시점 기록(§13.1/§13.2 본문)은 그대로 유지. |

@@ -133,7 +133,8 @@ my-app/
     ├─ shared/                            # 관계 리포지토리 소통 메세지함
     │   ├─ sent/completed/
     │   └─ received/completed/
-    └─ FRICTION_LOG.md                    # taskery 불편사항 누적 로그
+    ├─ FRICTION_LOG.md                    # taskery 불편사항 누적 로그
+    └─ TEST-GUIDE.md                      # 검증 방법 (방식별 이 프로젝트 실행 경로 — /task-plan이 채움)
 ```
 
 `.project/`는 플랫폼 무관 공통 자산이다. 진입 문서와 에이전트 자산 위치는 선택한 플랫폼에 따라 갈린다.

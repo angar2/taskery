@@ -75,10 +75,13 @@ draft → planned → developing → developed → testing → tested → closed
 | 결과 | 처리 | 종료 상태 |
 |------|------|---------|
 | **PASS** | `tested` 기록 → 사용자에게 close 신호 → 사용자 OK 시 `/task-close` | `tested` |
-| **FAIL** | 메인이 격리 결과(로그/근거) 보고 → 사용자에게 *"고쳐? OK 마무리?"* 질문 | 사용자 답에 따라 분기 |
+| **FAIL (코드 결함)** | 메인이 격리 결과(로그/근거) 보고 → 사용자에게 *"고쳐? OK 마무리?"* 질문 | 사용자 답에 따라 분기 |
 | FAIL + *"고쳐"* | 메인이 status를 `developing`으로 되돌림 → `/task-dev` 재진입 또는 직접 수정 | `developing` |
 | FAIL + *"OK 마무리"* | `tested` 기록 (단 Result 섹션에 *"알려진 결함 — 사유: ..."* 명시) → `/task-close` | `tested` |
-| **UNCERTAIN** | 메인이 결과 보고 → 사용자 검수 → PASS / FAIL 분기 흐름 | 사용자 판단에 따라 |
+| **UNCERTAIN (사람 검수)** | 정답지가 주관(`[USER]` — 시각 미세 / UX 느낌). 메인이 검수 항목 보고 → 사용자 ✓/✗ → 모두 ✓면 `tested`, ✗면 `developing` | 사용자 판단에 따라 |
+| **UNCERTAIN (검증 불가 = 시험문제 결함)** | `[AUTO]`인데 기대값 구성 불가. 코드 멀쩡 → `developing` 아님. status `testing` 유지 + `/task-plan` Test Plan 보수 모드(코드·status 보존) → `/task-test` 재실행 | `testing` (보수 후 재검사) |
+
+**세 갈래**: PASS → `tested` / 코드 결함 → `developing`(사용자 "고쳐") / 시험문제 결함 → Test Plan 보수(`task-plan`) → 재검사. UNCERTAIN은 둘로 갈림 — 사람 검수(주관) vs 검증 불가(시험문제 결함).
 
 **self-check FAIL** (`/task-dev` 진행 중) → `developing` 그대로 유지, 메인 자체 수정 시도 → PASS 시 `developed` 기록. 3회 반복 fail 시 사용자에게 보고 + 판단 요청.
 
@@ -139,16 +142,20 @@ draft → planned → developing → developed → testing → tested → closed
 - 본질: *본 task에서 구현한 요구사항이 정상 동작하는지* 검증 시나리오
 - **유닛 테스트 X** — 유닛 테스트는 `/task-dev` Step 6.5에서 단일 시점 실행 (코드 정상성 영역, Test Plan과 직교)
 - 각 시나리오 = (한 줄 설명, 분류, 방식, PASS 기준)
-- **분류 강제**: `[AUTO]` (자동화 가능) / `[USER]` (자동화 불가, 사용자 검수)
-- **카탈로그** (방식 선택 — 시나리오마다 1개 이상): 수동 검수 / 시나리오 스크립트 / API 호출 / 입출력 비교 / 사이드 이펙트 / 회귀 / E2E 자동화 도구
+- **형태 강제**: 모든 `[AUTO]` = [실행 명령/입력] + [구체적·관측 가능한 기대값] 한 쌍. 소원("정상 동작") 금지, 장면 쪼개기, "고장 시 어떻게 걸리나" 잣대 (task-test 문 앞 검사 자격)
+- **분류 강제**: `[AUTO]` (정답지 구성 가능 — 시각 객관 깨짐 포함) / `[USER]` (정답지가 주관 — 시각 미세 / UX 느낌만)
+- **방식 선택 규칙 (재량 0)**: 화면 변경→시각 / 상호작용→UI 동작 / 엔드포인트→API / 데이터 쓰기→상태 조회 / 순수 계산→입출력 / 기존 영역→회귀. 각 방식은 *정답지*가 다름
+- **카탈로그**: 수동 검수 / 시나리오 스크립트 / API 호출 / 입출력 비교 / 사이드 이펙트 / 시각 캡처-목업 대조 / 회귀 / E2E 자동화 도구
 - **UX/UI 영역 분리** (UX/UI task 한정):
-  - 동작 영역 (클릭/호버/드래그/입력 → 결과): 자동화 가능 → `[AUTO]`, 불가 → `[USER]` 체크리스트
-  - 시각 영역 (레이아웃/색상/간격/호버 효과): 자동 비교 의미 X → `[USER]` 체크리스트 + 목업 기준 참조 (`mockup/<task-doc-name>-mockup.html`)
+  - 동작 영역: 도구 있으면 `[AUTO]` E2E, 없으면 `[USER]` 체크리스트
+  - 시각 *객관* (레이아웃/요소 유무/색/배치 깨짐): `[AUTO]` 캡처-목업 대조 (격리 세션이 화면 캡처 → 목업과 대조 → 어긋남 목록 → FAIL)
+  - 시각 *미세 취향* (2px/색조/느낌): `[USER]` 체크리스트 + 목업 참조 (`mockup/<task-doc-name>-mockup.html`)
 - 시각 영역 시나리오 있으면 *fix 사이클 1~2회 예상* 사전 예고 명시
 
 가이드라인:
-- **자기완결적**: `/task-test` 격리 세션이 *task.md만 보고도* 수행 가능
-- **명령/기대값 포함**: 무엇을 실행하고 무엇이 기대되는지 명확
+- **자기완결적**: `/task-test` 격리 세션이 *task.md + TEST-GUIDE.md만 보고도* 수행 가능
+- **명령/기대값 포함**: 무엇을 실행하고 무엇이 기대되는지 명확 (없으면 시험문제 결함으로 반려됨)
+- **실행 경로**: 방식을 *이 프로젝트에서 실제로 어떻게 돌리나*는 `.project/TEST-GUIDE.md`에 기록 (모르면 task-plan이 사용자에게 묻고 채움)
 - **메인 가정 X**: *"잘 될 거야"* / *"문제 없을 듯"* 같은 가정 금지
 
 상세 양식 + 카탈로그 + 매트릭스 → [task-plan SKILL.md](../template/.claude/skills/task-plan/SKILL.md) Step 5 + [TASK_DOC_RULE.md](../template/.project/rules/TASK_DOC_RULE.md) §2.5 참조.
