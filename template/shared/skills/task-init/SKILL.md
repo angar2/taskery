@@ -93,26 +93,9 @@ description: task 시작 — 워크트리 분기 + 6 섹션 빈 골격 + 헤더 
 
 ### Step 4 — TASK 번호 결정 + 결정적 슬러그 + SSoT 안전망
 
-#### 4.1 다음 TASK-NNN 계산
+#### 4.1 TASK 번호는 Step 6 `fork`가 채번
 
-`bin/lib.js` `getNextTaskNumber(MAIN_WT)` 호출. 내부 동작:
-```sh
-# 진행중 (SSoT) — TASK-* 패턴 작업 브랜치 전체. `--no-merged dev` 미사용:
-# 워크트리 분기 직후 브랜치는 dev와 동일 commit이라 `--no-merged dev`가 *완전 머지 상태*로
-# 처리 → 빈 결과 → getNextTaskNumber 충돌. 브랜치 존재 자체가 SSoT.
-A=$(git -C "$MAIN_WT" branch --list \
-    'feature/*_TASK-*' 'bug/*_TASK-*' 'improve/*_TASK-*' \
-    'refactor/*_TASK-*' 'docs/*_TASK-*' 'chore/*_TASK-*' \
-    | grep -oE 'TASK-[0-9]+')
-# dev 머지 히스토리
-B=$(git -C "$MAIN_WT" log dev --grep='TASK-[0-9]\+' --extended-regexp --oneline \
-    | grep -oE 'TASK-[0-9]+')
-# 합집합 최대 + 1
-MAX=$( (echo "$A"; echo "$B") | sort -uV | tail -1 | sed 's/TASK-//')
-NEXT=$((MAX + 1))
-```
-- 3자리 zero-padded (`001`, `015`, `120`).
-- 합집합 비어 있으면 `001`.
+TASK-NNN은 **여기서 미리 계산하지 않는다.** 번호 읽기와 워크트리·브랜치 생성을 분리하면 병렬 task-init이 같은 번호를 읽는 레이스(TOCTOU)가 난다. 채번은 Step 6 `npx @angar2/taskery fork`가 **init 락 안에서 생성과 한 덩어리로** 수행한다 (읽기 직후 분기까지 원자 실행 → 동시 호출은 늘어난 번호를 봄). 확정 번호(`nnn`)는 fork 반환 JSON에서 받는다.
 
 #### 4.2 메타 가져오기 (BL/RM)
 
@@ -134,16 +117,9 @@ NEXT=$((MAX + 1))
 - 한국어 → 영어 kebab-case. 짧고 명확하게 (3 단어 이내 권장).
 - 같은 항목이면 같은 슬러그 → 같은 브랜치명 → git이 동시 분기 자동 거부 (race 차단 1층).
 
-#### 4.4 SSoT 안전망 (race 차단 2층)
+#### 4.4 SSoT 안전망 (fork가 락 안에서 수행)
 
-```sh
-git -C "$MAIN_WT" branch --no-merged dev --list \
-  'feature/*_TASK-*' 'bug/*_TASK-*' 'improve/*_TASK-*' \
-  'refactor/*_TASK-*' 'docs/*_TASK-*' 'chore/*_TASK-*' \
-  | grep -E "_${SRC}_"
-```
-- BL-NNN/RM-NNN이 *진행중*에 있으면 → 중단 + 사용자 알림 (*"BL-003은 이미 X 세션에서 진행 중"*).
-- DR은 본 안전망 검사 X (별도 ID 없음).
+같은 출처(BL-NNN/RM-NNN)가 이미 *진행중*이면 분기를 거부하는 안전망은 **Step 6 `fork`가 init 락 안에서 권위적으로 수행**한다 (채번과 동일 임계구역 → 별도 racy 중복검사 불필요). 진행중이면 fork가 *"BL-003 이미 진행중 (…브랜치)"* 로 실패하고, 스킬은 그 메시지로 중단 + 사용자 알림. DR은 별도 ID가 없어 본 검사 제외.
 
 ### Step 5 — 파일 vs 폴더 결정 + 브랜치명 산출
 
@@ -159,20 +135,21 @@ git -C "$MAIN_WT" branch --no-merged dev --list \
    ```
    - **타입**: feature → `feature`, bug → `bug`, improvement → `improve`, refactor → `refactor`, docs → `docs`, chore → `chore`
    - **개발자**: 메인 세션 = `claude`, 사용자 세션 = `angar2` 등
-3. 사용자에게 브랜치명 + 파일/폴더 confirm.
+   - **NNN은 Step 6 `fork`가 확정** — confirm 시점엔 미정(`TASK-???`). 분기 전 번호 못 박기는 병렬 레이스 차단의 귀결.
+3. 사용자에게 브랜치 구성요소(`{타입}/{개발자}_TASK-???_{출처}_{슬러그}`) + 파일/폴더 confirm. 확정 NNN은 fork 후 §8에서 보고.
 
-### Step 6 — 워크트리 생성
+### Step 6 — 워크트리 분기 (`fork` — 채번+생성 원자 실행)
+
+`npx @angar2/taskery fork <타입> <개발자> <출처> <슬러그>` 한 번으로 **채번 → 워크트리·브랜치 생성**을 init 락 안에서 원자 실행한다 (Step 4.1 채번 + 본 단계 생성이 한 임계구역 → 병렬 task-init 번호 충돌 차단).
 
 ```sh
-PROJECT_ID=$(jq -r '.projectId' "$MAIN_WT/.taskery-manifest.json")
-WORKTREES_ROOT="$HOME/.taskery/worktrees/$PROJECT_ID"
-WT_PATH="$WORKTREES_ROOT/TASK-${NNN}_${SRC}_${SLUG}"
-mkdir -p "$WORKTREES_ROOT"
-git -C "$MAIN_WT" worktree add "$WT_PATH" -b "$BRANCH" dev
+npx @angar2/taskery fork "$TYPE" "$DEV" "$SRC" "$SLUG"
+# 예: npx @angar2/taskery fork feature claude BL-003 login-feature
 ```
 
-- git이 동일 브랜치명 자동 거부 (race 차단 1층).
-- 동시 충돌 시 *"브랜치 이미 존재 — 다른 세션이 같은 항목 진행 중"* 보고 + 중단.
+- 성공 시 결과 JSON 한 줄 출력 — `{ "taskNum", "nnn", "branch", "wtPath", "projectId" }`. 이후 단계(§7 문서 / §7.5 BL 마킹 / §8 보고)는 이 반환값의 `nnn` · `branch` · `wtPath`를 사용한다.
+- fork가 락 안에서 함께 수행: 채번(TOCTOU 차단) + SSoT 안전망(§4.4) + 동일 브랜치명 거부(git — 같은 항목 동시 분기 차단).
+- fork 비정상 종료(exit 1) 시 stderr 메시지(*"… 이미 진행중"* / *"… 정책 위배"* 등)를 그대로 사용자에게 보고 + 중단.
 
 ### Step 7 — task 문서 위치 결정 + 빈 골격 작성
 
@@ -237,6 +214,8 @@ git -C "$MAIN_WT" check-ignore -q "$MAIN_WT/.project/dummy"
 
 ### Step 8 — 결과 보고
 
+`<NNN>` · `<WT_PATH>` · `<BRANCH>`는 Step 6 fork 반환 JSON의 `nnn` · `wtPath` · `branch` 값으로 채운다.
+
 ```
 ✅ TASK-<NNN> 생성 완료
 - 워크트리: <WT_PATH>
@@ -249,7 +228,7 @@ git -C "$MAIN_WT" check-ignore -q "$MAIN_WT/.project/dummy"
 
 ## 도구 가이드
 
-- **Bash**: 메인 워크트리 검출 / 사전 검증 / `git worktree add` / SSoT 조회 / TASK-NNN 계산
+- **Bash**: 메인 워크트리 검출 / 사전 검증 / `npx @angar2/taskery fork` 호출(채번+워크트리·브랜치 생성) / 결과 JSON 파싱
 - **Read**: `$MAIN_WT/.project/AGENT-GUIDE.md` / `$MAIN_WT/.project/tasks/<활성 plan>/BACKLOG.md` / `$MAIN_WT/.project/plans/<활성 plan>/ROADMAP.md`
 - **Write**: task.md 빈 골격 작성 (위치는 .gitignore 케이스에 따라)
 - **AskUserQuestion**: 분기 2 인터뷰 (한 번에 한 질문)
@@ -258,16 +237,16 @@ git -C "$MAIN_WT" check-ignore -q "$MAIN_WT/.project/dummy"
 
 - **워크트리 생성 + task 문서 작성만 담당** — 본문 채우기 금지. Requirements / Scope / Dev Plan / Test Plan 본문은 *반드시* `/task-plan`에서.
 - **단계 경계 — 허용/금지 명시 (stash FRICTION_LOG #11 반영)**:
-  - **허용 (화이트리스트)**: `$MAIN_WT/.project/plans/<활성 plan>/ROADMAP.md` §4(다음 작업 영역) 확인 / SSoT 조회 / TASK-NNN 계산 / 빈 골격 Write
+  - **허용 (화이트리스트)**: `$MAIN_WT/.project/plans/<활성 plan>/ROADMAP.md` §4(다음 작업 영역) 확인 / SSoT 조회 / `fork` 호출(채번+분기) / 빈 골격 Write
   - **금지 (블랙리스트)**: ARCHITECTURE.md / API-SPEC.md / FEATURES.md 등 `.project/` 루트 제품 관통 문서 본문 Read / 도메인 코드 Read · Grep / 기존 task 본문 Read
   - 본문 정보 수집은 *다음 단계 `/task-plan`*에서 수행.
 - **자동 추정 진행 X** — 직전 맥락 명확해도 *제안 + 사용자 OK* 거친 후 워크트리/파일 생성.
 - **상태는 `draft` 고정** — `/task-init` 끝의 상태는 `draft` 외 작성 금지.
-- **NNN 충돌 회피** — SSoT 조회로 진행중 + dev 머지 히스토리 합집합 확인.
+- **NNN 충돌 회피** — `fork`가 init 락 안에서 채번(진행중 ∪ dev 머지 히스토리 최대+1)과 워크트리 생성을 원자 실행 (병렬 task-init도 안전).
 - **slug 한국어 잔존 X** — 영어 kebab-case로 변환.
 - **헤더 5컬럼 모두 채움** — *"미정"* placeholder 작성 금지.
 - **메인 워크트리 검출 실패 시 즉시 중단** — git 버전 / 정책 위배 / dev 부재 등 안전망. 묵묵히 진행 X.
-- **race 발생 시 사용자 호출** — `git worktree add` 실패(같은 브랜치명) → SSoT 재조회 + 사용자에게 *"X 세션이 같은 항목 진행 중"* 알림.
+- **race 발생 시 사용자 호출** — `fork` 실패(같은 브랜치명 / 같은 출처 진행중) → stderr 메시지 그대로 사용자에게 *"다른 세션이 같은 항목 진행 중"* 알림 + 중단.
 
 ## 상태 전이
 
