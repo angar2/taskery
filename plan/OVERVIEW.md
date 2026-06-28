@@ -62,7 +62,7 @@ taskery/                                  ← 본 리포 (시스템 자체)
 │   ├─ status.js                         ← npx @angar2/taskery status (멀티세션 0.1.2+)
 │   └─ prune.js                          ← npx @angar2/taskery prune (멀티세션 0.1.2+)
 │
-└─ template/                              ← 사용자 프로젝트로 카피되는 자산 (코어 25 파일)
+└─ template/                              ← 사용자 프로젝트로 카피되는 자산 (코어 26 파일)
     ├─ CLAUDE.md                         ← 사용자 프로젝트 메인 진입점
     ├─ .gitignore                        ← .project/.env 등 포함
     ├─ .claude/
@@ -71,6 +71,7 @@ taskery/                                  ← 본 리포 (시스템 자체)
     │   └─ hooks/                        ← 2 catastrophic 안전망
     └─ .project/
         ├─ FRICTION_LOG.md               ← 불편 누적 빈 템플릿
+        ├─ TEST-GUIDE.md                 ← 검증 방법 빈 템플릿 (방식별 이 프로젝트 실행 경로)
         ├─ rules/                        ← 코어 룰 (TASK_DOC_RULE / GIT_RULE / CHANGELOG_RULE / MOCKUP_RULE)
         ├─ changelog/.gitkeep            ← 사용자 영역 빈 골격 (/task-close 갱신)
         ├─ flows/.gitkeep                ← 사용자 영역 빈 골격 (/task-dev 갱신)
@@ -120,7 +121,8 @@ my-app/                                   ← 사용자 프로젝트
 │   │   │   └─ completed/                ← 처리 완료 송신 메시지 보관
 │   │   └─ received/
 │   │       └─ completed/                ← 처리 완료 수신 메시지 보관
-│   └─ FRICTION_LOG.md                   ← 불편 누적 (template에서 빈 템플릿)
+│   ├─ FRICTION_LOG.md                   ← 불편 누적 (template에서 빈 템플릿)
+│   └─ TEST-GUIDE.md                     ← 검증 방법 (template에서 빈 템플릿) → /task-plan이 방식별 실행 경로 채움
 │
 ├─ src/ ...                               ← 사용자 코드
 └─ package.json                           ← 사용자 프로젝트

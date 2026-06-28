@@ -51,13 +51,17 @@ draft → planned → developing → developed → testing → tested → closed
 ```
 
 ```
-                     ┌──────── FAIL + "고쳐" ────┐
-                     ↓                          │
+                     ┌──────── FAIL(코드) + "고쳐" ────┐
+                     ↓                               │
 draft → planned → developing → developed → testing → tested → closed
-                                                         ↑
-                                                FAIL + "OK 마무리"
-                                                (알려진 결함 명시)
+          ↑                                    │ ↑       ↑
+          └─ 시험문제 결함 보수 ────────────────┘ │  FAIL + "OK 마무리"
+             (task-plan, 코드·status 보존,        │  (알려진 결함 명시)
+              testing 유지 → 재검사)        UNCERTAIN(사람 검수)
+                                            ✓→tested / ✗→developing
 ```
+
+**task-test 세 갈래**: PASS→`tested` / 코드 결함→`developing`(사용자 "고쳐") / 시험문제 결함(UNCERTAIN 검증 불가)→`task-plan` Test Plan 보수→재검사(`testing` 유지). UNCERTAIN(사람 검수, 주관)은 검수 ✓→`tested`, ✗→`developing`.
 
 상세 작성 주체 + FAIL/UNCERTAIN 분기는 → [TASK-DOC.md](TASK-DOC.md) §3~5 참조.
 
@@ -131,12 +135,12 @@ draft → planned → developing → developed → testing → tested → closed
 
 | 스킬 | 본문 위치 | 분량 |
 |------|---------|------|
-| `/project-init` | [template/.claude/skills/project-init/SKILL.md](../template/.claude/skills/project-init/SKILL.md) | 9,780 B |
+| `/project-init` | [template/.claude/skills/project-init/SKILL.md](../template/.claude/skills/project-init/SKILL.md) | 15,627 B |
 | `/plan-init` | [template/.claude/skills/plan-init/SKILL.md](../template/.claude/skills/plan-init/SKILL.md) | 7,711 B |
 | `/task-init` | [template/.claude/skills/task-init/SKILL.md](../template/.claude/skills/task-init/SKILL.md) | 14,010 B |
-| `/task-plan` | [template/.claude/skills/task-plan/SKILL.md](../template/.claude/skills/task-plan/SKILL.md) | 15,081 B |
-| `/task-dev` | [template/.claude/skills/task-dev/SKILL.md](../template/.claude/skills/task-dev/SKILL.md) | 11,507 B |
-| `/task-test` | [template/.claude/skills/task-test/SKILL.md](../template/.claude/skills/task-test/SKILL.md) | 11,942 B |
+| `/task-plan` | [template/.claude/skills/task-plan/SKILL.md](../template/.claude/skills/task-plan/SKILL.md) | 24,634 B |
+| `/task-dev` | [template/.claude/skills/task-dev/SKILL.md](../template/.claude/skills/task-dev/SKILL.md) | 13,407 B |
+| `/task-test` | [template/.claude/skills/task-test/SKILL.md](../template/.claude/skills/task-test/SKILL.md) | 21,829 B |
 | `/task-close` | [template/.claude/skills/task-close/SKILL.md](../template/.claude/skills/task-close/SKILL.md) | 14,736 B |
 | `/add-backlog` | [template/.claude/skills/add-backlog/SKILL.md](../template/.claude/skills/add-backlog/SKILL.md) | 6,321 B |
 | `/log-friction` | [template/.claude/skills/log-friction/SKILL.md](../template/.claude/skills/log-friction/SKILL.md) | 3,617 B |
@@ -225,16 +229,22 @@ CLAUDE.md `## 검증 명령` 단일 섹션이 *4 시점에 분산 실행* (self-
 1. task.md 정독 → Test Plan + Dev Plan 완료 기준 추출 (목업 있으면 mockup/<task-doc-name>-mockup.html 도 정독)
 2. status를 testing으로 갱신 (격리 세션 호출 직전)
 3. Task tool 호출, 격리 prompt:
-   - task.md 절대 경로 (격리 세션이 직접 정독 — 자기완결적)
+   - task.md 절대 경로 + TEST-GUIDE.md 절대 경로 ($MAIN_WT/.project/) (격리 세션이 직접 정독 — 자기완결적)
    - 본질 — Test Plan 시나리오 기반 *실질 동작 검증* (유닛 테스트 카운트 단정 X)
-   - [AUTO] / [USER] 분류 그대로 따름 — [USER]는 격리 검증 X, 사용자 검수 항목으로 리턴
-   - CLAUDE.md `## 검증 명령` + `## 테스트 명령` 둘 다 참조
+   - ④ 문 앞 검사 — 각 [AUTO]가 [명령+구체적 기대값] 자격 갖췄나, 미달이면 시험문제 결함 반려
+   - 증거 일치 시만 PASS (코드 정독 PASS 금지)
+   - [AUTO] / [USER] 분류 — [USER]는 주관(미세 취향/느낌)만 사용자 검수, 시각 객관 깨짐은 [AUTO] 캡처-목업 대조
+   - ⑤ UNCERTAIN 2종 — (사람 검수) 주관 / (검증 불가) [AUTO]인데 기대값 구성 불가 = 시험문제 결함 (근거 의무)
+   - CLAUDE.md `## 검증 명령` + `## 테스트 명령` + TEST-GUIDE.md 참조
    - 신규 테스트 식별자 grep 직접 등장 확인
    - PASS / FAIL / UNCERTAIN + 근거
 4. 결과 리턴받아 task.md Result 섹션 기록
-5. UNCERTAIN ([USER] 시나리오) → 메인이 체크리스트 형식으로 사용자 직접 검수 요청 (목업 경로 명시 + 시각 fix 사이클 사전 예고)
+5. 분기:
+   - UNCERTAIN(사람 검수, [USER]) → 체크리스트로 사용자 직접 검수 (목업 경로 + 시각 fix 사이클 사전 예고)
+   - UNCERTAIN(검증 불가) → /task-plan Test Plan 보수 모드 (코드·status 보존) → /task-test 재실행
+   - 시각 어긋남 FAIL → 어긋남 목록 보고 → 사용자 "고쳐" → dev 배치수정 → 재검사 (라운드 상한 3)
 6. 사용자 검수 모두 ✓ → status=tested → 사용자에게 close 신호
-7. FAIL 또는 ✗ → 사용자 보고 → "고쳐" or "OK 마무리" 분기
+7. FAIL(코드) 또는 ✗ → 사용자 보고 → "고쳐" or "OK 마무리" 분기
 ```
 
 격리 prompt 정확한 본문은 → [template/.claude/skills/task-test/SKILL.md](../template/.claude/skills/task-test/SKILL.md) Step 3 참조.
