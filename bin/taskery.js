@@ -9,6 +9,7 @@
  *   update  — 최신 버전 fetch + manifest 비교 + 머지 갱신
  *   status  — 멀티세션 현황 요약 (진행중 태스크 / 워크트리 / 머지 락, 0.1.2+)
  *   prune   — stale 워크트리 / 브랜치 대화형 정리 (0.1.2+)
+ *   fork    — task 분기 (채번+워크트리+브랜치 생성을 init 락으로 원자 실행, 0.3.2+)
  *   help    — 사용법 출력
  */
 
@@ -34,6 +35,7 @@ function help() {
   npx @angar2/taskery update    최신 버전 fetch + 머지 갱신
   npx @angar2/taskery status    멀티세션 현황 (진행중 태스크 / 워크트리 / 머지 락)
   npx @angar2/taskery prune     stale 워크트리 / 브랜치 대화형 정리
+  npx @angar2/taskery fork <type> <dev> <src> <slug>   task 분기 (통상 /task-init 경유)
   npx @angar2/taskery help      도움말
 
 새 프로젝트 시작:
@@ -73,6 +75,9 @@ switch (sub) {
       break;
     }
     runScript('prune.js');
+    break;
+  case 'fork':
+    runScript('fork.js');
     break;
   case 'help':
   case '--help':

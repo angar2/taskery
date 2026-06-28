@@ -7,7 +7,25 @@
 
 ## [Unreleased]
 
-(누적 영역 없음 — 다음 변경 시 추가)
+## [0.4.0] - 2026-06-29
+
+### 추가
+
+- **`/run-team` 스킬 — agent teams 자동 병렬 멀티태스크 (Claude 전용 · PLAYBOOK §15 본구현)** — 다건 태스크를 리더 메인 세션 1개가 Claude의 agent teams 기능으로 팀원(독립 세션)에게 1건씩 분배해 자동 병렬 처리하는 고기능. 기존엔 사용자가 작업마다 세션을 직접 띄워 지시해야 했고, 세션 간 컨텍스트 격벽으로 충돌·중복 위험이 있었다. 상위 에이전트 생태계가 taskery를 *병렬 개발 도구*로 호출하기 위한 전제이기도 하다.
+  - **세션 오케스트레이션만 추가** — 워크트리 격리는 `/task-init`이, 머지 직렬화·충돌 3단계는 `/task-close`가 그대로 담당. `/run-team`은 태스크 묶기 판단 + 팀원 분배 + 중단점 관리 + 머지 조율만 한다. `bin/` 코드 변경 0.
+  - **팀원 = agent teams 팀원** (독립 세션·자체 컨텍스트·사용자 직접 접근). Task tool 서브에이전트 대체를 스킬 본문에서 영구 금지 — 둘은 다르다(서브에이전트는 리더 컨텍스트 내 워커라 사용자 직접 접근·독립 컨텍스트 불가).
+  - **트리거 한정 발동** — 기본 플로우(1세션 1태스크)를 침범하지 않음. *"백로그 한 번에 진행해"* / *"팀에게 전부 독립으로 맡겨"* 류 발화에서만.
+  - **두 가드** — 플랫폼(Claude) + 활성화(`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`). 미충족 시 팀을 만들지 말고 안내 후 중단(꺼진 채 헛도는 것 방지).
+  - **중단점 = taskery 단계 경계** — 기본은 단계별 정지(팀원이 한 단계 후 idle → 리더 자동 통지), 사용자 지시 시 구간 자동. 되돌릴 수 없는 `/task-close`(dev 병합)는 게이트로 두기 권장. 각 팀원이 물리적으로 분리된 워크트리에서 작업하므로 agent teams의 "같은 파일 동시 편집 → 덮어쓰기" 제약이 구조적으로 회피된다.
+  - **Claude 전용** — agent teams가 Codex에 없어 `template/.claude/skills/run-team/`에 직접 배치(`platformOf`가 `.claude/`를 claude로 분류 → Claude 선택 시에만 설치, Codex 미포함). `AGENTS.md`에 Codex 미지원 가드(단일 태스크 흐름 권유). 코어 카피 파일은 Claude 설치 시 +1.
+  - 정합: `CLAUDE.md`(agent teams 섹션 + 스킬표) / `AGENTS.md`(가드) / `plan/SKILLS.md`·`OVERVIEW.md`·`PLATFORMS.md` / `README.md` / `PLAYBOOK.md` §15 적용 완료 표기.
+
+### 수정
+
+- **task-init TASK 번호 채번 레이스 차단 — `fork` 명령 신설 (병렬 task-init 안전)** — `/task-init`이 번호 읽기(Step 4.1)와 워크트리·브랜치 생성(Step 6)을 분리해 수행하던 탓에, 병렬 task-init(예: `/run-team` 팀원 동시 분기) 시 둘 사이 락이 없어 같은 번호를 읽고 각자 브랜치를 만드는 TOCTOU 레이스가 있었다(잠복 버그 — 1세션 1태스크에선 안 드러남, agent teams 병렬이 최초 노출: `TASK-001` 3중복). 상위 에이전트 생태계가 taskery를 *병렬 개발 도구*로 호출하려면 필수 차단 대상.
+  - **`npx @angar2/taskery fork <type> <dev> <src> <slug>` 신설** (`bin/fork.js` + `lib.forkTask`) — 채번 → 워크트리·브랜치 생성을 `~/.taskery/<projectId>.init.lock`(기존 `withMetaLock`) 안에서 **원자 실행**. 동시 호출은 직렬화돼 각자 늘어난 번호를 본다. SSoT 안전망(같은 출처 진행중 거부)도 같은 락 안으로 일원화(racy 중복검사 제거).
+  - **`/task-init` 정합** — Step 4.1 인라인 채번 셸 + Step 6 직접 `git worktree add` 제거 → `fork` 호출로 교체. 확정 NNN은 fork 반환 JSON에서 수령(confirm 시점엔 미정). `run-team`·`GIT_RULE`(template) 충돌 차단/생성 메커니즘 설명 정합.
+  - 검증: 병렬 `fork` 5건 → 번호 `1~5` 유일 + 워크트리·브랜치 각 5 (락 없는 동시 읽기는 `[1,1,1,1,1]`로 레이스 재현 확인).
 
 ---
 

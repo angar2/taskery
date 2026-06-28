@@ -110,7 +110,7 @@ my-app/
 ├─ .gitignore
 ├─ .claude/
 │   ├─ settings.json                      # hook 등록 (PreToolUse 매칭)
-│   ├─ skills/<skill-name>/SKILL.md       # 9 skill
+│   ├─ skills/<skill-name>/SKILL.md       # 9 skill (+ Claude 전용 run-team)
 │   └─ hooks/<hook-name>.sh               # 2 hook
 └─ .project/
     ├─ PROJECT.md                         # 프로젝트 개요
@@ -192,8 +192,11 @@ my-app/
 | `/task-close` | task | 최종 검증 후 git 커밋 + dev 브랜치 `--no-ff` 병합 |
 | `/add-backlog` | meta | 사용자 발화로 plan(기능 그룹)별 `tasks/<NNN_slug>/BACKLOG.md`에 task 후보 1건씩 추가 (0.1.2+) |
 | `/log-friction` | meta | 사용자 불편을 `.project/FRICTION_LOG.md`에 한 행 기록 |
+| `/run-team` | meta | 여러 작업을 묶을 수 있는 단위로 task로 나눠 자동 병렬 처리 — 리더 세션이 팀원(독립 세션)에게 task를 1건씩 분배하고 흐름을 관리 (Claude 전용 · 실험 기능 전제 · 0.3.x+) |
 
 각 스킬은 슬래시로 직접 호출하거나, 사용자 발화의 의미가 스킬의 frontmatter description과 매칭되면 메인 세션이 자동으로 발동시킨다.
+
+> `/run-team`은 Claude의 실험적 멀티 세션 기능(agent teams)을 사용하는 Claude 전용 스킬이다. 기본 흐름이 아니라 *"이 작업들 한 번에 팀으로 진행해"* 같은 발화가 있을 때만 발동하며, 활성화에는 환경 변수(`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`) 설정이 필요하다. Codex 설치에는 포함되지 않는다.
 
 `/project-init`, `/plan-init`, `/task-init` 세 스킬은 호출 시 다음 문서를 생성한다.
 

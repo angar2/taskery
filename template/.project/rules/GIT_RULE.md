@@ -210,7 +210,7 @@ docs: [TASK-{NNN}] CHANGELOG 업데이트
 
 | 작업 | 명령 | 주체 |
 |------|------|------|
-| 생성 | `git -C "$MAIN_WT" worktree add "$WT_PATH" -b "$BRANCH" dev` | `/task-init` |
+| 생성 | `npx @angar2/taskery fork <type> <dev> <src> <slug>` (내부: init 락 + `worktree add -b`) | `/task-init` |
 | 제거 | `git -C "$MAIN_WT" worktree remove "$WT_PATH"` | `/task-close` (자동 흐름 + 안전 검증) |
 | stale 정리 | `git -C "$MAIN_WT" worktree prune` | `npx @angar2/taskery prune` (사용자 확인 후) |
 
@@ -304,5 +304,6 @@ git -C "$MAIN_WT" branch --no-merged dev --list \
 | 2026-05-31 | 0.1.2 백로그 스킬 추가 정합 — 출처 표 `BL-NNN` 채번 주체 `/backlog-add` → `/add-backlog`로 갱신 + 버전별 경로(`.project/tasks/<vX.X>/BACKLOG.md`) 명시 |
 | 2026-06-02 | 0.1.3 F2·F3 정합 — §멀티세션 워크트리 정책 *메인 HEAD 떼기 금지* + *모호 발화 자의 해석 금지* / §git-guard.sh 5종 변형 인식 (-C / --git-dir / --work-tree) + 셸 prefix 금지 명시. stash FRICTION_LOG 2026-06-01 반영 |
 | 2026-06-25 | 추적 변경 0(코드 0 · `.project` gitignore) close 시 마커 빈커밋으로 분기·채번 정보 보존 — `--no-ff` 머지 커밋 미생성 케이스의 `--allow-empty` 유일 예외 명시 (상세: task-close Step 6-8). FRICTION 검토 F1 반영 |
+| 2026-06-28 | 워크트리 생성 메커니즘 갱신 — `git worktree add` 직접 실행 → `npx @angar2/taskery fork`(init 락 안에서 채번+분기 원자 실행). 병렬 task-init 번호 충돌(레이스) 차단 |
 | 2026-06-25 | §멀티세션 워크트리 정책에 "워크트리 실행 환경" 추가 — 워크트리에 의존성 심링크 금지(개발 서버 fs 접근 제한으로 로딩 실패), 실행·검수 task는 워크트리 안에 의존성 실제 마련. FRICTION 검토 F6 반영 |
 | 2026-06-25 | §멀티세션 워크트리 정책에 "멀티세션 검수 환경" 추가 — task별 dev 서버 포트 격리(메인=기준 포트, task=기준+TASK번호) + 터널 독립 + close 시 자기 것만 종료(광역 종료 금지) + 사용자 검수 시점 서버 자동 기동(task-test UNCERTAIN/PASS·task-dev 종료, FAIL 제외). FRICTION 검토 F7 반영 |

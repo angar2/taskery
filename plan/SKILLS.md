@@ -1,6 +1,6 @@
-# SKILLS — taskery 스킬 9종
+# SKILLS — taskery 스킬 9종 (+ Claude 전용 run-team)
 
-> 본 리포 *작업 흐름의 단일 진실 소스*. 9 스킬 명세 + 흐름 + 컨텍스트 관리 전략.
+> 본 리포 *작업 흐름의 단일 진실 소스*. 9 스킬 명세 + 흐름 + 컨텍스트 관리 전략. (+ Claude 전용 오케스트레이션 `/run-team` — §3.7)
 > 스킬 본문 step별 디테일은 `template/.claude/skills/<skill>/SKILL.md`에 위치 — 본 문서는 *흐름과 정신* 중심.
 
 ---
@@ -18,12 +18,15 @@
 | `/task-close` | task | git 마무리 + 검증 명령 재실행 게이트 + **머지 락 직렬화** + dev `--no-ff` 병합 + **워크트리/브랜치 자동 정리**. BACKLOG.md 무관 (task-init이 처리) | `tested` → `closed` | task마다 |
 | `/add-backlog` | **meta** | 사용자 발화로 *plan(기능 그룹)별* `tasks/<NNN_slug>/BACKLOG.md`에 항목 1건 추가 — 얕은 분석(개요 / 대상 영역) + BL-NNN 채번 + `withMetaLock` 직렬화 (0.1.2+) | — | 사용자 호출 / 백로그 발화 캐치 |
 | `/log-friction` | **meta** | FRICTION_LOG.md에 사용자 불편 한 행 기록 | — | 사용자 호출 / 불만 발화 캐치 / task-close 자체 감지 |
+| `/run-team` | **meta · Claude 전용** | agent teams로 다건 태스크를 팀원(독립 세션)에 분배해 자동 병렬 처리. 워크트리·머지는 기존 task 스킬이 담당 | — (오케스트레이터) | 트리거 발화 시에만 (실험 기능 전제) |
+
+> `/run-team`은 **Claude 전용** — agent teams가 Codex에 없어 Codex 설치 미포함. 상세 §3.7.
 
 **위계 정신**:
 - `project` → 1회성 (프로젝트 셋업)
 - `plan` → 기능 그룹마다 (작업 묶음 단위)
 - `task` → task마다 (5 스킬 흐름)
-- `meta` → 백로그 누적 (`/add-backlog`) + 사용자 불편 등록 (`/log-friction`)
+- `meta` → 백로그 누적 (`/add-backlog`) + 사용자 불편 등록 (`/log-friction`) + 자동 병렬 오케스트레이션 (`/run-team`, Claude 전용)
 
 ---
 
@@ -129,6 +132,26 @@ draft → planned → developing → developed → testing → tested → closed
 
 ---
 
+## 3.7 agent teams 자동 병렬 (Claude 전용 · 실험 · 트리거 한정)
+
+`/run-team`은 다건 태스크를 *리더 메인 세션 1개가 agent teams로 팀원(독립 세션)에 분배*해 자동 병렬 처리하는 고기능이다. 기존 멀티세션(§3.5)을 사용자가 일일이 띄우는 대신 리더가 띄우고 관리하게 한다. 상위 에이전트 생태계가 taskery를 *병렬 개발 도구*로 호출할 수 있게 하는 전제이기도 하다.
+
+**핵심 정신**:
+- **세션 오케스트레이션만 추가** — 워크트리 격리는 `/task-init`이, 머지 직렬화·충돌 3단계는 `/task-close`가 그대로 담당. `/run-team`은 *누가 무엇을 어디까지 진행하는지*만 조율
+- **팀원 = agent teams 팀원** (독립 세션 · 자체 컨텍스트 · 사용자 직접 접근). **Task tool 서브에이전트 대체 영구 금지** — 둘은 다름 (서브에이전트는 리더 컨텍스트 내 워커라 사용자 직접 접근·독립 컨텍스트 불가)
+- **트리거 한정 발동** — 기본 플로우(1세션 1태스크) 비침범. *"백로그 한 번에 / 팀으로 독립 병렬"* 류 발화에서만
+- **두 가드** — 플랫폼(Claude) + 활성화(`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`). 미충족 시 팀을 만들지 말고 안내 후 중단
+- **중단점 = taskery 단계 경계** — 기본 단계별 정지(팀원이 한 단계 후 idle → 리더 자동 통지), 사용자 지시 시 구간 자동. 디버거식 breakpoint 아님. 되돌릴 수 없는 `/task-close`는 게이트로 두기 권장
+- **팀원 파일 충돌 회피** — 각 팀원이 *물리적으로 분리된 워크트리*에서 작업하므로 agent teams "같은 파일 동시 편집 → 덮어쓰기" 제약이 구조적으로 회피됨
+
+**상태 전이 무관** — 본 스킬은 task 상태를 직접 전이시키지 X. 각 팀원이 호출하는 task 5스킬이 전이.
+
+**Claude 전용** — agent teams가 Codex에 없어 Codex 설치 미포함(`platformOf`가 `.claude/`를 claude 소속으로 분류 → Claude 선택 시에만 설치). Codex는 단일 태스크 흐름으로.
+
+상세 흐름은 → [template/.claude/skills/run-team/SKILL.md](../template/.claude/skills/run-team/SKILL.md) 참조.
+
+---
+
 ## 4. 스킬 본문 — 단일 진실 소스
 
 **본문 step별 디테일**은 `template/.claude/skills/<skill>/SKILL.md`에 위치. 본 문서는 link만:
@@ -144,6 +167,7 @@ draft → planned → developing → developed → testing → tested → closed
 | `/task-close` | [template/.claude/skills/task-close/SKILL.md](../template/.claude/skills/task-close/SKILL.md) | 14,736 B |
 | `/add-backlog` | [template/.claude/skills/add-backlog/SKILL.md](../template/.claude/skills/add-backlog/SKILL.md) | 6,321 B |
 | `/log-friction` | [template/.claude/skills/log-friction/SKILL.md](../template/.claude/skills/log-friction/SKILL.md) | 3,617 B |
+| `/run-team` (Claude 전용) | [template/.claude/skills/run-team/SKILL.md](../template/.claude/skills/run-team/SKILL.md) | 12,749 B |
 
 **공통 형식** (각 SKILL.md):
 ```markdown
@@ -314,3 +338,4 @@ CLAUDE.md `## 검증 명령` 단일 섹션이 *4 시점에 분산 실행* (self-
 | 2026-05-31 | 0.1.2 백로그 스킬 추가 반영 — §1 스킬 8종 → 9종 + `/add-backlog` (meta) 행 / §2 입력 처리 패턴 행 추가 / §3.6 백로그 (0.1.2+) 섹션 신규 (흐름 / 체크박스 의미 / task-init 연동 / task-close 무관) / §4 스킬 본문 표에 `/add-backlog` 행 / 위계 정신 meta 그룹에 백로그 누적 명시. task-init `[x]` 확인 마킹 + task-close BACKLOG.md 무관 명시도 §1 표에 반영 |
 | 2026-05-31 | 정합 순회 1차 후속 정정 — 제목 + 캡션 *스킬 8종* → *9종* 갱신 (멀티세션 + 백로그 commit 후 잔존). 본문 링크 path 표기 `<skill>.md` → `<skill>/SKILL.md` (0.1.1 디렉토리 마이그레이션 정합 누락분). §6 컨텍스트 관리 표 `/add-backlog` 행 추가 (9 스킬 정합). §4 본문 표 7 스킬 분량 실측 갱신 (멀티세션 commit으로 분량 증가 후 갱신 누락 — project-init/plan-init/task-init/task-plan/task-dev/task-test/task-close). 단순 수치 정합, 행위 변경 X |
 | 2026-06-02 | 0.1.3 F3 정합 — §1 스킬 표 task-plan/dev/test 캡션 *워크트리 안 호출* → *워크트리 호출 default (멀티세션), 호출 위치 자유, cwd 무관* / §3.5 호출 위치 분기(task-close) → *호출 위치 정책 (0.1.3+ — cwd 무관 동작 보장)* 섹션 재작성: 운영 모델 3가지(멀티세션 병렬 default / 단일 메인 지휘 / 메인 spawn 서브 세션) 모두 지원 + cwd 무관 동작 + 내부 명령 형태 강제 (`git -C` 형태, 셸 prefix / `--git-dir=` / `--work-tree=` 변형 금지) + git-guard.sh 5종 변형 인식 명시. stash FRICTION_LOG 2026-06-01 반영. |
+| 2026-06-28 | `/run-team` (agent teams 자동 병렬, Claude 전용) 추가 — 제목·캡션 + §1 표 행 + 위계 정신 meta 그룹 + §3.7 신규 섹션 + §4 본문 표 행(12,749 B). 공통 9종은 유지, Claude 전용 1종 분리 표기(패리티 의도적 갈림). PLAYBOOK §15 본구현. |

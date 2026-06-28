@@ -52,6 +52,19 @@
 
 ---
 
+## agent teams 자동 병렬 (Claude 전용 · 실험 · 트리거 한정)
+
+> 다건 태스크를 *리더 메인 세션 1개가 agent teams로 팀원(독립 세션)에 분배*해 자동 병렬 처리하는 고기능. 위 멀티세션을 사용자가 일일이 띄우는 대신 리더가 띄우고 관리한다. 워크트리 격리·머지 직렬화는 기존 `/task-init`·`/task-close`가 그대로 담당.
+
+- **기본 플로우 아님** — 디폴트는 *1세션 1태스크*. *트리거 발화*(예: *"백로그 한 번에 진행해"* / *"팀에게 전부 독립으로 맡겨"*)가 있을 때만 `/run-team` 발동. 단일 태스크 의도(*"~ 기능 추가해줘"*)는 기존 `/task-init` 흐름.
+- **활성화 전제** — agent teams는 실험 기능이라 기본 비활성. `~/.claude/settings.json`의 `env`에 `"CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"` 설정 후 세션 재시작. (팀원을 split pane으로 보려면 최상위에 `"teammateMode": "tmux"`도 — `teammateMode`는 `env`가 아닌 최상위 키이며 기본값 `auto`는 환경 자동 감지 후 in-process 폴백.) 미설정이면 `/run-team`이 안내하고 중단(헛도는 것 방지).
+- **팀원 = agent teams 팀원** — Task tool 서브에이전트 아님(독립 세션 · 자체 컨텍스트 · 사용자 직접 접근 가능).
+- **Claude 전용** — agent teams가 Codex에 없어 Codex에서는 미지원.
+
+상세: `.claude/skills/run-team/SKILL.md`.
+
+---
+
 ## 백로그 (0.1.2+)
 
 > `.project/tasks/<NNN_slug>/BACKLOG.md` = *plan(기능 그룹)별 task 후보 누적*. 사용자 발화로 1건씩 얕은 분석(개요 / 대상 영역) 곁들여 추가.
@@ -123,7 +136,7 @@
 
 ---
 
-## 스킬 9종 — project > plan > task 위계 + 회고
+## 스킬 — 공통 9종 + Claude 전용 1종(run-team)
 
 | 스킬 | 레벨 | 역할 |
 |------|------|------|
@@ -136,8 +149,11 @@
 | `/task-close` | task | 검증 명령 게이트 + 커밋 + dev 병합 (tested → closed) |
 | `/add-backlog` | meta | 사용자 발화로 활성 plan BACKLOG.md에 항목 1건 추가 (얕은 분석 + BL-NNN 채번 — 0.1.2+) |
 | `/log-friction` | meta | FRICTION_LOG.md에 사용자 불편 한 행 기록 |
+| `/run-team` | meta · **Claude 전용** | agent teams로 다건 태스크를 팀원(독립 세션)에 분배해 자동 병렬 처리 — 트리거 발화 시에만 (실험 기능 전제). 위 "agent teams 자동 병렬" 섹션 참조 |
 
 본문은 `.claude/skills/<스킬>/SKILL.md` 참조.
+
+> `/run-team`은 Claude 전용 — agent teams(실험 기능)가 Codex에 없어 Codex 설치에는 미포함.
 
 ---
 
