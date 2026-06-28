@@ -8,7 +8,7 @@
 ## 1. taskery 한 줄
 
 Claude Code 메인 세션을 위한 *가벼운 task 시스템*.
-**1 메인 세션(또는 멀티세션) + 스킬 9종 + catastrophic hook 2종 + npx 배포**로 구성. *practice 영역(SW 개발)을 process로 강제하지 않는다*는 한 가지 원칙으로 다듬어진 시스템.
+**1 메인 세션(또는 멀티세션) + 스킬 9종(+ Claude 전용 `run-team`) + catastrophic hook 2종 + npx 배포**로 구성. *practice 영역(SW 개발)을 process로 강제하지 않는다*는 한 가지 원칙으로 다듬어진 시스템.
 
 ---
 
@@ -29,7 +29,7 @@ Claude Code 메인 세션을 위한 *가벼운 task 시스템*.
 | 영역 | 정신 | 결과물 |
 |------|------|------|
 | **세션 모델** | 1 메인 세션 = 사용자 = 오케스트레이터 + 실행자. 같은 프로젝트 멀티세션 운영 시 작업 폴더(worktree) 격리 + 머지 락 직렬화 (0.1.2+) | 메인 세션 직접 호출 (서브에이전트는 옵션) |
-| **흐름 표지** | 스킬 9종 — project > plan > task 위계 + 메타(백로그 누적 / 불편 등록) | `/project-init` ~ `/log-friction` |
+| **흐름 표지** | 스킬 9종 — project > plan > task 위계 + 메타(백로그 누적 / 불편 등록) + Claude 전용 `run-team`(agent teams 자동 병렬) | `/project-init` ~ `/run-team` |
 | **안전망** | catastrophic only hook 2종 — git / 완료 보호 (process hook `pre-commit-verify` 폐기 — stash FRICTION_LOG #25) | `git-guard.sh` / `closed-immutable.sh` |
 | **배포** | 단일 default = npx | `npx @angar2/taskery init` / `update` / `create-taskery` |
 
@@ -46,7 +46,7 @@ taskery/                                  ← 본 리포 (시스템 자체)
 │
 ├─ plan/                                  ← 본 리포 spec / 결정 / 미래 옵션
 │   ├─ OVERVIEW.md                       ← 본 문서 (진입점)
-│   ├─ SKILLS.md                         ← 스킬 9종 명세 + 흐름
+│   ├─ SKILLS.md                         ← 스킬 9종(+ Claude 전용 run-team) 명세 + 흐름
 │   ├─ TASK-DOC.md                       ← 태스크 위계 + 양식 + 7 상태
 │   ├─ HOOKS.md                          ← 2 catastrophic hook 정책
 │   ├─ DISTRIBUTION.md                   ← npx 배포 + bin/ + manifest
@@ -62,12 +62,12 @@ taskery/                                  ← 본 리포 (시스템 자체)
 │   ├─ status.js                         ← npx @angar2/taskery status (멀티세션 0.1.2+)
 │   └─ prune.js                          ← npx @angar2/taskery prune (멀티세션 0.1.2+)
 │
-└─ template/                              ← 사용자 프로젝트로 카피되는 자산 (코어 26 파일)
+└─ template/                              ← 사용자 프로젝트로 카피되는 자산 (코어 26 파일 + Claude 전용 run-team 1)
     ├─ CLAUDE.md                         ← 사용자 프로젝트 메인 진입점
     ├─ .gitignore                        ← .project/.env 등 포함
     ├─ .claude/
     │   ├─ settings.json                 ← Claude Code hook 등록 (PreToolUse 매칭)
-    │   ├─ skills/                       ← 9 스킬 본문 (add-backlog 포함, 0.1.2+)
+    │   ├─ skills/                       ← 9 스킬 본문 (add-backlog 포함, 0.1.2+) + Claude 전용 run-team (0.3.x+)
     │   └─ hooks/                        ← 2 catastrophic 안전망
     └─ .project/
         ├─ FRICTION_LOG.md               ← 불편 누적 빈 템플릿
@@ -94,7 +94,7 @@ my-app/                                   ← 사용자 프로젝트
 │
 ├─ .claude/                               ← 코어 (npx 갱신)
 │   ├─ settings.json                     ← hook 등록 (PreToolUse 매칭)
-│   ├─ skills/ (9)
+│   ├─ skills/ (9 — Claude 설치 시 + run-team)
 │   └─ hooks/ (2)
 │
 ├─ .project/                              ← 사용자 영역
@@ -151,7 +151,7 @@ my-app/                                   ← 사용자 프로젝트
 
 | 정보 | 단일 진실 소스 |
 |------|--------------|
-| 스킬 본문 (Step 1~N) | [template/.claude/skills/<skill>/SKILL.md](../template/.claude/skills/) (9 디렉토리) |
+| 스킬 본문 (Step 1~N) | [template/.claude/skills/<skill>/SKILL.md](../template/.claude/skills/) (9 디렉토리 + Claude 전용 `run-team`) |
 | Hook 본문 + 정규식 | [template/.claude/hooks/<hook>.sh](../template/.claude/hooks/) (2 파일 — `git-guard.sh` / `closed-immutable.sh`. `pre-commit-verify.sh` 폐기) |
 | Hook 등록 (Claude Code PreToolUse 매칭) | [template/.claude/settings.json](../template/.claude/settings.json) |
 | 태스크 양식 + 4단 layer + 완성 예시 3개 | [template/.project/rules/TASK_DOC_RULE.md](../template/.project/rules/TASK_DOC_RULE.md) |
@@ -176,7 +176,7 @@ my-app/                                   ← 사용자 프로젝트
 |------|----------|---------|
 | [OVERVIEW.md](OVERVIEW.md) (본 문서) | 진입 + 정신 + 큰 그림 + 디렉토리 + 단일 진실 소스 + 인덱스 | **메인 세션 진입 시 맨 먼저** |
 | [DECISIONS.md](DECISIONS.md) | 핵심 의사결정 + 변경 이력 (단일 진실 소스) | *왜 이렇게 결정?* 궁금할 때 |
-| [SKILLS.md](SKILLS.md) | 스킬 9종 명세 + 흐름 + 컨텍스트 관리 | 작업 시작 / 스킬 동작 의문 시 |
+| [SKILLS.md](SKILLS.md) | 스킬 9종(+ Claude 전용 `run-team`) 명세 + 흐름 + 컨텍스트 관리 | 작업 시작 / 스킬 동작 의문 시 |
 | [TASK-DOC.md](TASK-DOC.md) | 태스크 위계 + 양식 + 7 상태 + 4단 layer 가이드 | task 작성 / 상태 전이 의문 시 |
 | [HOOKS.md](HOOKS.md) | 2 catastrophic hook 정책 + 우회 절차 | hook 차단 발생 시 / 우회 필요 시 |
 | [DISTRIBUTION.md](DISTRIBUTION.md) | npx 배포 + bin/ + manifest 머지 로직 | 사용자 프로젝트 셋업 / npx update / publish 시 |
@@ -186,7 +186,7 @@ my-app/                                   ← 사용자 프로젝트
 
 | 자료 | 위치 | 용도 |
 |------|------|------|
-| 사용자 프로젝트 메인 진입점 | `<user-project>/CLAUDE.md` | 메인 세션 자동 정독 (검증 명령 + 룰 참조 + 스킬 9종) |
+| 사용자 프로젝트 메인 진입점 | `<user-project>/CLAUDE.md` | 메인 세션 자동 정독 (검증 명령 + 룰 참조 + 스킬 9종 + Claude 전용 run-team) |
 | 스킬 본문 | `<user-project>/.claude/skills/*/SKILL.md` | 스킬 호출 시 메인이 정독 |
 | Hook | `<user-project>/.claude/hooks/*.sh` | Claude Code PreToolUse 자동 실행 |
 | task 양식 룰 | `<user-project>/.project/rules/TASK_DOC_RULE.md` | task 작성 시 메인이 정독 |
@@ -253,3 +253,4 @@ my-app/                                   ← 사용자 프로젝트
 | 2026-05-30 | 정합 검증 후속 정정 (Phase 5) — §1 / §3 / §4 / §7 본문·도식에 잔존한 *hook 3종* / *catastrophic 3* 표기를 2종으로 갱신 + §4 / §10 *코어 23 파일* → *24 파일* (CHANGELOG_RULE / MOCKUP_RULE 신설 반영, pre-commit-verify.sh 삭제). |
 | 2026-05-31 | 0.1.2 멀티세션 + 백로그 정합 누락 일괄 정정 (정합 순회 1차) — §1 *1 메인 세션*만 표기 → *1 메인 세션(또는 멀티세션)* + 워크트리 격리 명시 / §3 흐름 표지 *스킬 8종* → *9종 + 메타 그룹(백로그 누적 / 불편 등록)* / §4-1 본 리포 *bin/ 5 스크립트* → *7 스크립트* (status.js / prune.js 추가) + *코어 24 파일* → *25 파일* (add-backlog 신설) + skills/ *(8)* → *(9)* + rules/ 본문에 CHANGELOG_RULE / MOCKUP_RULE 명시 + tasks/ 캡션에 vX.X/BACKLOG.md plan-init 생성 명시 / §4-2 사용자 프로젝트 디렉토리 구조에 GLOSSARY.md / CHANGELOG_RULE / MOCKUP_RULE 본문 추가 + skills/ (8) → (9) + tasks/ 캡션 plan-init BACKLOG 명시 / §6 단일 진실 소스 표 *(8 디렉토리)* → *(9 디렉토리)* / §7 plan 문서 인덱스 SKILLS.md 캡션 *8종* → *9종* / §7 사용자 프로젝트 자산 표 메인 진입점 *스킬 8종* → *9종*. 단순 수치 정합, 행위 변경 X |
 | 2026-05-31 | 정합 순회 3차 — §9 *현재 상태 + 남은 작업* 본문에 *0.1.0 부트스트랩 시점 기록* 명시 박스 추가 (그 후 진척은 CHANGELOG.md 단일 진실 소스 link). *남은 작업 publish-prep 4 항목*도 *0.1.0 시점 기록, 모두 완료됨*으로 시점 명시. 행위 변경 X — 시점 기록 보존 + 단일 진실 소스 명시 |
+| 2026-06-28 | `/run-team` (agent teams 자동 병렬, Claude 전용) 추가 반영 — §1 한 줄 / §3 흐름 표지 / §4-1 코어 파일수·skills 캡션 / §4-2 사용자 도식 skills / §6 단일 진실 소스 표 / §7 SKILLS 캡션에 *Claude 전용 run-team* 명시. 공통 9종 유지 + Claude 전용 1종 분리 표기(패리티 의도적 갈림). PLAYBOOK §15 본구현. |
