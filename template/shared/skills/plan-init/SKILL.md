@@ -41,29 +41,22 @@ plan(기능 그룹)마다 호출. **plan = 작업을 묶는 기능 그룹 단위
 2. 메인 워크트리 dev 체크아웃 검증 — 위배 시 사용자 호출 + 중단.
 3. `$MAIN_WT/.project/PROJECT.md` 존재 확인 — 없으면 *"`/project-init` 먼저 호출 필요"* + 중단.
 
-### Step 2 — plan slug 확정 + NNN 채번 + legacy 게이트
+### Step 2 — plan 생성 (CLI — 채번 + 폴더 + 골격 + AGENT-GUIDE)
 
 1. slug 확정 (인자 또는 사용자 질문 — 위 입력 처리).
-2. **다음 plan 번호 + legacy 검출** — `bin/lib.js`의 `computeNextPlanNumber(MAIN_WT)` 호출:
-   ```js
-   const lib = require('@angar2/taskery/bin/lib');
-   const { next, legacyDirs } = lib.computeNextPlanNumber(MAIN_WT);
-   // next = '001'/'002'/... (3자리 zero-pad), legacyDirs = NNN_ 패턴 아닌 기존 폴더 목록
-   ```
-   bash 등가(참고):
-   ```sh
-   ls -1 "$MAIN_WT/.project/plans" 2>/dev/null | grep -E '^[0-9]{3}_' \
-     | sed -E 's/^([0-9]{3})_.*/\1/' | sort -n | tail -1
-   ```
-3. **legacy 게이트** — `legacyDirs`가 비어 있지 않으면(예: 구버전 `v1.0`, `alpha` 폴더 잔존):
-   - 즉시 사용자 호출 + 경고: *"`plans/`에 NNN 채번이 아닌 폴더(<legacyDirs>)가 있어. 새 plan을 NNN로 채번하면 활성 plan이 갈려 원래 문제가 재발해. 먼저 수동 이전(문서 루트 이동 + 폴더 `NNN_slug` 리네임 + AGENT-GUIDE 활성 plan 갱신)을 끝낸 뒤 진행할지, 그래도 진행할지 결정해줘."*
-   - 사용자 명시 confirm 전 폴더 생성 금지.
-4. plan 폴더명 = `${next}_${slug}` (예: `001_mvp`).
+2. `npx @angar2/taskery plan-init <slug>` 한 번으로 다음을 코드가 원자 수행:
+   - **NNN 채번** (3자리, 기존 최대+1)
+   - **폴더 생성** — `plans/<NNN_slug>/` + `tasks/<NNN_slug>/{spec-diffs,screenshots,mockup}/`
+   - **골격 Write** — ROADMAP.md / PLAN.md / BACKLOG.md (placeholder 포함, Step 3~4·7 형식)
+   - **AGENT-GUIDE.md `## 활성 plan 버전` 갱신** (Step 8)
+   - 성공 시 JSON 한 줄 — `{ plan, nnn, planDir, tasksDir }`. 이후 단계는 이 `plan`(=`<NNN_slug>`)을 사용.
+3. **legacy 게이트** — `plans/`에 NNN 채번이 아닌 폴더(구버전 `v1.0` / `alpha` 등) 잔존 시 CLI가 **exit 2 + `{gated:true, legacyDirs}`**로 멈춘다(폴더 생성 X). 이때:
+   - 사용자 호출 + 경고: *"`plans/`에 NNN 채번이 아닌 폴더(<legacyDirs>)가 있어. 새 plan을 NNN로 채번하면 활성 plan이 갈려 원래 문제가 재발해. 먼저 수동 이전(문서 루트 이동 + 폴더 `NNN_slug` 리네임 + AGENT-GUIDE 활성 plan 갱신)을 끝낸 뒤 진행할지, 그래도 진행할지 결정해줘."*
+   - 사용자가 강행 결정 시 `npx @angar2/taskery plan-init <slug> --force`로 재호출.
 
-### Step 3 — plan 폴더 생성 + ROADMAP.md 작성
+### Step 3 — ROADMAP.md 내용 채우기
 
-1. `$MAIN_WT/.project/plans/<NNN_slug>/` 디렉토리 생성.
-2. **ROADMAP.md** 작성 — *현재 plan(기능 그룹) 한정* task 단계 로드맵. *ROADMAP 작성 4룰*:
+Step 2 CLI가 ROADMAP.md 골격을 이미 생성했다 (아래 형식). *현재 plan(기능 그룹) 한정* task 단계를 placeholder(`<영역명>` / `<한 task 분량 작업>`)에 채운다. *ROADMAP 작성 4룰*:
    1. ROADMAP은 *현재 plan 한정* — 다른 기능 그룹 후보는 글로벌 `.project/BACKLOG.md`. 프로젝트 전체 거시 빌드 순서는 `PROJECT.md ## 초기 빌드 로드맵`(별개).
    2. 진행 순서에 task 번호(TASK-NNN) 강제 금지 — *Stage(영역) 단위*로만 명시 (예측 불가 task 합류 시 번호 어긋남 방지).
    3. Stage 안 *작업 단위 명시* 필요 (한 task 분량 권장 — 다음 task 진행 시 메인 세션이 ROADMAP 보고 작업 범위 판단 가능).
@@ -81,9 +74,9 @@ plan(기능 그룹)마다 호출. **plan = 작업을 묶는 기능 그룹 단위
 | <한 task 분량 작업> | ⏳ 대기 |
 ```
 
-### Step 4 — PLAN.md 작성 (얇은 인덱스 — 하드룰)
+### Step 4 — PLAN.md 내용 채우기 (얇은 인덱스 — 하드룰)
 
-PLAN.md는 *얇은 인덱스*다. 이 기능 그룹이 건드린 루트 문서 요약 + task 체크리스트만 둔다.
+Step 2 CLI가 PLAN.md 골격을 이미 생성했다. PLAN.md는 *얇은 인덱스*다 — 이 기능 그룹이 건드린 루트 문서 요약 + task 체크리스트만 placeholder에 채운다.
 
 **하드룰 (중복 차단):**
 - **각 항목 = 루트 문서 섹션 *링크 1줄*. 본문 복제 금지.** 기능 상세는 `.project/` 루트 문서에만 존재(단일 홈).
@@ -120,33 +113,13 @@ PLAN.md는 *얇은 인덱스*다. 이 기능 그룹이 건드린 루트 문서 �
 
 이 기능 그룹이 *새 정책 / 새 스택 / 새 구조*를 도입하면 해당 루트 문서(SERVICE-POLICY / TECH-STACK / ARCHITECTURE)를 수정한다. 도입 없으면 건너뜀. (그룹 A는 project-init이 작성한 정적 제품 관통 문서 — plan-init은 부수적 변경만.)
 
-### Step 7 — `tasks/<NNN_slug>/` 디렉토리 준비
+### Step 7 — `tasks/<NNN_slug>/` 디렉토리 (CLI 자동 생성됨)
 
-1. `$MAIN_WT/.project/tasks/<NNN_slug>/` 디렉토리 생성 (빈 폴더).
-2. `tasks/<NNN_slug>/spec-diffs/`, `screenshots/`, `mockup/` 빈 폴더 미리 생성.
-3. `tasks/<NNN_slug>/BACKLOG.md` 빈 골격 Write — *plan(기능 그룹)별 task 후보 누적용*, 글로벌 `.project/BACKLOG.md`와 별개:
+Step 2 `plan-init` CLI가 이미 생성 완료 — `tasks/<NNN_slug>/` + `spec-diffs/` `screenshots/` `mockup/` 빈 폴더 + `BACKLOG.md` 빈 골격(plan별 task 후보 누적용, 글로벌 `.project/BACKLOG.md`와 별개). **추가 작업 없음** — 본문은 task 진행하며 `/add-backlog` 또는 메인 감지로 누적된다.
 
-```markdown
-# BACKLOG — <NNN_slug>
+### Step 8 — `AGENT-GUIDE.md` 활성 plan (CLI 자동 갱신됨)
 
-> 본 파일은 *<NNN_slug> plan 진행 중 누적되는 후속 task 후보* 추적용.
-> 글로벌 `.project/BACKLOG.md` (다음 기능 그룹 후보 카탈로그) 와 별개.
-
-| 위치 | 영역 | 역할 |
-|------|------|------|
-| `.project/BACKLOG.md` (글로벌) | 다음 기능 그룹 후보 카탈로그 (다음 plan에서 검토) | Living document |
-| `.project/tasks/<NNN_slug>/BACKLOG.md` (본 파일) | 현재 plan 진행 중 누적된 후속 task 후보 | 한 plan 내 task close 직후 후보 누적 |
-
-## 후속 task 후보
-
-(사용자 발화 또는 task-close 직후 메인 감지로 한 행씩 추가. 빈 상태 default.)
-```
-
-빈 골격만 작성. 본문은 task 진행하면서 사용자 발화 또는 메인 감지로 누적.
-
-### Step 8 — `AGENT-GUIDE.md` 활성 plan 갱신
-
-`$MAIN_WT/.project/AGENT-GUIDE.md`의 `## 활성 plan 버전` 섹션 다음 줄을 `<NNN_slug>`로 갱신 (헤딩 텍스트 자체는 변경 X — lib.js/스킬이 의존). **반드시** — 누락 시 메인 세션이 옛 plan 보고 헤맴.
+Step 2 `plan-init` CLI가 `## 활성 plan 버전` 다음 줄을 `<NNN_slug>`로 갱신 완료 (헤딩 텍스트 불변 — lib.js/스킬 의존). 결과 JSON 확인만. (수동 갱신 불요.)
 
 ### Step 9 — 결과 보고
 
@@ -160,10 +133,9 @@ PLAN.md는 *얇은 인덱스*다. 이 기능 그룹이 건드린 루트 문서 �
 
 ## 도구 가이드
 
-- **Read**: PROJECT.md / `.project/` 루트 제품 관통 문서(FEATURES/UX-UI 등 delta 대상)
-- **Bash**: `MAIN_WT` 검출, `mkdir -p plans/<NNN_slug> tasks/<NNN_slug>/{spec-diffs,screenshots,mockup}`
-- **bin/lib.js**: `computeNextPlanNumber`(채번 + legacy 검출)
-- **Write/Edit**: PLAN.md / ROADMAP.md 작성, 제품 관통 문서 FEATURES/UX-UI delta append, AGENT-GUIDE 활성 plan 갱신
+- **Read**: PROJECT.md / `.project/` 루트 제품 관통 문서(FEATURES/UX-UI 등 delta 대상) / plan-init 반환 골격 확인
+- **Bash**: `MAIN_WT` 검출 / `npx @angar2/taskery plan-init <slug>` 호출(채번+폴더+골격+AGENT-GUIDE 갱신) / 결과 JSON 파싱
+- **Write/Edit**: ROADMAP.md / PLAN.md *골격 내용 채우기*(CLI가 골격 생성), 제품 관통 문서 FEATURES/UX-UI delta append
 - **AskUserQuestion**: slug 확정 / legacy 게이트 confirm
 
 ## 주의사항

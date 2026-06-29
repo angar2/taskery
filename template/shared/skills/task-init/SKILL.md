@@ -138,64 +138,61 @@ TASK-NNN은 **여기서 미리 계산하지 않는다.** 번호 읽기와 워크
    - **NNN은 Step 6 `fork`가 확정** — confirm 시점엔 미정(`TASK-???`). 분기 전 번호 못 박기는 병렬 레이스 차단의 귀결.
 3. 사용자에게 브랜치 구성요소(`{타입}/{개발자}_TASK-???_{출처}_{슬러그}`) + 파일/폴더 confirm. 확정 NNN은 fork 후 §8에서 보고.
 
-### Step 6 — 워크트리 분기 (`fork` — 채번+생성 원자 실행)
+### Step 6 — 워크트리 분기 + 골격 자동 생성 (`fork`)
 
-`npx @angar2/taskery fork <타입> <개발자> <출처> <슬러그>` 한 번으로 **채번 → 워크트리·브랜치 생성**을 init 락 안에서 원자 실행한다 (Step 4.1 채번 + 본 단계 생성이 한 임계구역 → 병렬 task-init 번호 충돌 차단).
+`npx @angar2/taskery fork <타입> <개발자> <출처> <슬러그> --size <규모> --title "<한국어 제목>" [--promote]` 한 번으로 **채번 → 워크트리·브랜치 생성**(init 락 원자 — Step 4.1 채번 + 생성이 한 임계구역, 병렬 task-init 번호 충돌 차단)에 더해 **빈 골격 task.md 자동 생성**까지 수행한다. 생성일=오늘 · 플랜=활성 plan · 유형(브랜치 타입→문서 유형 자동 매핑 `improve`→`improvement`) · status=draft는 코드가 채운다.
 
 ```sh
-npx @angar2/taskery fork "$TYPE" "$DEV" "$SRC" "$SLUG"
-# 예: npx @angar2/taskery fork feature claude BL-003 login-feature
+npx @angar2/taskery fork "$TYPE" "$DEV" "$SRC" "$SLUG" --size "$SIZE" --title "$TITLE"
+# 폴더 승격(Step 5에서 사용자 명시 시): 끝에 --promote 추가
+# 예: npx @angar2/taskery fork feature claude BL-003 login --size medium --title "로그인 기능"
 ```
 
-- 성공 시 결과 JSON 한 줄 출력 — `{ "taskNum", "nnn", "branch", "wtPath", "projectId" }`. 이후 단계(§7 문서 / §7.5 BL 마킹 / §8 보고)는 이 반환값의 `nnn` · `branch` · `wtPath`를 사용한다.
-- fork가 락 안에서 함께 수행: 채번(TOCTOU 차단) + SSoT 안전망(§4.4) + 동일 브랜치명 거부(git — 같은 항목 동시 분기 차단).
+- 성공 시 결과 JSON 한 줄 — `{ "taskNum", "nnn", "branch", "wtPath", "projectId", "docPath", "registered", "promoted" }`. 이후 단계(§7 확인 / §7.5 BL 마킹 / §8 보고)는 `nnn` · `branch` · `wtPath` · `docPath`를 사용한다.
+- fork가 락 안에서 함께 수행: 채번(TOCTOU 차단) + SSoT 안전망(§4.4) + 동일 브랜치명 거부(git) + **골격 task.md 생성**(`.gitignore` 케이스 자동 판정 — 등록=메인WT / 미등록=워크트리, 파일명 규칙 코드 보장).
+- 골격 생성 실패 시(드묾 — 활성 plan 검출 불가 등) 반환에 `scaffoldError`가 담기고 `docPath`는 없다 → §7 폴백으로 직접 작성.
 - fork 비정상 종료(exit 1) 시 stderr 메시지(*"… 이미 진행중"* / *"… 정책 위배"* 등)를 그대로 사용자에게 보고 + 중단.
 
-### Step 7 — task 문서 위치 결정 + 빈 골격 작성
+### Step 7 — 골격 확인 (fork가 자동 생성)
 
-`.gitignore` 케이스 분기 — task 문서를 *메인 워크트리에 직접 작성* vs *워크트리 안에 작성*:
+Step 6 `fork`가 §1.3 빈 골격을 이미 생성했다 — 반환 `docPath`가 그 절대 경로. 위치는 `.gitignore` 케이스로 코드가 자동 판정한다:
 
-```sh
-git -C "$MAIN_WT" check-ignore -q "$MAIN_WT/.project/dummy"
-```
+| 케이스 | 위치 |
+|--------|------|
+| **등록됨** (퍼블릭 리포 default) | **메인 워크트리** (`$MAIN_WT/.project/tasks/<plan>/`) — 멀티세션 공유 단일 소스. dev untracked |
+| **미등록** | **워크트리 안** (`$WT_PATH/.project/tasks/<plan>/`) — 워크트리 커밋 + 머지 시 dev 반영 |
 
-| 결과 | 케이스 | 작성 위치 |
-|------|--------|----------|
-| exit 0 | **등록됨** (퍼블릭 리포 default) | **메인 워크트리** (`$MAIN_WT/.project/tasks/<NNN_slug>/`) — proper-lockfile로 안전 쓰기. 멀티세션 공유 단일 소스. dev untracked (git 자동 무시) |
-| exit 1 | **미등록** | **워크트리 안** (`$WT_PATH/.project/tasks/<NNN_slug>/`) — 워크트리 커밋 + 머지 시 dev에 반영 |
+`docPath` 파일을 Read해 헤더 5컬럼 + 6 섹션 placeholder + status=draft가 맞는지 확인만 한다. **본문 작성 금지** — Requirements / Scope / Dev Plan / Test Plan은 *반드시* `/task-plan`에서.
 
-빈 골격 형식 (TASK_DOC_RULE §1.3 참조):
-
-```markdown
-# TASK-<NNN> — <한국어 제목>
-
-| 생성일 | 플랜 | 유형 | 규모 | 상태 |
-|--------|------|------|------|------|
-| <YYYY-MM-DD> | <NNN_slug> | <유형> | <규모> | draft |
-
-## Requirements
-
-(사용자 요구 + 메인 증폭 — `/task-plan`에서 채움)
-
-## Scope
-
-(영향 범위 — `/task-plan`에서 채움)
-
-## Dev Plan
-
-(Phase 1, 2, ... — `/task-plan`에서 채움)
-
-## Test Plan
-
-(테스트 방법 + 검증 명령 — `/task-plan`에서 채움)
-
-## Result
-
-(진행 + 테스트 결과 — `/task-dev`, `/task-test`에서 채움)
-```
-
-- 6 섹션 placeholder는 *빈 헤딩 + 한 줄 안내*. 구체 내용 X.
-- 폴더 승격 시 `TASK-<NNN>_<slug>/task.md`로 동일 본문 작성.
+> **폴백** (반환에 `docPath` 없이 `scaffoldError`만 있을 때만): 아래 §1.3 형식으로 해당 위치에 직접 작성한다 (생성일=오늘, status=draft, 단일=`<NNN>_<slug>.md` / 폴더 승격=`TASK-<NNN>_<slug>/task.md`).
+>
+> ```markdown
+> # TASK-<NNN> — <한국어 제목>
+>
+> | 생성일 | 플랜 | 유형 | 규모 | 상태 |
+> |--------|------|------|------|------|
+> | <YYYY-MM-DD> | <plan> | <유형> | <규모> | draft |
+>
+> ## Requirements
+>
+> (사용자 요구 + 메인 증폭 — `/task-plan`에서 채움)
+>
+> ## Scope
+>
+> (영향 범위 — `/task-plan`에서 채움)
+>
+> ## Dev Plan
+>
+> (Phase 1, 2, ... — `/task-plan`에서 채움)
+>
+> ## Test Plan
+>
+> (테스트 방법 + 검증 명령 — `/task-plan`에서 채움)
+>
+> ## Result
+>
+> (진행 + 테스트 결과 — `/task-dev`, `/task-test`에서 채움)
+> ```
 
 ### Step 7.5 — BL 출처 BACKLOG.md 확인 마킹 (BL일 때만)
 
@@ -211,23 +208,23 @@ git -C "$MAIN_WT" check-ignore -q "$MAIN_WT/.project/dummy"
 
 ### Step 8 — 결과 보고
 
-`<NNN>` · `<WT_PATH>` · `<BRANCH>`는 Step 6 fork 반환 JSON의 `nnn` · `wtPath` · `branch` 값으로 채운다.
+`<NNN>` · `<WT_PATH>` · `<BRANCH>` · `<TASK_DOC_PATH>`는 Step 6 fork 반환 JSON의 `nnn` · `wtPath` · `branch` · `docPath` 값으로 채운다.
 
 ```
 ✅ TASK-<NNN> 생성 완료
 - 워크트리: <WT_PATH>
 - 브랜치: <BRANCH>
-- task 문서: <TASK_DOC_PATH> (메인 워크트리 / 워크트리 안 — 위 케이스에 따라)
-- 헤더: <생성일> / <NNN_slug> / <유형> / <규모> / draft
+- task 문서: <TASK_DOC_PATH> (fork 자동 생성 — 메인 워크트리 / 워크트리 안은 registered 케이스에 따라)
+- 헤더: <생성일> / <plan> / <유형> / <규모> / draft
 - BL 마킹: BL-<NNN> [x] (BL 출처 시. RM/DR이면 생략)
 - 다음: /task-plan TASK-<NNN> 으로 기획 채우기 (워크트리 폴더에서 새 세션 열어 진행 / 메인 세션 그대로 진행 / 메인이 서브 세션 spawn 등 운영 모델 자유)
 ```
 
 ## 도구 가이드
 
-- **Bash**: 메인 워크트리 검출 / 사전 검증 / `npx @angar2/taskery fork` 호출(채번+워크트리·브랜치 생성) / `backlog-get`(BL 메타) · `backlog-mark`(BL 확인 마킹) 호출 / 결과 JSON 파싱
-- **Read**: `$MAIN_WT/.project/AGENT-GUIDE.md` / `$MAIN_WT/.project/tasks/<활성 plan>/BACKLOG.md` / `$MAIN_WT/.project/plans/<활성 plan>/ROADMAP.md`
-- **Write**: task.md 빈 골격 작성 (위치는 .gitignore 케이스에 따라)
+- **Bash**: 메인 워크트리 검출 / 사전 검증 / `npx @angar2/taskery fork` 호출(채번+워크트리·브랜치 생성+골격 자동 작성) / `backlog-get`(BL 메타) · `backlog-mark`(BL 확인 마킹) 호출 / 결과 JSON 파싱
+- **Read**: `$MAIN_WT/.project/AGENT-GUIDE.md` / `$MAIN_WT/.project/tasks/<활성 plan>/BACKLOG.md` / `$MAIN_WT/.project/plans/<활성 plan>/ROADMAP.md` / fork 반환 `docPath` 골격 확인
+- **Write**: (폴백 시에만) `scaffoldError` 반환 시 §7 형식으로 task.md 골격 직접 작성
 - **AskUserQuestion**: 분기 2 인터뷰 (한 번에 한 질문)
 
 ## 주의사항
