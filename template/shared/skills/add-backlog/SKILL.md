@@ -53,31 +53,18 @@ description: 사용자 발화로 *plan(기능 그룹)별* tasks/<NNN_slug>/BACKL
 - 한국어 제목 → 영어 *의미 변환* → kebab-case (3 단어 이내, 음역 X)
 - 예: *"로그인 페이지 빈 화면"* → `login-empty-page` / *"다크모드 토글"* → `dark-mode-toggle`
 
-### Step 5 — BL-NNN 채번 + append (withMetaLock 직렬화)
+### Step 5 — BL-NNN 채번 + append (CLI)
 
-`bin/lib.js`의 `appendBacklogItem(mainWtPath, meta)` 호출.
+`npx @angar2/taskery backlog-add` 한 줄로 처리한다. 채번(`BL-NNN` 최대+1) · 항목 블록 서식 · placeholder 치환 · `withMetaLock` 직렬화는 전부 코드가 보장한다 (손 파싱/Edit 불필요).
 
-```js
-const lib = require('@angar2/taskery/bin/lib'); // 또는 패키지 내부 경로
-const blNum = await lib.appendBacklogItem(MAIN_WT, {
-  type: '<유형>',
-  title: '<제목>',
-  slug: '<슬러그>',
-  summary: '<개요>',
-  target: '<대상 영역>',
-});
+```sh
+npx @angar2/taskery backlog-add \
+  --type "<유형>" --title "<제목>" --slug "<슬러그>" \
+  --summary "<개요>" --target "<대상 영역>"
 ```
 
-내부 흐름:
-1. `withMetaLock(backlogPath)` 안에서:
-   - BACKLOG.md 전체에서 `BL-(\d+)` 패턴 grep → 최대값 + 1. 빈 파일 → BL-001 시작
-   - 항목 블록 포맷팅:
-     ```
-     - [ ] **BL-NNN** [유형] 제목 `slug`
-       - 개요: ...
-       - 대상 영역: ...
-     ```
-   - plan-init 빈 골격의 placeholder 라인 (`(사용자 발화 또는 task-close 직후 메인 감지로 한 행씩 추가. 빈 상태 default.)`) 발견 시 → 그 자리에 치환. 미발견 시 → 파일 끝 빈 줄 + 블록 append
+- 성공 시 결과 JSON 한 줄 출력 — `{ "blNum", "blId" }`. Step 6 보고에 이 `blId`를 사용한다.
+- 활성 plan BACKLOG.md 부재 / 인자 누락 시 stderr + exit 1 — 메시지 그대로 사용자에게 보고 + 중단.
 
 ### Step 6 — 결과 보고
 
@@ -91,9 +78,8 @@ const blNum = await lib.appendBacklogItem(MAIN_WT, {
 
 ## 도구 가이드
 
-- **Bash**: 메인 워크트리 검출 / dev 체크아웃 검증
+- **Bash**: 메인 워크트리 검출 / dev 체크아웃 검증 / `npx @angar2/taskery backlog-add` 호출(채번+append) / 결과 JSON 파싱
 - **Read**: `$MAIN_WT/.project/AGENT-GUIDE.md` (활성 plan 검출) / 기존 BACKLOG.md 정독 (중복 / 유사 항목 사전 확인)
-- **bin/lib.js**: `getActiveVersion` / `getBacklogPath` / `appendBacklogItem` 호출
 - **AskUserQuestion**: 유형 모호 시 confirm — 한 번에 한 질문
 
 ## 주의사항
