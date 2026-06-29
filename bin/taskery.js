@@ -10,6 +10,8 @@
  *   status  — 멀티세션 현황 요약 (진행중 태스크 / 워크트리 / 머지 락, 0.1.2+)
  *   prune   — stale 워크트리 / 브랜치 대화형 정리 (0.1.2+)
  *   fork    — task 분기 (채번+워크트리+브랜치 생성을 init 락으로 원자 실행, 0.3.2+)
+ *   backlog-add/get/mark — 활성 plan BACKLOG.md 조작 (채번/조회/확인 마킹, 코드화)
+ *   set-status — task 헤더 상태 전이 (7×7 유효전이 검증, 코드화)
  *   help    — 사용법 출력
  */
 
@@ -18,9 +20,10 @@ const path = require('path');
 
 const sub = process.argv[2];
 
-function runScript(scriptName) {
+function runScript(scriptName, injectArgs = []) {
+  // injectArgs: dispatcher가 스크립트에 주입하는 선행 인자(예: backlog 서브op). 그 뒤로 사용자 인자.
   const scriptPath = path.resolve(__dirname, scriptName);
-  const r = spawnSync(process.execPath, [scriptPath, ...process.argv.slice(3)], {
+  const r = spawnSync(process.execPath, [scriptPath, ...injectArgs, ...process.argv.slice(3)], {
     stdio: 'inherit',
   });
   process.exit(r.status ?? 1);
@@ -36,6 +39,10 @@ function help() {
   npx @angar2/taskery status    멀티세션 현황 (진행중 태스크 / 워크트리 / 머지 락)
   npx @angar2/taskery prune     stale 워크트리 / 브랜치 대화형 정리
   npx @angar2/taskery fork <type> <dev> <src> <slug>   task 분기 (통상 /task-init 경유)
+  npx @angar2/taskery backlog-add --type <t> --title <제목> --slug <slug> --summary <개요> --target <대상영역>   백로그 추가
+  npx @angar2/taskery backlog-get <BL-NNN>             백로그 항목 조회 (JSON)
+  npx @angar2/taskery backlog-mark <BL-NNN> <TASK-NNN> 백로그 확인 마킹
+  npx @angar2/taskery set-status <TASK-NNN> <state>    task 상태 전이 (유효전이 검증)
   npx @angar2/taskery help      도움말
 
 새 프로젝트 시작:
@@ -78,6 +85,18 @@ switch (sub) {
     break;
   case 'fork':
     runScript('fork.js');
+    break;
+  case 'backlog-add':
+    runScript('backlog.js', ['add']);
+    break;
+  case 'backlog-get':
+    runScript('backlog.js', ['get']);
+    break;
+  case 'backlog-mark':
+    runScript('backlog.js', ['mark']);
+    break;
+  case 'set-status':
+    runScript('set-status.js');
     break;
   case 'help':
   case '--help':

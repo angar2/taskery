@@ -590,6 +590,149 @@ async function markBacklogChecked(mainWtPath, blId, taskNum) {
   });
 }
 
+// ─── task 헤더 / 상태 전이 (코드화) ─────────────────────────────────
+// 헤더 5컬럼 파싱 · task 문서 위치 판정 · 7상태 유효전이 검증을 코드로 단일화.
+// 계약: TASK_DOC_RULE §1.1(헤더) · §1.2(7상태) · §1.5(문서 위치).
+
+// 7×7 유효전이표 (TASK_DOC_RULE §1.2 + FAIL/UNCERTAIN 분기). from → 허용 to 목록.
+//   - 정상 진행: draft→planned→developing→developed→testing→tested→closed
+//   - 되돌림: testing→developing (task-test FAIL "코드 결함" 사용자 "고쳐")
+//   - closed는 종료 상태(빈 목록) — closed-immutable hook이 이후 본 파일 잠금.
+const TRANSITIONS = {
+  draft: ['planned'],
+  planned: ['developing'],
+  developing: ['developed'],
+  developed: ['testing'],
+  testing: ['tested', 'developing'],
+  tested: ['closed'],
+  closed: [],
+};
+
+function _locateHeaderRow(content) {
+  // 헤더 표(라벨행 → 구분선 → 데이터행)에서 데이터행을 찾아 split 셀과 줄 인덱스 반환.
+  // 데이터행 셀: `| a | b | c | d | e |` → split('|') = ['', ' a ', ..., ' e ', '']. null이면 표 부재.
+  const lines = content.split('\n');
+  let labelIdx = -1;
+  for (let i = 0; i < lines.length; i++) {
+    const l = lines[i];
+    if (l.trimStart().startsWith('|') && l.includes('생성일') && l.includes('상태')) {
+      labelIdx = i;
+      break;
+    }
+  }
+  if (labelIdx === -1) return null;
+  let dataIdx = -1;
+  for (let j = labelIdx + 1; j < lines.length; j++) {
+    const t = lines[j].trim();
+    if (t === '') continue;
+    if (/^[|\s:-]+$/.test(t)) continue; // 구분선 (|---|---|)
+    if (lines[j].trimStart().startsWith('|')) {
+      dataIdx = j;
+      break;
+    }
+    break; // 표 끝
+  }
+  if (dataIdx === -1) return null;
+  return { lines, dataIdx, cells: lines[dataIdx].split('|') };
+}
+
+function parseTaskHeader(taskMdPath) {
+  // 헤더 5컬럼을 구조화 → { created, plan, type, size, status }. 표 부재/컬럼 부족 시 throw.
+  const content = fs.readFileSync(taskMdPath, 'utf8');
+  const loc = _locateHeaderRow(content);
+  if (!loc) throw new Error(`헤더 표 파싱 실패 (TASK_DOC_RULE §1.1 형식 아님): ${taskMdPath}`);
+  const inner = loc.cells.slice(1, -1).map((c) => c.trim());
+  if (inner.length < 5) {
+    throw new Error(`헤더 표 컬럼 부족(${inner.length}/5): ${taskMdPath}`);
+  }
+  const [created, plan, type, size, status] = inner;
+  return { created, plan, type, size, status };
+}
+
+function isProjectRegistered(mainWtPath) {
+  // .gitignore에 .project/ 등록 여부 — check-ignore exit 0 = 등록(퍼블릭 default, 문서는 메인WT 공유),
+  // exit 1 = 미등록(문서는 워크트리 안, 머지로 dev 반영). task-init Step7 분기와 동일 판정.
+  try {
+    execFileSync(
+      'git',
+      ['-C', mainWtPath, 'check-ignore', '-q', path.join(mainWtPath, '.project', 'dummy')],
+      { stdio: 'ignore' },
+    );
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+function resolveTaskDocPath(mainWtPath, wtPath, { taskNum }) {
+  // task 문서 위치 단일 판정 — 등록 케이스로 base 결정 후 taskNum으로 탐색.
+  // 단일 파일(`<NNN>_<slug>.md`) / 폴더 승격(`TASK-<NNN>_<slug>/task.md`) 양쪽 + plan 폴더 무관(*) 글롭.
+  // 발견 못하면 null. 반환: { registered, plan, promoted, dir, file }.
+  const nnn = String(taskNum).padStart(3, '0');
+  const registered = isProjectRegistered(mainWtPath);
+  const base = registered ? mainWtPath : wtPath;
+  const tasksRoot = path.join(base, '.project', 'tasks');
+  if (!fs.existsSync(tasksRoot)) return null;
+  const fileRe = new RegExp(`^${nnn}_.+\\.md$`);
+  const dirRe = new RegExp(`^TASK-${nnn}_`);
+  for (const planEnt of fs.readdirSync(tasksRoot, { withFileTypes: true })) {
+    if (!planEnt.isDirectory()) continue;
+    const planDir = path.join(tasksRoot, planEnt.name);
+    for (const ent of fs.readdirSync(planDir, { withFileTypes: true })) {
+      if (ent.isFile() && fileRe.test(ent.name)) {
+        return {
+          registered,
+          plan: planEnt.name,
+          promoted: false,
+          dir: planDir,
+          file: path.join(planDir, ent.name),
+        };
+      }
+      if (ent.isDirectory() && dirRe.test(ent.name)) {
+        const f = path.join(planDir, ent.name, 'task.md');
+        if (fs.existsSync(f)) {
+          return {
+            registered,
+            plan: planEnt.name,
+            promoted: true,
+            dir: path.join(planDir, ent.name),
+            file: f,
+          };
+        }
+      }
+    }
+  }
+  return null;
+}
+
+async function setStatus(taskMdPath, next) {
+  // 헤더 상태 컬럼을 next로 전이 — 현재 상태 읽고 7×7 표 검증 후 치환 (withMetaLock 직렬화).
+  //   - next가 7상태 아님 → throw. 현재==next → idempotent no-op (changed:false).
+  //   - 유효전이 아님 → throw (잘못된 전이 거부).
+  if (!Object.prototype.hasOwnProperty.call(TRANSITIONS, next)) {
+    throw new Error(`알 수 없는 상태: ${next} (유효: ${Object.keys(TRANSITIONS).join(', ')})`);
+  }
+  if (!fs.existsSync(taskMdPath)) throw new Error(`task 문서 없음: ${taskMdPath}`);
+  return await withMetaLock(taskMdPath, async () => {
+    const content = fs.readFileSync(taskMdPath, 'utf8');
+    const loc = _locateHeaderRow(content);
+    if (!loc) throw new Error(`헤더 표 파싱 실패: ${taskMdPath}`);
+    const cur = loc.cells.slice(1, -1).map((c) => c.trim())[4];
+    if (cur === next) return { changed: false, from: cur, to: next, path: taskMdPath };
+    const allowed = TRANSITIONS[cur] || [];
+    if (!allowed.includes(next)) {
+      throw new Error(
+        `잘못된 전이: ${cur} → ${next} (허용: ${allowed.length ? allowed.join(', ') : '없음 — 종료 상태'})`,
+      );
+    }
+    const statusCellIdx = loc.cells.length - 2; // 마지막 빈 셀 직전 = 상태
+    loc.cells[statusCellIdx] = loc.cells[statusCellIdx].replace(cur, next);
+    loc.lines[loc.dataIdx] = loc.cells.join('|');
+    fs.writeFileSync(taskMdPath, loc.lines.join('\n'));
+    return { changed: true, from: cur, to: next, path: taskMdPath };
+  });
+}
+
 module.exports = {
   LOCAL_SUFFIX,
   MANIFEST_NAME,
@@ -642,4 +785,10 @@ module.exports = {
   appendBacklogItem,
   parseBacklogItem,
   markBacklogChecked,
+  // task 헤더 / 상태 전이 (코드화)
+  TRANSITIONS,
+  parseTaskHeader,
+  isProjectRegistered,
+  resolveTaskDocPath,
+  setStatus,
 };
