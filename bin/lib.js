@@ -733,6 +733,422 @@ async function setStatus(taskMdPath, next) {
   });
 }
 
+// ─── task 문서 골격 생성 (코드화, C1) ───────────────────────────────
+// fork 직후 §1.3 빈 골격을 코드가 자동 생성 — 생성일=오늘 / status=draft 자동, 파일명 규칙 코드 보장.
+
+// 생성일=오늘(로컬 타임존 YYYY-MM-DD). toISOString()은 UTC라 KST 자정~09시 사이 전날로 박힘 → 로컬 산출.
+function _todayLocal() {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+// 브랜치 타입 → 문서 유형(§1.1). improve↔improvement만 다름.
+const DOC_TYPE_OF = {
+  feature: 'feature',
+  bug: 'bug',
+  improve: 'improvement',
+  refactor: 'refactor',
+  docs: 'docs',
+  chore: 'chore',
+};
+
+function _buildTaskDocPath(base, plan, { taskNum, slug, promoted }) {
+  const nnn = String(taskNum).padStart(3, '0');
+  const planDir = path.join(base, '.project', 'tasks', plan);
+  if (promoted) {
+    const dir = path.join(planDir, `TASK-${nnn}_${slug}`);
+    return { dir, file: path.join(dir, 'task.md') };
+  }
+  return { dir: planDir, file: path.join(planDir, `${nnn}_${slug}.md`) };
+}
+
+function _renderTaskSkeleton({ taskNum, title, created, plan, docType, size }) {
+  const nnn = String(taskNum).padStart(3, '0');
+  return [
+    `# TASK-${nnn} — ${title}`,
+    '',
+    '| 생성일 | 플랜 | 유형 | 규모 | 상태 |',
+    '|--------|------|------|------|------|',
+    `| ${created} | ${plan} | ${docType} | ${size} | draft |`,
+    '',
+    '## Requirements',
+    '',
+    '(사용자 요구 + 메인 증폭 — `/task-plan`에서 채움)',
+    '',
+    '## Scope',
+    '',
+    '(영향 범위 — `/task-plan`에서 채움)',
+    '',
+    '## Dev Plan',
+    '',
+    '(Phase 1, 2, ... — `/task-plan`에서 채움)',
+    '',
+    '## Test Plan',
+    '',
+    '(테스트 방법 + 검증 명령 — `/task-plan`에서 채움)',
+    '',
+    '## Result',
+    '',
+    '(진행 + 테스트 결과 — `/task-dev`, `/task-test`에서 채움)',
+    '',
+  ].join('\n');
+}
+
+function scaffoldTaskDoc(mainWtPath, wtPath, meta) {
+  // meta: { taskNum, slug, title, type(브랜치 타입), size, plan?, promoted?, created? }
+  // 위치: 등록(.gitignore) 케이스 → 메인WT, 미등록 → 워크트리. plan 미지정 시 AGENT-GUIDE에서 검출.
+  // taskNum이 고유(fork init 락 채번)라 동일 문서 동시 쓰기 경합 없음 → 락 불요.
+  const registered = isProjectRegistered(mainWtPath);
+  const base = registered ? mainWtPath : wtPath;
+  const plan = meta.plan || getActiveVersion(mainWtPath);
+  const docType = DOC_TYPE_OF[meta.type] || meta.type;
+  const created = meta.created || _todayLocal();
+  const { dir, file } = _buildTaskDocPath(base, plan, {
+    taskNum: meta.taskNum,
+    slug: meta.slug,
+    promoted: !!meta.promoted,
+  });
+  if (fs.existsSync(file) && fs.readFileSync(file, 'utf8').trim()) {
+    throw new Error(`task 문서 이미 존재: ${file}`);
+  }
+  mkdirp(dir);
+  fs.writeFileSync(
+    file,
+    _renderTaskSkeleton({
+      taskNum: meta.taskNum,
+      title: meta.title,
+      created,
+      plan,
+      docType,
+      size: meta.size,
+    }),
+  );
+  return { registered, promoted: !!meta.promoted, plan, file };
+}
+
+// ─── plan 생성 (코드화, C3) ─────────────────────────────────────────
+// 채번 + legacy 게이트 + 폴더 mkdir + ROADMAP/PLAN/BACKLOG 골격 + AGENT-GUIDE 활성 plan 갱신을 코드로.
+// LLM 몫(FEATURES/UX-UI delta · ROADMAP Stage 내용 · PLAN 링크)은 골격의 placeholder로 남긴다.
+
+function _renderRoadmap(plan) {
+  return [
+    `# ROADMAP — ${plan}`,
+    '',
+    '> 본 plan(기능 그룹) 한정 task 단계. Stage 단위(task 번호 강제 X), 상태 컬럼만 Living.',
+    '> 프로젝트 거시 빌드 순서는 PROJECT.md, 다음 기능 그룹 후보는 글로벌 BACKLOG.md.',
+    '',
+    '## Stage 1 — <영역명>',
+    '| 작업 단위 | 상태 |',
+    '|-----------|------|',
+    '| <한 task 분량 작업> | ⏳ 대기 |',
+    '',
+  ].join('\n');
+}
+
+function _renderPlanIndex(plan) {
+  return [
+    `# PLAN — ${plan}`,
+    '',
+    '> 이 plan(기능 그룹)의 얇은 인덱스. 각 항목은 루트 문서 섹션 링크 1줄 — 본문은 복제하지 않는다.',
+    '',
+    '## 이 기능 그룹이 건드리는 루트 문서',
+    '- [FEATURES.md › <이 그룹 섹션>](../../FEATURES.md) — <한 줄 요약>',
+    '- [UX-UI.md › <이 그룹 섹션>](../../UX-UI.md) — <한 줄 요약>',
+    '- (DATA-MODEL / API-SPEC — task 진행이 구현 동반으로 채움)',
+    '',
+    '## task 체크리스트',
+    '- [ ] <작업 단위> (ROADMAP Stage N)',
+    '',
+  ].join('\n');
+}
+
+function _renderPlanBacklog(plan) {
+  return [
+    `# BACKLOG — ${plan}`,
+    '',
+    `> 본 파일은 *${plan} plan 진행 중 누적되는 후속 task 후보* 추적용.`,
+    '> 글로벌 `.project/BACKLOG.md` (다음 기능 그룹 후보 카탈로그) 와 별개.',
+    '',
+    '| 위치 | 영역 | 역할 |',
+    '|------|------|------|',
+    '| `.project/BACKLOG.md` (글로벌) | 다음 기능 그룹 후보 카탈로그 (다음 plan에서 검토) | Living document |',
+    `| \`.project/tasks/${plan}/BACKLOG.md\` (본 파일) | 현재 plan 진행 중 누적된 후속 task 후보 | 한 plan 내 task close 직후 후보 누적 |`,
+    '',
+    '## 후속 task 후보',
+    '',
+    BACKLOG_PLACEHOLDER,
+    '',
+  ].join('\n');
+}
+
+function _setActivePlan(mainWtPath, plan) {
+  // AGENT-GUIDE.md '## 활성 plan 버전' 섹션 다음 비어있지 않은 첫 줄을 plan 값으로 교체(헤딩 텍스트 불변).
+  const guidePath = path.join(mainWtPath, '.project', 'AGENT-GUIDE.md');
+  if (!fs.existsSync(guidePath)) {
+    throw new Error('.project/AGENT-GUIDE.md 부재. /project-init 먼저 호출.');
+  }
+  const lines = fs.readFileSync(guidePath, 'utf8').split('\n');
+  const hIdx = lines.findIndex((l) => /^##\s*활성 plan 버전/.test(l));
+  if (hIdx === -1) {
+    throw new Error("AGENT-GUIDE.md '## 활성 plan 버전' 섹션 부재.");
+  }
+  const valueLine = `${plan} — \`.project/plans/${plan}/\` 참조`;
+  let i = hIdx + 1;
+  while (i < lines.length && lines[i].trim() === '') i++;
+  if (i < lines.length && !/^#/.test(lines[i])) {
+    lines[i] = valueLine; // 기존 값 줄 교체
+  } else {
+    lines.splice(hIdx + 1, 0, '', valueLine); // 값 줄 부재 → 헤딩 뒤 삽입
+  }
+  fs.writeFileSync(guidePath, lines.join('\n'));
+}
+
+function initPlan(mainWtPath, slug, opts = {}) {
+  // 채번 → legacy 게이트 → 폴더 + 골격 + AGENT-GUIDE 갱신. slug 검증은 CLI 측.
+  // legacy 폴더(NNN_ 아닌 plan 폴더) 잔존 + !force → { gated:true } 반환(CLI가 사용자 confirm 후 force 재호출).
+  const { next, legacyDirs } = computeNextPlanNumber(mainWtPath);
+  if (legacyDirs.length && !opts.force) {
+    return { gated: true, legacyDirs, next };
+  }
+  const plan = `${next}_${slug}`;
+  const planDir = path.join(mainWtPath, '.project', 'plans', plan);
+  const tasksDir = path.join(mainWtPath, '.project', 'tasks', plan);
+  if (fs.existsSync(planDir)) {
+    throw new Error(`plan 폴더 이미 존재: ${planDir}`);
+  }
+  mkdirp(planDir);
+  mkdirp(path.join(tasksDir, 'spec-diffs'));
+  mkdirp(path.join(tasksDir, 'screenshots'));
+  mkdirp(path.join(tasksDir, 'mockup'));
+  fs.writeFileSync(path.join(planDir, 'ROADMAP.md'), _renderRoadmap(plan));
+  fs.writeFileSync(path.join(planDir, 'PLAN.md'), _renderPlanIndex(plan));
+  fs.writeFileSync(path.join(tasksDir, 'BACKLOG.md'), _renderPlanBacklog(plan));
+  _setActivePlan(mainWtPath, plan);
+  return { gated: false, plan, nnn: next, planDir, tasksDir, legacyDirs };
+}
+
+// ─── task close 결정적 준비 (코드화, D1·D2) ─────────────────────────
+// closeTask는 *결정적 준비만* 수행: 게이트(status=tested) → Phase 커밋(D2) → status=closed →
+// flows/문서 커밋 → 추적마커. 비가역 3종(dev --no-ff 머지 · worktree remove · branch -d)과
+// 충돌 해결·머지 락은 스킬(LLM)이 수행 — 위험 최소화 + 충돌은 LLM 판단 영역.
+
+// 브랜치 타입 → 커밋 태그 (GIT_RULE 6-3).
+const TAG_OF = {
+  feature: 'feat',
+  bug: 'fix',
+  improve: 'improve',
+  refactor: 'refactor',
+  docs: 'docs',
+  chore: 'docs',
+};
+
+function _parseDevPlanPhases(content) {
+  // ## Dev Plan 섹션의 `### Phase N — 이름` + `- 파일:` 필드 추출.
+  const lines = content.split('\n');
+  let inDevPlan = false;
+  const phases = [];
+  let cur = null;
+  for (const l of lines) {
+    if (/^##\s+Dev Plan/.test(l)) {
+      inDevPlan = true;
+      continue;
+    }
+    if (inDevPlan && /^##\s+/.test(l)) break; // 다음 섹션
+    if (!inDevPlan) continue;
+    const ph = l.match(/^###\s+Phase\s+(\d+)\s*(?:[—-]\s*)?(.*)$/);
+    if (ph) {
+      cur = { num: parseInt(ph[1], 10), name: ph[2].trim(), files: [] };
+      phases.push(cur);
+      continue;
+    }
+    if (!cur) continue;
+    const fm = l.match(/^\s*-\s*파일\s*:\s*(.+)$/);
+    if (fm) {
+      cur.files = fm[1]
+        .split(',')
+        .map((s) => s.replace(/`/g, '').trim())
+        .filter((s) => s && !/^[(<]/.test(s)); // placeholder(<...>, (...)) 제외
+    }
+  }
+  return phases;
+}
+
+function _porcelainFiles(wtPath) {
+  // git status --porcelain -uall → 변경 파일 경로 목록 (XY 상태코드 3자 제거).
+  // -uall: untracked 디렉토리를 개별 파일로 전개 (디렉토리 통째 `src/` 접힘 방지).
+  const out = gitCapture(wtPath, ['status', '--porcelain', '-uall'], { allowFail: true });
+  if (!out) return [];
+  return out
+    .split('\n')
+    .filter(Boolean)
+    .map((l) => l.slice(3).trim())
+    .map((p) => (p.includes(' -> ') ? p.split(' -> ')[1] : p)) // rename은 도착 경로
+    .filter(Boolean);
+}
+
+function splitUncommittedByPhase(wtPath, taskMdPath, meta) {
+  // 코드 변경분(.project/ 외)을 Dev Plan Phase에 매핑해 Phase별 자동 커밋. meta: { taskNum, type }.
+  //   - 모든 코드 파일이 정확히 1 Phase에 매핑 → Phase 순서대로 자동 커밋.
+  //   - 미매핑/다중매핑/Phase 파싱 불가 → { ambiguous } 반환(커밋 X) → 스킬이 수동 처리.
+  // .project/ 메타(flows/문서/changelog)는 제외 — closeTask가 별도 커밋.
+  const codeFiles = _porcelainFiles(wtPath).filter((f) => !f.startsWith('.project/'));
+  if (codeFiles.length === 0) return { committed: [], empty: true };
+  const phases = _parseDevPlanPhases(fs.readFileSync(taskMdPath, 'utf8'));
+  if (phases.length === 0) {
+    return { ambiguous: true, reason: 'Dev Plan Phase 파싱 불가', files: codeFiles };
+  }
+  const matchOf = (f) =>
+    phases
+      .map((p, i) => ({ p, i }))
+      .filter(({ p }) =>
+        p.files.some((pf) => {
+          const base = pf.replace(/\/$/, '');
+          return f === pf || f === base || f.startsWith(base + '/') || base.endsWith('/' + f);
+        }),
+      )
+      .map(({ i }) => i);
+  const fileToPhase = {};
+  for (const f of codeFiles) {
+    const m = matchOf(f);
+    if (m.length !== 1) {
+      return {
+        ambiguous: true,
+        reason: m.length === 0 ? `Phase 미매핑: ${f}` : `다중 Phase 매핑: ${f}`,
+        files: codeFiles,
+        phases: phases.map((p) => ({ num: p.num, name: p.name, files: p.files })),
+      };
+    }
+    fileToPhase[f] = m[0];
+  }
+  // Phase별 그룹 → 순서대로 커밋
+  const groups = new Map();
+  for (const f of codeFiles) {
+    const i = fileToPhase[f];
+    if (!groups.has(i)) groups.set(i, []);
+    groups.get(i).push(f);
+  }
+  const tag = TAG_OF[meta.type] || 'docs';
+  const nnn = String(meta.taskNum).padStart(3, '0');
+  const committed = [];
+  for (const i of [...groups.keys()].sort((a, b) => a - b)) {
+    const p = phases[i];
+    const grp = groups.get(i);
+    execFileSync('git', ['-C', wtPath, 'add', '--', ...grp], { stdio: 'pipe' });
+    const msg =
+      `${tag}: [TASK-${nnn}] Phase ${p.num} - ${p.name}\n\n` +
+      grp.map((f) => `- ${f}`).join('\n') +
+      `\n- 사유: ${p.name}`;
+    execFileSync('git', ['-C', wtPath, 'commit', '-m', msg], { stdio: 'pipe' });
+    committed.push({ phase: p.num, name: p.name, files: grp });
+  }
+  return { committed };
+}
+
+async function closeTask(mainWtPath, { taskNum }, opts = {}) {
+  // 결정적 준비만 — 비가역(머지·정리)·충돌 해결은 스킬이 후속 수행.
+  // 반환: { blocked } (게이트 미충족/매핑 모호) 또는 { prepped, branch, wtPath, registered, commits, aheadOfDev }.
+  const active = getActiveTasks(mainWtPath).find((t) => t.taskNum === taskNum);
+  if (!active) {
+    throw new Error(`TASK-${String(taskNum).padStart(3, '0')} 진행중 브랜치 없음 (SSoT 조회).`);
+  }
+  assertMainWorktreeOnDev(mainWtPath);
+  const projectId = getProjectId(mainWtPath);
+  const wtPath = getWorktreePath(projectId, { taskNum, src: active.src, slug: active.slug });
+  const resolved = resolveTaskDocPath(mainWtPath, wtPath, { taskNum });
+  if (!resolved) throw new Error(`TASK-${taskNum} 문서 못 찾음.`);
+
+  const header = parseTaskHeader(resolved.file);
+  if (header.status !== 'tested') {
+    return { blocked: 'status', current: header.status, docPath: resolved.file };
+  }
+
+  // Phase 커밋 (D2) — 코드 변경분만
+  const split = splitUncommittedByPhase(wtPath, resolved.file, { taskNum, type: active.type });
+  if (split.ambiguous) {
+    return {
+      blocked: 'mapping',
+      reason: split.reason,
+      files: split.files,
+      phases: split.phases,
+      wtPath,
+      docPath: resolved.file,
+    };
+  }
+
+  // status=closed (문서 위치 무관 — setStatus가 .gitignore 케이스 따라 처리)
+  await setStatus(resolved.file, 'closed');
+
+  const commits = [...split.committed];
+  // 미등록 케이스: .project/ 변경분(flows / 문서 / changelog)을 커밋
+  if (!resolved.registered) {
+    const flows = _porcelainFiles(wtPath).filter((f) => f.startsWith('.project/flows/'));
+    if (flows.length) {
+      execFileSync('git', ['-C', wtPath, 'add', '--', ...flows], { stdio: 'pipe' });
+      execFileSync(
+        'git',
+        ['-C', wtPath, 'commit', '-m', `docs: [TASK-${String(taskNum).padStart(3, '0')}] flows 갱신`],
+        { stdio: 'pipe' },
+      );
+      commits.push({ phase: 'flows', files: flows });
+    }
+    const rest = _porcelainFiles(wtPath).filter((f) => f.startsWith('.project/'));
+    if (rest.length) {
+      execFileSync('git', ['-C', wtPath, 'add', '--', ...rest], { stdio: 'pipe' });
+      execFileSync(
+        'git',
+        [
+          '-C',
+          wtPath,
+          'commit',
+          '-m',
+          `docs: [TASK-${String(taskNum).padStart(3, '0')}] 태스크 문서 완료`,
+        ],
+        { stdio: 'pipe' },
+      );
+      commits.push({ phase: 'doc', files: rest });
+    }
+  }
+
+  // 추적 마커 빈커밋 (dev보다 앞선 커밋 0개 — docs/분석 task + .project gitignore 케이스)
+  const ahead = parseInt(
+    gitCapture(wtPath, ['rev-list', '--count', 'dev..HEAD'], { allowFail: true }) || '0',
+    10,
+  );
+  if (ahead === 0) {
+    execFileSync(
+      'git',
+      [
+        '-C',
+        wtPath,
+        'commit',
+        '--allow-empty',
+        '-m',
+        `docs: [TASK-${String(taskNum).padStart(3, '0')}] 추적 마커 — 코드 0·.project gitignore (채번 보존)`,
+      ],
+      { stdio: 'pipe' },
+    );
+    commits.push({ phase: 'marker', empty: true });
+  }
+
+  const aheadFinal = parseInt(
+    gitCapture(wtPath, ['rev-list', '--count', 'dev..HEAD'], { allowFail: true }) || '0',
+    10,
+  );
+  return {
+    prepped: true,
+    taskNum,
+    branch: active.branch,
+    wtPath,
+    registered: resolved.registered,
+    docPath: resolved.file,
+    commits,
+    aheadOfDev: aheadFinal,
+  };
+}
+
 module.exports = {
   LOCAL_SUFFIX,
   MANIFEST_NAME,
@@ -791,4 +1207,13 @@ module.exports = {
   isProjectRegistered,
   resolveTaskDocPath,
   setStatus,
+  // task 문서 골격 (C1)
+  DOC_TYPE_OF,
+  scaffoldTaskDoc,
+  // plan 생성 (C3)
+  initPlan,
+  // task close 결정적 준비 (D1·D2)
+  TAG_OF,
+  splitUncommittedByPhase,
+  closeTask,
 };
