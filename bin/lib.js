@@ -359,11 +359,13 @@ function getNextTaskNumber(mainWtPath) {
   // 1. 진행중 (SSoT)
   const activeNums = getActiveTasks(mainWtPath).map((t) => t.taskNum);
   // 2. dev 머지 히스토리 (GIT_RULE 풍부 메시지)
+  //    --extended-regexp(ERE)에서 `+`는 수량자 — `\+`로 쓰면 *리터럴 +* 가 되어 "TASK-001"을
+  //    못 잡는다. 그러면 close로 활성 브랜치가 사라진 뒤 채번이 1로 리셋돼 순차 작업이 번호 충돌.
   const log = gitCapture(mainWtPath, [
     'log',
     'dev',
     '--grep',
-    'TASK-[0-9]\\+',
+    'TASK-[0-9]+',
     '--extended-regexp',
     '--oneline',
   ]);
