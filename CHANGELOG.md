@@ -7,6 +7,19 @@
 
 ## [Unreleased]
 
+### 추가
+
+- **Tier 3 — MCP 서버(`bin/mcp.js`, 구조화 도구 8종)** — `bin/lib.js` core 함수를 MCP 도구로 노출: `backlog_add` / `backlog_get` / `backlog_mark` / `set_status` / `plan_init` / `task_init` / `task_close` / `status`. AI가 `npx` stdout 텍스트를 파싱하던 것을 네이티브 구조화 입출력 + 게이트 강제(전이·종료 조건)로 대체한다. CLI(`bin/*.js`)와 **동일 core를 공유**하므로 로직 중복 0 — MCP 도구 = CLI 명령의 다른 입구. 신규 런타임 의존성 `@modelcontextprotocol/sdk`(^1.29)·`zod`(inputSchema). `init`이 Claude용 `.mcp.json` 자동 등록(첫 세션 승인 게이트), Codex는 `codex mcp add taskery -- npx -y @angar2/taskery mcp` 안내. 미등록 환경은 npx CLI가 폴백.
+  - `task_close`는 **결정적 준비만**(Phase 커밋·status=closed·추적 마커) — 비가역 절차(dev `--no-ff` 머지·워크트리/브랜치 정리)와 충돌 해결은 안전상 스킬에 잔존(close-A 경계, git-guard hook + 복구 출력 보호).
+
+### 변경
+
+- **Tier 1·2 — 결정적 로직 코드화(CLI + core 함수)** — 백로그 추가/조회/마킹, 상태 전이(7×7 유효전이표 검증), plan 생성(채번+골격), task 문서 골격 자동 생성, close 준비(Phase 자동 커밋·상태 전이)를 `backlog`(add/get/mark)·`set-status`·`plan-init`·`fork`·`close` CLI + lib 함수(`parseTaskHeader`·`resolveTaskDocPath`·`scaffoldTaskDoc`·`setStatus`·`TRANSITIONS`·`splitUncommittedByPhase`·`closeTask`)로 이관. AI가 마크다운 절차를 읽고 손으로 파싱·계산·Write 재현하던 것을 코드 호출로 대체 → 토큰 절감 + 형식 드리프트 차단 + 락 강제. 스킬 7종(add-backlog·plan-init·task-init·task-plan·task-dev·task-test·task-close)을 결정적 절차를 걷어낸 얇은 판단 지시로 재배선(예: task-init 262→76줄).
+
+### 수정
+
+- **`getNextTaskNumber` 순차 채번 리셋 버그** — dev 머지 히스토리 fallback grep이 `TASK-[0-9]\+ --extended-regexp`였는데, ERE에서 `\+`는 *리터럴 +* 라 "TASK-001"을 못 잡았다. 그 결과 `/task-close`로 활성 브랜치가 사라진 뒤 채번이 1로 리셋돼, 닫고 시작하는 순차 작업이 전부 `TASK-001`로 충돌했다(0.4.0부터 잠복 — 1세션 순차 다작업에서 노출). 정규식을 `TASK-[0-9]+`로 교정. [`project_task_init_number_race`의 *병렬* fork 락과 별건인 *순차* 충돌].
+
 ## [0.4.0] - 2026-06-29
 
 ### 추가

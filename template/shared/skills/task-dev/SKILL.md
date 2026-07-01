@@ -62,7 +62,7 @@ self-check 명령은 워크트리(`$WT_PATH`)에서 실행 — 코드 변경이 
 
 ### Step 2 — status 전환 (planned → developing)
 
-진입 시 `planned`인 경우만 헤더 status를 `developing`으로 Edit.
+`set_status` 도구로 `developing` 전이 (또는 `npx @angar2/taskery set-status TASK-<NNN> developing`) — 진입 시 `planned`이면 `developing`으로. 이미 `developing`(이어가기)이면 idempotent no-op. (유효전이 코드 검증.)
 
 ### Step 3 — Phase 순서대로 구현
 
@@ -156,7 +156,7 @@ stash FRICTION_LOG #14+19 / #25 반영 — 유닛 테스트는 본 단계에서 
 
 ### Step 8 — status 전환 + 결과 보고
 
-1. 헤더 status → `developed` Edit.
+1. `set_status` 도구로 `developed` 전이 (또는 `npx @angar2/taskery set-status TASK-<NNN> developed`) — self-check + 테스트 PASS 후. (유효전이 코드 검증.)
 2. 결과 보고:
 
 ```
@@ -179,8 +179,8 @@ stash FRICTION_LOG #14+19 / #25 반영 — 유닛 테스트는 본 단계에서 
 ## 도구 가이드
 
 - **Read**: task 파일 / `CLAUDE.md` 검증 명령 / 관련 코드 정독
-- **Edit / Write**: 코드 작성 + Phase 체크박스 갱신 + Result 섹션 갱신 + status 전환
-- **Bash**: 검증 명령 실행 (린트/타입/빌드/단위테스트). **git 명령 절대 X — `/task-close`만 git 담당**
+- **Edit / Write**: 코드 작성 + Phase 체크박스 갱신 + Result 섹션 갱신
+- **Bash / 도구**: 검증 명령 실행 (린트/타입/빌드/단위테스트) / `set_status` 도구(또는 `npx @angar2/taskery set-status`) status 전이. **git 명령 절대 X — `/task-close`만 git 담당**
 - **Grep / Glob**: 추가 코드 탐색 (Phase 진행 중 인접 영향 발견 시)
 
 ## 주의사항

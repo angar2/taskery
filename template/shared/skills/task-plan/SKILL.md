@@ -340,7 +340,7 @@ Test Plan 작성 완료 후 *반드시* 점검 단계 수행. *"누적/리셋 �
 2. 사용자 *"OK"* / *"수정해줘"* 응답:
    - **OK** → Step 8 진행.
    - **수정 요청** → 해당 섹션 수정 후 다시 합의. 한도 없이 반복 OK (반복 잦으면 task 분리/규모 재조정 검토).
-3. 합의 완료 후 헤더 status → `planned`로 Edit.
+3. 합의 완료 후 `set_status` 도구로 `planned` 전이 (또는 `npx @angar2/taskery set-status TASK-<NNN> planned`) — 헤더 상태 전이(유효전이 코드 검증). (Test Plan 보수 모드는 `testing` 유지 — 전이 호출 X.)
 
 ### Step 8 — 결과 보고
 
@@ -357,7 +357,8 @@ Test Plan 작성 완료 후 *반드시* 점검 단계 수행. *"누적/리셋 �
 
 - **Read**: task 파일 / `.project/` 루트 제품 관통 문서 / 관련 코드 정독
 - **Grep / Glob**: Scope 코드 서치 (관련 함수/파일 탐색)
-- **Edit**: task 파일 4 섹션 채우기 + status 전환
+- **Edit**: task 파일 4 섹션 채우기
+- **Bash / 도구**: `set_status` 도구(또는 `npx @angar2/taskery set-status`) status 전이 (유효전이 코드 검증)
 - **Write**: spec-diff 파일 (Phase 0 변경 시)
 - **AskUserQuestion**: Requirements 증폭 confirm / 합의 단계 / Phase 분할 검토
 

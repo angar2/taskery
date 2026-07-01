@@ -56,7 +56,7 @@ MAIN_WT=$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")
 
 ### Step 2 — status 전환 (developed → testing)
 
-진입 시 `developed`인 경우만 헤더 status를 `testing`으로 Edit.
+`set_status` 도구로 `testing` 전이 (또는 `npx @angar2/taskery set-status TASK-<NNN> testing`) — 진입 시 `developed`이면 `testing`으로. 이미 `testing`(이어가기)이면 idempotent no-op. (유효전이 코드 검증.)
 
 ### Step 3 — 격리 세션 호출 (Task tool)
 
@@ -172,7 +172,7 @@ task 파일을 직접 Read 해서 ## Test Plan 섹션 + ## Dev Plan의 Phase별 
 
 #### PASS 분기
 
-1. 헤더 status → `tested` Edit.
+1. `set_status` 도구로 `tested` 전이 (또는 `npx @angar2/taskery set-status TASK-<NNN> tested`) — PASS 전이 (유효전이 코드 검증).
 2. 결과 보고:
 ```
 ✅ TASK-<NNN> 격리 검증 PASS
@@ -195,7 +195,7 @@ task 파일을 직접 Read 해서 ## Test Plan 섹션 + ## Dev Plan의 Phase별 
 1. "고쳐" — 메인이 status를 developing으로 되돌림 + /task-dev 재진입
 2. "OK 마무리" — 실패 알면서 /task-close 진행 (위험: 알려진 결함 채로 closed)
 ```
-3. 사용자 *"고쳐"* → 헤더 status `testing` → `developing` Edit + `/task-dev` 안내. 사용자 *"OK 마무리"* → status `testing` → `tested` Edit (단 Result 섹션에 *"알려진 결함 있음"* 명시) + `/task-close` 안내.
+3. 사용자 *"고쳐"* → `set_status` 도구로 `developing` 전이(또는 `npx @angar2/taskery set-status TASK-<NNN> developing`) + `/task-dev` 안내. 사용자 *"OK 마무리"* → `set_status`로 `tested` 전이 (Result 섹션에 *"알려진 결함 있음"* 명시) + `/task-close` 안내.
 4. **시각 어긋남 FAIL의 경우** — 격리 세션이 준 *어긋남 목록*을 그대로 보고에 실어, 사용자 *"고쳐"* 시 `/task-dev`가 그 목록을 **한 번에 배치로** 수정하도록 안내(흠을 사용자가 직접 찾지 않음 — test가 찾아줌). **재검사 라운드 상한 = 3회** (기본값, 프로젝트별 조정 가능): dev↔test를 3회 돌고도 어긋남이 남으면 멈추고 *현 상태 + 남은 어긋남*을 사용자에게 보고해 판단을 받는다. (전이는 매 라운드 사용자 *"고쳐"* 발화로 진행 — 무인 자동 루프 아님.)
 
 #### UNCERTAIN(검증 불가) 분기 — 시험문제 결함 → Test Plan 보수
@@ -250,7 +250,8 @@ USER 검수 — N 항목 (목업 기준: <mockup path — 있을 시>)
 ## 도구 가이드
 
 - **Read**: task 파일 / `## Test Plan` + `## Dev Plan` 정독
-- **Edit**: status 전환 + Result 섹션 기록
+- **Edit**: Result 섹션 기록
+- **Bash / 도구**: `set_status` 도구(또는 `npx @angar2/taskery set-status`) status 전이 (유효전이 코드 검증)
 - **Task tool**: 격리 세션 호출 (Step 3 prompt 사용)
 - **AskUserQuestion**: FAIL/UNCERTAIN 시 사용자 판단 받기
 
