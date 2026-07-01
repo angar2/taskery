@@ -161,6 +161,29 @@ async function main() {
     console.log(`  .gitignore — 사용자 선택으로 패스`);
   }
 
+  // 4.7. MCP 서버 등록 — Claude는 .mcp.json 생성(첫 세션 승인 게이트), Codex는 명령 안내.
+  //   MCP 도구 8종 = lib core의 구조화 입구(CLI와 동일 함수). 미등록 환경은 npx CLI가 폴백.
+  if (platforms.includes('claude')) {
+    const mcpJsonPath = path.join(cwd, '.mcp.json');
+    let mcpConfig = { mcpServers: {} };
+    if (fs.existsSync(mcpJsonPath)) {
+      // 기존 .mcp.json의 다른 서버 보존 — taskery 항목만 머지.
+      try {
+        mcpConfig = JSON.parse(fs.readFileSync(mcpJsonPath, 'utf8'));
+      } catch (e) {
+        mcpConfig = { mcpServers: {} };
+      }
+      if (!mcpConfig.mcpServers) mcpConfig.mcpServers = {};
+    }
+    if (!mcpConfig.mcpServers.taskery) {
+      mcpConfig.mcpServers.taskery = { command: 'npx', args: ['-y', '@angar2/taskery', 'mcp'] };
+      fs.writeFileSync(mcpJsonPath, JSON.stringify(mcpConfig, null, 2) + '\n');
+      console.log(`  .mcp.json — taskery MCP 서버 등록 (첫 세션에서 승인 필요)`);
+    } else {
+      console.log(`  .mcp.json — taskery 서버 이미 등록됨, 스킵`);
+    }
+  }
+
   // 5. 결과 보고
   console.log(`\n✅ taskery init 완료`);
   console.log(`   카피: ${copied}개 / 스킵: ${skipped}개`);
@@ -168,11 +191,16 @@ async function main() {
   console.log(`   manifest: ${MANIFEST_NAME}\n`);
   const entryFile = platforms.includes('claude') ? 'CLAUDE.md' : 'AGENTS.md';
   console.log(`다음 단계:`);
-  console.log(`  1. ${entryFile} 정독 + 프로젝트 메타 + 검증 명령 채우기`);
-  if (platforms.includes('codex')) {
-    console.log(`  2. Codex 최초 1회 '/hooks'로 hook trust 승인 (.codex/config.toml — git-guard / closed-immutable)`);
+  let step = 1;
+  console.log(`  ${step++}. ${entryFile} 정독 + 프로젝트 메타 + 검증 명령 채우기`);
+  if (platforms.includes('claude')) {
+    console.log(`  ${step++}. Claude 첫 세션에서 taskery MCP 서버 승인 (.mcp.json — 구조화 도구 8종; 미승인 시 npx CLI 폴백)`);
   }
-  console.log(`  3. 에이전트 진입 → '/project-init' → '/plan-init <기능그룹>' → '/task-init'\n`);
+  if (platforms.includes('codex')) {
+    console.log(`  ${step++}. Codex 최초 1회 '/hooks'로 hook trust 승인 (.codex/config.toml — git-guard / closed-immutable)`);
+    console.log(`     + MCP 등록: codex mcp add taskery -- npx -y @angar2/taskery mcp`);
+  }
+  console.log(`  ${step++}. 에이전트 진입 → '/project-init' → '/plan-init <기능그룹>' → '/task-init'\n`);
 }
 
 main().catch((e) => {

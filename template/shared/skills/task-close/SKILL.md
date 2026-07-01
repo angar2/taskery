@@ -101,9 +101,9 @@ FAIL 시:
   - *"고쳐"* → status `developing`으로 되돌림 + `/task-dev` 안내 + close 중단.
   - *"OK 마무리"* → 결함 명시한 채 진행 (Result 섹션에 *"검증 명령 X FAIL 알려진 결함 — 사유: ..."* 추가).
 
-### Step 3 — 결정적 준비 (`close` CLI)
+### Step 3 — 결정적 준비 (`task_close` 도구)
 
-`npx @angar2/taskery close TASK-NNN` 한 번으로 다음을 코드가 수행:
+`task_close` 도구 (또는 `npx @angar2/taskery close TASK-NNN`) 한 번으로 다음을 코드가 수행:
 - **Phase 기능 커밋** — uncommitted 코드 변경분(`.project/` 외)을 task.md `### Phase N`의 `- 파일:` 필드에 매핑해 Phase 순서대로 자동 커밋 (GIT_RULE 메시지 형식, 태그 자동: feature→`feat:` / bug→`fix:` / improve→`improve:` / refactor→`refactor:` / docs·chore→`docs:`).
 - **status → `closed`** — task 문서 헤더 (`.gitignore` 케이스 자동 판정 — 등록=메인WT / 미등록=워크트리).
 - **flows/문서 커밋** (미등록 케이스) — 워크트리 안 `.project/flows/` + task 문서.
@@ -111,9 +111,9 @@ FAIL 시:
 
 반환 JSON `{ prepped, branch, wtPath, registered, commits, aheadOfDev }`.
 
-**콜백 (특수 exit — 메인이 LLM 판단 후 처리):**
-- **exit 2 — Phase↔파일 매핑 모호** (`{blocked:'mapping', files, phases, reason}`): Dev Plan `- 파일:` 필드가 변경 파일을 못 덮음(미매핑) 또는 한 파일이 여러 Phase에 걸침. → 메인이 Dev Plan + `git -C "$WT_PATH" diff --name-only` 정독 후 **코드 변경분을 Phase별로 수동 커밋**(GIT_RULE 형식, 위 태그) → `npx @angar2/taskery close TASK-NNN` **재호출**. 코드가 이미 커밋돼 있으므로 close가 status=closed + 문서 커밋 + 마커를 자동 완료한다.
-- **exit 3 — status 게이트** (`{blocked:'status', current}`): status가 `tested`가 아님. Step 1~2 통과했다면 발생 X. 발생 시 사용자 보고 + 중단.
+**콜백 (반환 `blocked` 필드 / npx는 특수 exit — 메인이 LLM 판단 후 처리):**
+- **`blocked:'mapping'`** (npx exit 2 — `{files, phases, reason}`): Dev Plan `- 파일:` 필드가 변경 파일을 못 덮음(미매핑) 또는 한 파일이 여러 Phase에 걸침. → 메인이 Dev Plan + `git -C "$WT_PATH" diff --name-only` 정독 후 **코드 변경분을 Phase별로 수동 커밋**(GIT_RULE 형식, 위 태그) → `task_close` 도구(또는 `npx ... close`) **재호출**. 코드가 이미 커밋돼 있으므로 close가 status=closed + 문서 커밋 + 마커를 자동 완료한다.
+- **`blocked:'status'`** (npx exit 3 — `{current}`): status가 `tested`가 아님. Step 1~2 통과했다면 발생 X. 발생 시 사용자 보고 + 중단.
 
 > **close 후 task 문서 수정 금지** — close가 status=`closed`로 잠갔다(`closed-immutable.sh` hook 차단). 이후 Step 4 충돌 해결 내역은 *task 문서가 아니라 rebase/머지 커밋 메시지*에 기록한다.
 
@@ -253,8 +253,8 @@ git -C "$MAIN_WT" worktree remove "$WT_PATH"
 
 ## 도구 가이드
 
-- **Read**: GIT_RULE / task 파일 / CLAUDE.md 검증 명령 정독 / `close` 반환 JSON
-- **Bash**: `npx @angar2/taskery close TASK-NNN`(결정적 준비) + git 명령 (`rebase`, `merge`, `worktree`, `branch`) + 검증 명령 재실행. **유일하게 git 사용 허가된 스킬**
+- **Read**: GIT_RULE / task 파일 / CLAUDE.md 검증 명령 정독 / `task_close` 반환 JSON
+- **Bash / 도구**: `task_close` 도구(또는 `npx @angar2/taskery close TASK-NNN`) 결정적 준비 + git 명령 (`rebase`, `merge`, `worktree`, `branch`) + 검증 명령 재실행. **유일하게 git 사용 허가된 스킬**
 - **Edit / Write**: (매핑 콜백 시) 수동 Phase 커밋용 staging / CHANGELOG 내용 (close가 커밋). **close 후 task 문서는 closed라 수정 X**
 - **bin/lib.js**: `withMergeLock` (머지 락 — Step 5)
 
