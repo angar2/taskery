@@ -7,6 +7,8 @@
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-07-01
+
 ### 추가
 
 - **Tier 3 — MCP 서버(`bin/mcp.js`, 구조화 도구 8종)** — `bin/lib.js` core 함수를 MCP 도구로 노출: `backlog_add` / `backlog_get` / `backlog_mark` / `set_status` / `plan_init` / `task_init` / `task_close` / `status`. AI가 `npx` stdout 텍스트를 파싱하던 것을 네이티브 구조화 입출력 + 게이트 강제(전이·종료 조건)로 대체한다. CLI(`bin/*.js`)와 **동일 core를 공유**하므로 로직 중복 0 — MCP 도구 = CLI 명령의 다른 입구. 신규 런타임 의존성 `@modelcontextprotocol/sdk`(^1.29)·`zod`(inputSchema). `init`이 Claude용 `.mcp.json` 자동 등록(첫 세션 승인 게이트), Codex는 `codex mcp add taskery -- npx -y @angar2/taskery mcp` 안내. 미등록 환경은 npx CLI가 폴백.
