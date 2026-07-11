@@ -11,8 +11,8 @@
 - **git 작업은 메인 세션이 `/task-close` 스킬 또는 직접 수행**.
 - **main, dev 직접 커밋 절대 금지**: 모든 작업은 태스크 브랜치에서 진행.
 - **하나의 브랜치는 하나의 태스크만 담당**.
-- **작업 브랜치는 *task-init 시점에* dev에서 분기, *task-close 시점에* dev로 병합** (멀티세션 0.1.2+).
-- **dev → main 병합은 사용자가 직접 수행**.
+- **작업 브랜치는 *task-init 시점의 현재 브랜치*(= 부모 브랜치)에서 분기, *task-close 시점에* 그 부모 브랜치로 병합** (멀티세션 0.1.2+ / 부모 파라미터화 0.6.0+). 부모는 `dev` 고정이 아니라 서 있는 브랜치 — 개인 기본 `dev`, 회사/로드맵 `dev_feat_x`/`master` 등. task 헤더에 기록돼 close가 그 값으로 되병합한다.
+- **부모 → 상위(dev/voyager/master 등) 병합은 사용자가 직접 수행** (로컬 또는 PR). taskery는 부모까지만 병합.
 - **수동 git 작업 시 정합성 보장 X** — taskery 명령(스킬 호출 / `npx @angar2/taskery <서브>`)으로만 운영. 수동 `git worktree add` / `branch` / `merge` 시 SSoT·락·자동 정리 흐름이 깨질 수 있음.
 
 ---
@@ -22,7 +22,7 @@
 | 브랜치 | 용도 |
 |--------|------|
 | `main` | 프로덕션 |
-| `dev` | 통합 개발 (메인 워크트리 = dev 전용) |
+| `dev` | 통합 개발 — 개인 기본 부모 브랜치 (메인 워크트리는 *현재 부모 브랜치* 고정, dev는 그 기본값) |
 | `{타입}/{개발자}_TASK-NNN_{출처}_{슬러그}` | 태스크 작업 브랜치 (멀티세션 시스템 단일 식별자) |
 
 ### 브랜치 타입
@@ -112,7 +112,7 @@ feat: [TASK-001] Phase 1 - 사용자 인증 로직 구현
 1. Phase별 기능 커밋 (각 Phase마다 1개)
 2. 태스크 문서 커밋
 3. CHANGELOG 커밋
-4. dev 브랜치 병합 (--no-ff, 머지 락 직렬화)
+4. 부모 브랜치 병합 (--no-ff, 머지 락 직렬화)
 5. 워크트리 자동 제거 + 작업 브랜치 자동 삭제 (멀티세션 0.1.2+ — §"작업 브랜치 삭제 정책" 면제 조항)
 ```
 
@@ -132,10 +132,10 @@ docs: [TASK-{NNN}] CHANGELOG 업데이트
 
 - 머지 커밋 메시지는 git 기본 메시지 사용
 - `-m` 옵션으로 커밋 메시지 지정 금지
-- **`--no-ff` 강제 (일반 타입)**: feature/bug/improvement/refactor 등 일반 작업 브랜치 → dev 병합 시 `git merge --no-ff {브랜치명}` 사용. fast-forward 병합 절대 금지. 머지 커밋이 없으면 작업 브랜치 삭제 후 분기 정보 영구 손실(90일 reflog GC 후 추적 불가).
-- **추적 변경 0 → 마커 빈커밋 (`--allow-empty` 금지의 유일 예외)**: 코드 변경 0 + `.project` gitignore로 작업 브랜치가 dev보다 앞선 커밋이 0개이면 `--no-ff`도 *Already up to date*가 되어 머지 커밋이 생성되지 않는다. 이 경우 `/task-close`가 추적 마커 빈커밋 1개(`--allow-empty`)를 생성해 분기·채번 정보를 보존한다 (상세: task-close Step 6-8). 그 외 빈커밋은 금지.
+- **`--no-ff` 강제 (일반 타입)**: feature/bug/improvement/refactor 등 일반 작업 브랜치 → 부모 병합 시 `git merge --no-ff {브랜치명}` 사용. fast-forward 병합 절대 금지. 머지 커밋이 없으면 작업 브랜치 삭제 후 분기 정보 영구 손실(90일 reflog GC 후 추적 불가).
+- **추적 변경 0 → 마커 빈커밋 (`--allow-empty` 금지의 유일 예외)**: 코드 변경 0 + `.project` gitignore로 작업 브랜치가 부모보다 앞선 커밋이 0개이면 `--no-ff`도 *Already up to date*가 되어 머지 커밋이 생성되지 않는다. 이 경우 `/task-close`가 추적 마커 빈커밋 1개(`--allow-empty`)를 생성해 분기·채번 정보를 보존한다 (상세: task-close Step 6-8). 그 외 빈커밋은 금지.
 - **plan/roadmap 임시 docs 브랜치 예외**: plan-init 단계의 단일 커밋(plan 신규 생성 — PLAN/ROADMAP + 제품 관통 문서 delta)에 한정 `--ff-only` 가능.
-- **task 진행 중 ROADMAP/플랜 문서 갱신은 별도 `docs/*` 브랜치 분리 절대 금지**: 해당 task의 작업 브랜치 (`feature/*` / `improve/*` 등) 안에서 수정 + 다른 구현 커밋과 함께 `--no-ff` 머지로 dev 병합 (분기 정보 손실 방지).
+- **task 진행 중 ROADMAP/플랜 문서 갱신은 별도 `docs/*` 브랜치 분리 절대 금지**: 해당 task의 작업 브랜치 (`feature/*` / `improve/*` 등) 안에서 수정 + 다른 구현 커밋과 함께 `--no-ff` 머지로 부모 병합 (분기 정보 손실 방지).
 
 ---
 
@@ -144,7 +144,7 @@ docs: [TASK-{NNN}] CHANGELOG 업데이트
 ### 기본 (멀티세션 외 / 케이스 2 / 사용자 수동 작업)
 
 작업 브랜치(feature/* / bug/* / improve/* / refactor/* / docs/* / chore/*)는 다음 조건 모두 만족 시에만 삭제한다:
-1. dev 브랜치에 `--no-ff` 병합 완료 (머지 커밋이 dev에 기록됨)
+1. 부모 브랜치에 `--no-ff` 병합 완료 (머지 커밋이 부모에 기록됨)
 2. 사용자 명시 승인 ("브랜치 삭제해" 등 직접 요청)
 
 **메인 세션 룰**: 사용자 승인 없는 작업 브랜치 삭제 지시 절대 금지. 머지 후 자동 삭제 X. 사용자가 직접 요청 시에만 `git branch -d {브랜치명}` 실행. (단, plan/roadmap 임시 docs 브랜치는 단일 커밋 ff-only 머지 후 자동 삭제 가능.)
@@ -156,7 +156,7 @@ docs: [TASK-{NNN}] CHANGELOG 업데이트
 | 동작 | 명령 | 면제 사유 |
 |------|------|----------|
 | 워크트리 제거 | `git -C "$MAIN_WT" worktree remove "$WT_PATH"` | task 완료 후 격리 폴더 정리 필요. 사전 안전 검증 (§"멀티세션 워크트리 정책" 참조) 후 진행 |
-| 작업 브랜치 삭제 | `git -C "$MAIN_WT" branch -d "$BRANCH"` | dev `--no-ff` 머지 완료 후 안전 삭제 (-D 강제 X). 머지 커밋이 dev에 박혀 분기 정보 보존 |
+| 작업 브랜치 삭제 | `git -C "$MAIN_WT" branch -d "$BRANCH"` | 부모 `--no-ff` 머지 완료 후 안전 삭제 (-D 강제 X). 머지 커밋이 부모에 박혀 분기 정보 보존 |
 
 #### 보존 키워드 (양쪽 다 보존)
 
@@ -172,7 +172,7 @@ docs: [TASK-{NNN}] CHANGELOG 업데이트
 사용자 선택:
 - 보존 → 워크트리 + 브랜치 모두 보존 (Step 12, 13 건너뜀)
 - 삭제 → 정상 자동 흐름 (Step 12, 13 진행)
-- 취소 → close 중단 (단, dev 머지는 이미 완료된 상태)
+- 취소 → close 중단 (단, 부모 브랜치 머지는 이미 완료된 상태)
 
 #### 안전망 출력 (브랜치 삭제 직후)
 
@@ -189,11 +189,11 @@ docs: [TASK-{NNN}] CHANGELOG 업데이트
 
 ## 멀티세션 워크트리 정책 (0.1.2+)
 
-### 메인 워크트리 = dev 전용
+### 메인 워크트리 = 부모 브랜치 고정
 
-- 메인 워크트리는 항상 dev 체크아웃 상태 유지
+- 메인 워크트리는 `/task-init` 시점에 서 있던 브랜치(= 그 task의 *부모 브랜치*)를 유지. 개인 기본 `dev`, 회사/로드맵 `dev_feat_x`/`master` 등 — taskery는 현재 브랜치를 부모로 삼는다(이름 고정 X).
 - 모든 태스크 작업은 *예외 없이* 별도 워크트리에서 수행
-- **메인 워크트리 HEAD를 dev에서 떼는 어떤 명령도 영구 금지**: `git checkout <task-branch>` / `git switch <task-branch>` / `git reset` HEAD 이동 / `git rebase` HEAD 이동 등. *"잠깐만 메인에서"* / *"테스트 한 번만"* 같은 예외 발화도 거부 (별도 워크트리로 처리)
+- **진행 중 태스크가 있는 동안 메인 워크트리 HEAD를 옮기는 어떤 명령도 영구 금지**: `git checkout <task-branch>` / `git switch <task-branch>` / `git reset` HEAD 이동 / `git rebase` HEAD 이동 등. close가 부모로 되병합해야 하므로 부모에 서 있어야 한다. *"잠깐만 메인에서"* / *"테스트 한 번만"* 같은 예외 발화도 거부 (별도 워크트리로 처리). (부모 브랜치 자체 전환은 진행 중 태스크가 없을 때만.)
 - **모호 발화 자의 해석 금지**: *"워크트리 없이"* / *"메인에서"* / *"이 자리에서"* 류 발화 = 본 규칙 충돌 신호 → 즉시 정지 + 규칙 명시 + 1줄 confirm 요청 (자의 해석 후 진행 영구 금지). 사용자 의도가 *오타/모호*일 가능성은 *워크트리 사용*으로 읽는 게 자연스러움
 - `/task-init` / `/task-close` 시작 시 검증 (위배 시 사용자 호출 + 중단)
 
@@ -235,12 +235,12 @@ git ≥ 2.31 필요 (`--path-format=absolute` 옵션).
 ### SSoT 조회 (진행중 태스크)
 
 ```sh
-git -C "$MAIN_WT" branch --no-merged dev --list \
+git -C "$MAIN_WT" branch --list \
   'feature/*_TASK-*' 'bug/*_TASK-*' 'improve/*_TASK-*' \
   'refactor/*_TASK-*' 'docs/*_TASK-*' 'chore/*_TASK-*'
 ```
 
-`_TASK-*` 패턴 강제로 케이스 2(TASK 없는 브랜치) 자동 제외. 별도 상태 파일/락 운영 X — git 분산 락(동일 브랜치명 자동 거부) + 결정적 슬러그(백로그/로드맵 항목 제목 → kebab-case)가 race 차단 2층 안전망.
+`_TASK-*` 패턴 강제로 케이스 2(TASK 없는 브랜치) 자동 제외. (부모 기준 `--no-merged` 미사용 — 분기 직후 브랜치는 부모와 동일 commit이라 완전 머지로 오판돼 채번이 충돌하기 때문. 브랜치 존재 자체가 SSoT. `bin/lib.js` `getActiveTasks` 참조.) 별도 상태 파일/락 운영 X — git 분산 락(동일 브랜치명 자동 거부) + 결정적 슬러그(백로그/로드맵 항목 제목 → kebab-case)가 race 차단 2층 안전망.
 
 ### 머지 직렬화 (head-to-head race 차단)
 
@@ -253,7 +253,7 @@ git -C "$MAIN_WT" branch --no-merged dev --list \
 
 여러 세션이 병렬로 검수용 dev 서버·터널을 띄울 때 포트·프로세스가 충돌하지 않도록 task별로 자원을 독립 소유한다. CLI·라이브러리 등 검수 서버가 없는 프로젝트는 무관.
 
-- **포트 격리 (결정적)**: 메인/dev 세션 = 기준 포트, task 워크트리 = 기준 포트 + TASK번호. 기준 포트는 프로젝트가 `CLAUDE.md`(코덱스는 `AGENTS.md`) `## 검수 실행 명령`에 선언한다 (멀티 프로젝트 동시 운영 시 프로젝트마다 다른 기준 포트). TASK번호는 1부터라 offset 0(기준 포트)이 메인 몫으로 항상 비어 충돌하지 않는다.
+- **포트 격리 (결정적)**: 메인 세션(부모 브랜치) = 기준 포트, task 워크트리 = 기준 포트 + TASK번호. 기준 포트는 프로젝트가 `CLAUDE.md`(코덱스는 `AGENTS.md`) `## 검수 실행 명령`에 선언한다 (멀티 프로젝트 동시 운영 시 프로젝트마다 다른 기준 포트). TASK번호는 1부터라 offset 0(기준 포트)이 메인 몫으로 항상 비어 충돌하지 않는다.
 - **터널 (필수 아님)**: 모바일 검수 등 필요한 task만, 자기 포트를 가리키는 별도 프로세스로 판다 → task별 독립 URL.
 - **자기 것만 정리**: `/task-close` 시 본 task가 띄운 서버·터널(자기 포트 것)만 종료한다. **`pkill -f` 같은 광역 종료 금지** — 다른 세션의 서버까지 죽이는 원인.
 - **검수 기동 (자동)**: 사용자가 결과를 *눈으로 검수*하는 시점에 위 포트로 서버를 백그라운드 기동하고 접속 URL을 보고한다 (사용자가 매번 실행을 지시하지 않게). 정확한 발동 지점은 각 스킬 참조 — `/task-dev`는 세션이 거기서 끝날 때(Step 9), `/task-test`는 UNCERTAIN 검수 직전(Step 5)·PASS 후 종료 시(Step 7). FAIL→수정 흐름에서는 기동하지 않는다. 단계가 *기능상* 서버를 요구하면(E2E 등) 검수 시점과 무관하게 띄운다.
@@ -282,7 +282,7 @@ git -C "$MAIN_WT" branch --no-merged dev --list \
 - 민감 정보 커밋 금지 (`.env`, API KEY, Secret Key 등)
 - 여러 태스크를 하나의 브랜치에서 작업 금지
 - 커밋 순서 임의 변경 금지
-- 승인 없이 dev 브랜치 병합 금지
+- 승인 없이 부모 브랜치 병합 금지
 - **destructive 명령 사용자 승인 필수**: 다음 명령은 사용자 명시 승인 없이 절대 실행 금지:
   - `git reset --hard ...`
   - `git push --force ...`

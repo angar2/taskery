@@ -92,9 +92,9 @@ PLAN.md는 *얇은 인덱스*다 — 이 기능 그룹이 건드린 루트 문�
 작성 산출물 목록 + 다음 단계:
 - *"`<NNN_slug>/` plan 생성 완료 — PLAN/ROADMAP + FEATURES/UX-UI 의도 stub. AGENT-GUIDE 활성 plan `<NNN_slug>` 갱신. 다음은 `/task-init`으로 첫 task (스키마/엔드포인트 상세는 task 진행에서 구현 동반)."*
 
-**commit 흐름** (GIT_RULE): dev 직접 commit *금지*(git-guard 차단). default 둘:
+**commit 흐름** (GIT_RULE): 현재 브랜치(= 부모)가 dev/main이면 직접 commit *금지*(git-guard 차단). default 둘:
 1. **첫 task에 묶기 (권장)**: `/project-init` 직후면 init 산출물과 같은 작업 브랜치(보통 TASK-001 부트스트랩 chore)에 함께. 새 기능 그룹이면 새 task 브랜치 또는 임시 docs 브랜치.
-2. **임시 docs 브랜치**: `git checkout -b docs/{개발자}_plan-{NNN_slug}` → commit → dev `--no-ff` 머지.
+2. **임시 docs 브랜치**: `git checkout -b docs/{개발자}_plan-{NNN_slug}` → commit → **현재 브랜치(부모) `--no-ff` 머지**(부모가 dev면 dev, dev_feat_x면 dev_feat_x).
 
 ## 주의사항
 

@@ -24,7 +24,7 @@ MAIN_WT=$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")
 | 케이스 | task 문서 위치 | 제품 관통 문서 위치 | 동시 쓰기 |
 |--------|--------------|----------------|----------|
 | 등록 (퍼블릭 리포 default) | `$MAIN_WT/.project/tasks/<NNN_slug>/...` | `$MAIN_WT/.project/<doc>.md` (루트 평평) | `withMetaLock` (`bin/lib.js`) |
-| 미등록 | `$WT_PATH/.project/tasks/<NNN_slug>/...` (워크트리 안, 머지 시 dev 반영) | `$MAIN_WT/.project/<doc>.md` (제품 문서는 여전히 단일 소스) | 단일 세션 가정 (워크트리 내부) |
+| 미등록 | `$WT_PATH/.project/tasks/<NNN_slug>/...` (워크트리 안, 머지 시 부모 브랜치 반영) | `$MAIN_WT/.project/<doc>.md` (제품 문서는 여전히 단일 소스) | 단일 세션 가정 (워크트리 내부) |
 
 본문 모든 `.project/...` 경로는 *위 분기에 따라* 적용. spec-diff / mockup / screenshots는 task 문서와 같은 위치.
 
@@ -364,7 +364,7 @@ Test Plan 작성 완료 후 *반드시* 점검 단계 수행. *"누적/리셋 �
 
 ## 주의사항
 
-- **본문 영역만 작성** — 헤더 5컬럼 중 *상태*만 갱신(`draft` → `planned`). 생성일/플랜/유형/규모는 `/task-init`에서 작성된 값 유지. 단 Step 4에서 *규모가 명백히 잘못 추정*된 게 드러나면 사용자 confirm 후 갱신 OK (예: medium 추정했는데 Phase 8개 나옴 → large 갱신 + 분리 검토).
+- **본문 영역만 작성** — 헤더 6컬럼 중 *상태*만 갱신(`draft` → `planned`). 생성일/플랜/유형/규모/부모 브랜치는 `/task-init`에서 작성된 값 유지. 단 Step 4에서 *규모가 명백히 잘못 추정*된 게 드러나면 사용자 confirm 후 갱신 OK (예: medium 추정했는데 Phase 8개 나옴 → large 갱신 + 분리 검토).
 - **Phase 선제적 일괄 작성 금지** — small task에 medium 분량 Phase 작성하는 함정 회피. 명확한 것만 작성하고 진행 중 추가.
 - **Test Plan = 실질 동작 시나리오 (유닛 테스트 X)** — Test Plan은 *요구사항이 정상 동작하는지* 검증. 유닛 테스트는 task-dev Step 6.5에서 단일 시점 실행 (코드 정상성 영역, Test Plan과 직교).
 - **Test Plan 자기완결적** — 격리 세션이 *task.md만 보고* 수행 가능해야. 메인의 plan/dev 컨텍스트 *"위 Phase에서 만든 X"* 같은 표현 금지. 코드/동작/명령만 명시.

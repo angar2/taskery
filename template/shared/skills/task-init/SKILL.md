@@ -1,6 +1,6 @@
 ---
 name: task-init
-description: task 시작 — 워크트리 분기 + 6 섹션 빈 골격 + 헤더 5컬럼 (status=draft) task.md 생성 (멀티세션 0.1.2+)
+description: task 시작 — 워크트리 분기 + 6 섹션 빈 골격 + 헤더 6컬럼 (부모 브랜치 자동 기록 · status=draft) task.md 생성 (멀티세션 0.1.2+)
 ---
 
 # /task-init
@@ -9,7 +9,7 @@ description: task 시작 — 워크트리 분기 + 6 섹션 빈 골격 + 헤더 
 
 새 task 시작 시 호출. **워크트리 분기 + task.md 빈 골격 작성**. Requirements / Scope / Dev Plan / Test Plan 본문은 다음 단계 `/task-plan`에서 채운다.
 
-> 메인 워크트리(dev 체크아웃)에서 호출. 채번·워크트리·브랜치 생성·골격 작성은 `task_init` 도구(fork)가 init 락 안에서 원자 수행한다.
+> 메인 워크트리(부모 브랜치 체크아웃 — 기본 dev)에서 호출. 서 있는 브랜치가 곧 부모가 된다. 채번·워크트리·브랜치 생성·골격 작성은 `task_init` 도구(fork)가 init 락 안에서 원자 수행한다.
 
 ## 호출 시점 + 입력
 
@@ -41,22 +41,22 @@ description: task 시작 — 워크트리 분기 + 6 섹션 빈 골격 + 헤더 
 
 ## Step 4 — 분기 + 골격 생성 (`task_init`) + BL 마킹
 
-`task_init` 도구(또는 `npx @angar2/taskery fork <타입> <개발자> <출처> <슬러그> --size <규모> --title "<한국어 제목>" [--promote]`) 한 번으로 **채번 → 워크트리·브랜치 생성**(init 락 원자 — 병렬 task-init 번호 충돌·동일 출처 중복·동일 브랜치명을 코드가 차단)에 더해 **빈 골격 task.md 자동 생성**(생성일=오늘 · plan=활성 plan · 유형 자동매핑 `improve`→`improvement` · status=draft · `.gitignore` 케이스로 위치 자동 판정)까지 수행한다.
+`task_init` 도구(또는 `npx @angar2/taskery fork <타입> <개발자> <출처> <슬러그> --size <규모> --title "<한국어 제목>" [--promote]`) 한 번으로 **채번 → 워크트리·브랜치 생성**(init 락 원자 — 병렬 task-init 번호 충돌·동일 출처 중복·동일 브랜치명을 코드가 차단)에 더해 **빈 골격 task.md 자동 생성**(생성일=오늘 · plan=활성 plan · 유형 자동매핑 `improve`→`improvement` · **부모 브랜치=fork 시점 현재 브랜치 자동 기록**(dev 고정 아님) · status=draft · `.gitignore` 케이스로 위치 자동 판정)까지 수행한다.
 
 - 반환 `{ taskNum, nnn, branch, wtPath, projectId, docPath, registered, promoted }`. 폴더 승격은 `--promote`/`promote:true`.
-- 에러 시(*"… 이미 진행중"* / *"… 정책 위배"* — dev/메인WT 검증·SSoT를 fork가 강제) stderr 메시지 그대로 보고 + 중단.
+- 에러 시(*"… 이미 진행중"* / *"… detached HEAD"* — 부모 브랜치(현재 브랜치) 확인·SSoT를 fork가 강제) stderr 메시지 그대로 보고 + 중단.
 - **BL 출처면** 직후 `backlog_mark` 도구(또는 `npx @angar2/taskery backlog-mark BL-NNN TASK-NNN`)로 `[ ]→[x]` + `- TASK:` 마크(콤마 누적, withMetaLock). RM/DR은 skip.
 
 ## Step 5 — 골격 확인 + 보고
 
-반환 `docPath`(절대 경로)를 Read해 헤더 5컬럼 + 6 섹션 placeholder + status=draft 확인만 한다. **본문 작성 금지** — Requirements / Scope / Dev Plan / Test Plan은 *반드시* `/task-plan`에서.
+반환 `docPath`(절대 경로)를 Read해 헤더 6컬럼 + 6 섹션 placeholder + status=draft 확인만 한다. **본문 작성 금지** — Requirements / Scope / Dev Plan / Test Plan은 *반드시* `/task-plan`에서.
 
 > **폴백** (반환에 `docPath` 없이 `scaffoldError`만 있을 때만): TASK_DOC_RULE §1.3 형식으로 해당 위치에 직접 작성(생성일=오늘, status=draft, 단일=`<NNN>_<slug>.md` / 폴더=`TASK-<NNN>_<slug>/task.md`).
 
 ```
 ✅ TASK-<NNN> 생성 완료
 - 워크트리: <wtPath> / 브랜치: <branch> / task 문서: <docPath>
-- 헤더: <생성일> / <plan> / <유형> / <규모> / draft
+- 헤더: <생성일> / <plan> / <유형> / <규모> / <부모 브랜치> / draft
 - BL 마킹: BL-<NNN> [x] (BL 출처 시. RM/DR 생략)
 - 다음: /task-plan TASK-<NNN> 으로 기획 채우기
 ```
@@ -66,7 +66,7 @@ description: task 시작 — 워크트리 분기 + 6 섹션 빈 골격 + 헤더 
 - **워크트리 생성 + 골격 작성만** — 본문 채우기 금지. Requirements / Scope / Dev Plan / Test Plan은 *반드시* `/task-plan`.
 - **단계 경계** — 허용: ROADMAP §4 확인 / SSoT 조회 / `task_init` 호출 / 빈 골격 확인. 금지: ARCHITECTURE/API-SPEC/FEATURES 등 루트 제품 관통 문서 본문 Read · 도메인 코드 Read·Grep · 기존 task 본문 Read (그건 `/task-plan` 영역).
 - **자동 추정 진행 X** — 맥락 명확해도 *제안 + OK* 후 생성.
-- **상태는 `draft` 고정** · **slug 영어 kebab-case** · **헤더 5컬럼 모두 채움**(*"미정"* placeholder X — 코드가 채움).
+- **상태는 `draft` 고정** · **slug 영어 kebab-case** · **헤더 6컬럼 모두 채움**(*"미정"* placeholder X — 코드가 채움. 부모 브랜치도 코드 자동 기록).
 - **fork 실패(같은 브랜치명 / 같은 출처 진행중) → 사용자 호출** + 중단(*"다른 세션이 같은 항목 진행 중"*).
 
 ## 상태 전이

@@ -24,26 +24,26 @@
 1. **범위 준수** — 사용자가 명시한 범위/행동만 수행. 명시 외 자체 진입 영구 금지. 예: 사용자가 *"X부터 Y까지"* 지시 → Y 끝에서 정지 + 상태 보고 + 다음 단계 명시 호출 대기.
 2. **Skill 정식 발동** — task 단계는 반드시 Skill 도구로 정식 호출. 가이드 본문을 머릿속 절차로 대체 금지 (컴팩트 세션 / 시스템 리마인더 인지 상태에서도 동일).
 3. **워크트리 자가 진단** — 세션 시작 시 현재 cwd가 *메인 워크트리*인지 *태스크 워크트리*인지 자가 판단 (`git rev-parse --show-toplevel` + `~/.taskery/worktrees/` 경로 비교). 태스크 워크트리면 *해당 진행중 태스크 컨텍스트*로 진입, 메인 워크트리면 *새 태스크 / 진행중 목록 인터뷰* 흐름.
-4. **모호 발화 자의 해석 금지** — *"워크트리 없이"* / *"메인에서"* / *"이 자리에서 그냥"* 류로 읽히는 발화 = 코어 규칙(메인 워크트리 = dev 전용) 충돌 신호. 즉시 정지 + 규칙 한 줄 명시 + 1줄 confirm 요청. 자의 해석 후 진행 영구 금지. 사용자 의도가 *오타/모호*일 가능성을 *워크트리 사용*으로 읽는 게 자연스러움.
+4. **모호 발화 자의 해석 금지** — *"워크트리 없이"* / *"메인에서"* / *"이 자리에서 그냥"* 류로 읽히는 발화 = 코어 규칙(메인 워크트리 = 부모 브랜치 고정, task는 워크트리에서) 충돌 신호. 즉시 정지 + 규칙 한 줄 명시 + 1줄 confirm 요청. 자의 해석 후 진행 영구 금지. 사용자 의도가 *오타/모호*일 가능성을 *워크트리 사용*으로 읽는 게 자연스러움.
 
 ---
 
 ## 멀티세션 워크트리 (0.1.2+)
 
-> 멀티세션 = 같은 프로젝트에서 *여러 메인 세션이 독립 태스크를 병렬*로 진행. git worktree로 작업 폴더 격리, dev 머지 시 직렬화.
+> 멀티세션 = 같은 프로젝트에서 *여러 메인 세션이 독립 태스크를 병렬*로 진행. git worktree로 작업 폴더 격리, 부모 브랜치 머지 시 직렬화.
 
-- **메인 워크트리 = dev 전용**: 메인 워크트리는 항상 `dev` 체크아웃 상태. 모든 태스크 작업은 *예외 없이* 별도 워크트리에서 수행. 메인 워크트리 HEAD를 dev에서 떼는 어떤 작업(`git checkout <task-branch>` / `git switch <task-branch>` / `git reset` HEAD 이동 / `git rebase` HEAD 이동 등)도 영구 금지. *"잠깐만 메인에서"* / *"테스트 한 번만 메인에서"* 같은 예외 발화도 거부 — 별도 워크트리에서 처리.
+- **메인 워크트리 = 부모 브랜치 고정**: 메인 워크트리는 `/task-init` 시점에 체크아웃돼 있는 브랜치(= 그 task의 *부모 브랜치*)를 유지한다. 개인 기본은 `dev`, 회사/로드맵은 `dev_feat_x` / `master` 등 — taskery는 *현재 서 있는 브랜치*를 부모로 삼는다(특정 이름 고정 X). 모든 태스크 작업은 *예외 없이* 별도 워크트리에서 수행. 진행 중 태스크가 있는 동안 메인 워크트리 HEAD를 옮기는 어떤 작업(`git checkout <task-branch>` / `git switch` / `git reset` HEAD 이동 / `git rebase` HEAD 이동 등)도 영구 금지 — close가 부모로 되병합해야 하므로 부모에 서 있어야 한다. *"잠깐만 메인에서"* / *"테스트 한 번만 메인에서"* 같은 예외 발화도 거부 — 별도 워크트리에서 처리. (부모 브랜치 자체를 바꾸려면 진행 중 태스크가 없을 때 원하는 브랜치로 체크아웃 후 새 task 시작.)
 - **워크트리 위치**: `~/.taskery/worktrees/<projectId>/TASK-NNN_<출처>_<슬러그>/`
   - `<projectId>`: `.taskery-manifest.json` `projectId` (8자 hex)
   - `<출처>`: `BL-NNN` / `RM-NNN` / `DR`
-- **`/task-init`이 워크트리 생성** + **`/task-close`가 dev 머지 + 워크트리 자동 제거** (자동 흐름. 보존 키워드 `keep` / `브랜치 남겨` 등 발화 시 둘 다 보존).
+- **`/task-init`이 부모 브랜치에서 워크트리 생성** + **`/task-close`가 부모 브랜치 머지 + 워크트리 자동 제거** (자동 흐름. 보존 키워드 `keep` / `브랜치 남겨` 등 발화 시 둘 다 보존).
 - **메인 메타 접근**: 워크트리에서 `.project/`, `CLAUDE.md` 등 접근 시 *메인 워크트리 절대 경로* 사용:
   ```sh
   MAIN_WT=$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")
   ```
 - **수동 git 작업 시 정합성 보장 X** — taskery 명령(스킬 / `npx @angar2/taskery <서브>`)으로만 운영.
 - **CLI 보조 명령**:
-  - `npx @angar2/taskery status` — 진행중 태스크 + 워크트리 + dev 머지 상태 요약
+  - `npx @angar2/taskery status` — 진행중 태스크 + 워크트리 + 부모 머지 상태 요약
   - `npx @angar2/taskery prune` — stale 워크트리 대화형 정리
 
 상세: `.project/rules/GIT_RULE.md` "멀티세션 워크트리 정책" 섹션.
@@ -71,11 +71,11 @@
 
 - **`/add-backlog`**: 사용자 *"~ 백로그에 추가"* 발화 → 얕은 분석(코드 탐색 X, 추정 수준) → BL-NNN 채번 → BACKLOG.md append (`[ ]` 대기).
 - **`/task-init` 연동**: 사용자 *"백로그의 BL-NNN 진행"* 발화 → 해당 항목 *확인 마킹*. `[ ]` → `[x]` + `- TASK: TASK-NNN` 추가 (다회 진행 시 콤마).
-- **체크박스 의미**: `[ ]` = 미확인 (task로 옮기지 않은 메모) / `[x]` = 확인 완료 (task로 옮김). `[x]`는 *task로 옮겼다*는 메모일 뿐, dev 머지·완료 여부와는 무관하다.
-- **`[x]` 항목이 실제로 완료된 작업인지 굳이 확인하려 들지 않는다.** 진행·완료 상태는 백로그가 아니라 `taskery status`(살아있는 브랜치) + dev 머지커밋이 판단한다.
+- **체크박스 의미**: `[ ]` = 미확인 (task로 옮기지 않은 메모) / `[x]` = 확인 완료 (task로 옮김). `[x]`는 *task로 옮겼다*는 메모일 뿐, 부모 머지·완료 여부와는 무관하다.
+- **`[x]` 항목이 실제로 완료된 작업인지 굳이 확인하려 들지 않는다.** 진행·완료 상태는 백로그가 아니라 `taskery status`(살아있는 브랜치) + 부모 머지커밋이 판단한다.
 - **머지 여부를 직접 알아야 할 경우에만** 아래 순서로 작업 완료 여부를 확인한다:
-  1. `taskery status` 진행중 목록에 그 TASK가 **있으면** → 아직 진행 중(dev 미머지)이므로 `git log dev --grep`이 비는 것이 정상이다. 재조회하지 않는다.
-  2. 목록에 **없으면** → `git log dev --grep 'BL-NNN'` + 브랜치명으로 작업 완료 여부를 확인한다.
+  1. `taskery status` 진행중 목록에 그 TASK가 **있으면** → 아직 진행 중(부모 미머지)이므로 `git log --all --grep`이 비는 것이 정상이다. 재조회하지 않는다.
+  2. 목록에 **없으면** → `git log --all --grep 'BL-NNN'` + 브랜치명으로 작업 완료 여부를 확인한다.
 - **글로벌 `.project/BACKLOG.md`** (다음 기능 그룹 후보 카탈로그) 는 본 흐름 무관 — `/plan-init` 영역.
 
 상세: `.claude/skills/add-backlog/SKILL.md`.
@@ -115,11 +115,11 @@
 ## 검수 실행 명령 (해당 시 — 앱 실행·검수가 필요한 프로젝트)
 
 > `/task-dev`·`/task-test`가 검수 시점(세션 중단점)에 이 명령으로 서버를 *백그라운드* 기동하고 접속 URL을 보고한다.
-> 멀티세션 포트 격리: 메인/dev 세션 = 기준 포트, task 워크트리 = 기준 포트 + TASK번호. 상세는 GIT_RULE "멀티세션 검수 환경" 섹션.
+> 멀티세션 포트 격리: 메인 세션(부모 브랜치) = 기준 포트, task 워크트리 = 기준 포트 + TASK번호. 상세는 GIT_RULE "멀티세션 검수 환경" 섹션.
 > CLI/라이브러리 등 검수 서버가 없는 프로젝트는 본 섹션 전체 삭제.
 
 - 기준 포트: `<예: 5100>`
-- 실행 명령: `<예: npm run dev -- --port <PORT>>` (`<PORT>` = 기준 포트 + TASK번호, 메인/dev는 기준 포트)
+- 실행 명령: `<예: npm run dev -- --port <PORT>>` (`<PORT>` = 기준 포트 + TASK번호, 메인은 기준 포트)
 - 터널 (모바일 검수 등 필요 시 — 선택): `<예: cloudflared tunnel --url http://localhost:<PORT>>`
 
 ---
@@ -128,7 +128,7 @@
 
 | 룰 | 위치 | 역할 |
 |----|------|------|
-| TASK_DOC_RULE | `.project/rules/TASK_DOC_RULE.md` | task 문서 양식 (헤더 5컬럼 / 6 섹션 / 7 상태) |
+| TASK_DOC_RULE | `.project/rules/TASK_DOC_RULE.md` | task 문서 양식 (헤더 6컬럼 / 6 섹션 / 7 상태) |
 | GIT_RULE | `.project/rules/GIT_RULE.md` (있으면) → 글로벌 `~/.claude/rules/GIT_RULE.md` (fallback) | git 정책 (브랜치 / 커밋 / 머지) |
 | CHANGELOG_RULE | `.project/rules/CHANGELOG_RULE.md` | CHANGELOG 작성 정책 (위치 / 형식 / 필수 필드) |
 | MOCKUP_RULE | `.project/rules/MOCKUP_RULE.md` | UX/UI task의 HTML 목업 위치 / 형식 / 네이밍 |
@@ -146,7 +146,7 @@
 | `/task-plan` | task | Requirements/Scope/Dev Plan/Test Plan 작성 (draft → planned) |
 | `/task-dev` | task | Phase 순서 구현 + self-check (planned → developed) |
 | `/task-test` | task | Task tool 격리 검증 (developed → tested) |
-| `/task-close` | task | 검증 명령 게이트 + 커밋 + dev 병합 (tested → closed) |
+| `/task-close` | task | 검증 명령 게이트 + 커밋 + 부모 브랜치 병합 (tested → closed) |
 | `/add-backlog` | meta | 사용자 발화로 활성 plan BACKLOG.md에 항목 1건 추가 (얕은 분석 + BL-NNN 채번 — 0.1.2+) |
 | `/log-friction` | meta | FRICTION_LOG.md에 사용자 불편 한 행 기록 |
 | `/run-team` | meta · **Claude 전용** | agent teams로 다건 태스크를 팀원(독립 세션)에 분배해 자동 병렬 처리 — 트리거 발화 시에만 (실험 기능 전제). 위 "agent teams 자동 병렬" 섹션 참조 |

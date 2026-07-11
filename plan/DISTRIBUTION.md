@@ -47,7 +47,7 @@
 
 | 스크립트 | 역할 | 분량 |
 |---------|------|------|
-| [bin/lib.js](../bin/lib.js) | 공통 유틸 — 기본 7종(`walkTemplate` / `sha256` / `mkdirp` / `copyFile` / `writeManifest` / `readManifest` / `isLocalOverride`) + 멀티세션 (0.1.2+) 유틸 (`getMainWorktreePath` / `getProjectId` / `getWorktreePath` / `withMergeLock` / `withMetaLock` / `getActiveTasks` / `getNextTaskNumber` / `assertMainWorktreeOnDev` / `assertDevExists` / `parseBranchName` / `generateProjectId` 등) + 백로그 (0.1.2+) 유틸 (`getActiveVersion` / `getBacklogPath` / `appendBacklogItem` / `parseBacklogItem` / `markBacklogChecked` + `BACKLOG_PLACEHOLDER` 상수) | 16,570 B |
+| [bin/lib.js](../bin/lib.js) | 공통 유틸 — 기본 7종(`walkTemplate` / `sha256` / `mkdirp` / `copyFile` / `writeManifest` / `readManifest` / `isLocalOverride`) + 멀티세션 (0.1.2+) 유틸 (`getMainWorktreePath` / `getProjectId` / `getWorktreePath` / `withMergeLock` / `withMetaLock` / `getActiveTasks` / `getNextTaskNumber` / `currentBranch` / `assertMainWorktreeOn` / `parseBranchName` / `generateProjectId` 등) + 백로그 (0.1.2+) 유틸 (`getActiveVersion` / `getBacklogPath` / `appendBacklogItem` / `parseBacklogItem` / `markBacklogChecked` + `BACKLOG_PLACEHOLDER` 상수) | 16,570 B |
 | [bin/taskery.js](../bin/taskery.js) | 진입점 dispatcher — `init` / `update` / `status` / `prune` / `help` 서브커맨드 분기 | 1,870 B |
 | [bin/init.js](../bin/init.js) | `npx @angar2/taskery init` 본체 — template/ → cwd 카피 + manifest 동적 생성 + .gitignore 인터랙티브 prompt | 5,608 B |
 | [bin/create.js](../bin/create.js) | `npx -p @angar2/taskery create-taskery <name>` — mkdir + cd + init 호출 | 1,638 B |

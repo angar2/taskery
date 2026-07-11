@@ -39,7 +39,7 @@ draft → planned → developing → developed → testing → tested → closed
 | `developed` | 구현 완료 (자가 검증 통과) |
 | `testing` | 독립 검증 진행 중 |
 | `tested` | 독립 검증 완료 |
-| `closed` | git 커밋 + dev 병합 완료 |
+| `closed` | git 커밋 + 부모 브랜치 병합 완료 |
 
 > 상태별 전이 조건과 task 문서 양식은 [TASK-DOC.md](https://github.com/angar2/taskery/blob/main/plan/TASK-DOC.md)에서 확인 가능
 
@@ -153,8 +153,8 @@ my-app/
 같은 프로젝트에서 여러 메인 세션을 동시에 운영해 독립 task를 병렬로 진행한다.
 
 - 새 task를 시작하면(`/task-init`) 작업 폴더(`~/.taskery/worktrees/<projectId>/TASK-NNN_<출처>_<슬러그>/`)와 작업 브랜치를 함께 분기한다.
-- 작업 폴더에서 새 메인 세션을 열어 진행하거나, 메인 세션 1개로 모든 작업을 지휘하거나, 메인이 서브 세션을 호출해 병렬로 진행한다 — 운영 방식은 자유. 메인 워크트리(원본 폴더)는 `dev` 전용 상태로 유지된다.
-- task 완료(`/task-close`) 시 머지 락으로 직렬화한 후 dev에 `--no-ff` 병합한다. 다른 세션이 먼저 머지해 충돌이 발생하면 본 세션이 단순/의미적/판단 불가 3단계로 해결을 시도한다.
+- 작업 폴더에서 새 메인 세션을 열어 진행하거나, 메인 세션 1개로 모든 작업을 지휘하거나, 메인이 서브 세션을 호출해 병렬로 진행한다 — 운영 방식은 자유. 메인 워크트리(원본 폴더)는 task를 시작한 브랜치(*부모 브랜치*, 기본은 `dev`)를 그대로 유지한다.
+- task 완료(`/task-close`) 시 머지 락으로 직렬화한 후 **그 부모 브랜치**에 `--no-ff` 병합한다(개인은 `dev`, 회사/로드맵은 서 있던 브랜치). 다른 세션이 먼저 머지해 충돌이 발생하면 본 세션이 단순/의미적/판단 불가 3단계로 해결을 시도한다.
 - 머지 직후 작업 폴더와 작업 브랜치는 자동 정리된다(보존 키워드 사용 시 양쪽 유지). 안전망으로 복구 명령이 함께 출력된다.
 
 요건: git ≥ 2.31. 보조 명령 `npx @angar2/taskery status` / `prune`로 진행 현황과 stale 정리를 확인한다.
@@ -189,7 +189,7 @@ my-app/
 | `/task-plan` | task | task의 요구사항·범위·개발 계획·테스트 계획 작성 |
 | `/task-dev` | task | 계획에 따른 단계별 구현 + 자가 검증 |
 | `/task-test` | task | 별도 격리 세션에서 독립 검증 (메인 가정 차단) |
-| `/task-close` | task | 최종 검증 후 git 커밋 + dev 브랜치 `--no-ff` 병합 |
+| `/task-close` | task | 최종 검증 후 git 커밋 + 부모 브랜치 `--no-ff` 병합 |
 | `/add-backlog` | meta | 사용자 발화로 plan(기능 그룹)별 `tasks/<NNN_slug>/BACKLOG.md`에 task 후보 1건씩 추가 (0.1.2+) |
 | `/log-friction` | meta | 사용자 불편을 `.project/FRICTION_LOG.md`에 한 행 기록 |
 | `/run-team` | meta | 여러 작업을 묶을 수 있는 단위로 task로 나눠 자동 병렬 처리 — 리더 세션이 팀원(독립 세션)에게 task를 1건씩 분배하고 흐름을 관리 (Claude 전용 · 실험 기능 전제 · 0.3.x+) |
@@ -240,7 +240,7 @@ npx @angar2/taskery init
 /task-plan TASK-001            # draft → planned : 요구사항·범위·개발 계획·테스트 계획 작성
 /task-dev TASK-001             # planned → developed : 단계별 구현과 자체 검증
 /task-test TASK-001            # developed → tested : 별도 격리 세션으로 독립 검증
-/task-close TASK-001           # tested → closed : 최종 검증 후 git 커밋과 dev 병합
+/task-close TASK-001           # tested → closed : 최종 검증 후 git 커밋과 부모 브랜치 병합
 
 # 불편 발생 시 등록
 /log-friction                  # 사용자 불편 한 행 기록

@@ -56,11 +56,14 @@ function main() {
   const lockTimeoutMs = manifest.lock_timeout_ms ?? DEFAULT_LOCK_TIMEOUT_MS;
 
   const currentBranch = gitCapture(mainWt, ['rev-parse', '--abbrev-ref', 'HEAD']);
-  const isOnDev = currentBranch === 'dev';
+  const detached = currentBranch === 'HEAD';
 
   console.log(`\ntaskery status\n`);
   console.log(`메인 워크트리: ${mainWt}`);
-  console.log(`현재 브랜치: ${currentBranch}${isOnDev ? '' : ' ⚠ (메인 워크트리 = dev 정책 위배)'}`);
+  // 현재 브랜치 = 새 태스크의 부모 브랜치(0.6.0). detached HEAD면 fork 불가.
+  console.log(
+    `현재 브랜치(= 새 태스크 부모): ${currentBranch}${detached ? ' ⚠ (detached HEAD — 브랜치 체크아웃 필요)' : ''}`,
+  );
   console.log(`projectId: ${projectId}`);
   console.log(`stale_days: ${staleDays} / lock_timeout_ms: ${lockTimeoutMs}\n`);
 
@@ -126,7 +129,7 @@ function main() {
     );
     const orphans = folders.filter((f) => !activeFolders.has(f));
     if (orphans.length > 0) {
-      console.log(`⚠ SSoT에 없는 워크트리 폴더 ${orphans.length}건 (이미 dev 머지된 잔존?):`);
+      console.log(`⚠ SSoT에 없는 워크트리 폴더 ${orphans.length}건 (이미 부모 머지된 잔존?):`);
       for (const o of orphans) {
         console.log(`  ${path.join(worktreesRoot, o)}`);
       }

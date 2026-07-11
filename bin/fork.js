@@ -96,6 +96,7 @@ async function main() {
         title: opts.title,
         type,
         size: opts.size,
+        parent: result.parent,
         promoted: !!opts.promote,
       });
       out = { ...result, docPath: doc.file, registered: doc.registered, promoted: doc.promoted };
