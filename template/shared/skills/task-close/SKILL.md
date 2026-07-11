@@ -1,13 +1,13 @@
 ---
 name: task-close
-description: task git 마무리 — 검증 게이트 + 커밋 순서 + 머지 락 직렬화 + dev --no-ff 병합 + 워크트리/브랜치 자동 정리, tested → closed (멀티세션 0.1.2+)
+description: task git 마무리 — 검증 게이트 + 커밋 순서 + 머지 락 직렬화 + 부모 브랜치 --no-ff 병합 + 워크트리/브랜치 자동 정리, tested → closed (멀티세션 0.1.2+)
 ---
 
 # /task-close
 
 ## 개요
 
-`tested` 상태 task의 git 마무리. **호출 위치 자유** — 워크트리 cwd / 메인 워크트리 cwd / 다른 세션이 호출한 서브 세션 모두 동작 동일 (모든 git 명령이 `git -C <경로>` 형태라 cwd 무관). `close` CLI 결정적 준비(Phase 커밋·status=closed·문서 커밋·추적 마커) → 사전 rebase → 충돌 해결 (3단계 에스컬레이션) → 머지 락 → 락 안 재 rebase → dev `--no-ff` 머지 → 워크트리 제거 + 작업 브랜치 자동 삭제.
+`tested` 상태 task의 git 마무리. **호출 위치 자유** — 워크트리 cwd / 메인 워크트리 cwd / 다른 세션이 호출한 서브 세션 모두 동작 동일 (모든 git 명령이 `git -C <경로>` 형태라 cwd 무관). `close` CLI 결정적 준비(Phase 커밋·status=closed·문서 커밋·추적 마커) → 사전 rebase → 충돌 해결 (3단계 에스컬레이션) → 머지 락 → 락 안 재 rebase → 부모 브랜치 `--no-ff` 머지 → 워크트리 제거 + 작업 브랜치 자동 삭제.
 
 **최종 게이트**: 모든 검증 명령 재실행 — 린트/타입체크/빌드 PASS여야 진행.
 
@@ -56,17 +56,17 @@ LOCK_FILE="$HOME/.taskery/${PROJECT_ID}.merge.lock"
 ### Step 1 — 사전 검증
 
 1. **메인 워크트리 검출** (위 핵심 변수).
-2. **메인 워크트리 = dev 검증**:
+2. **메인 워크트리 = 부모 브랜치 확인**: 메인 워크트리는 이 task의 *부모 브랜치*(task-init 시점 현재 브랜치, 헤더 기록)에 서 있어야 close가 그 부모로 되병합한다. 정확한 부모 일치는 Step 3 `close`가 검증(불일치 시 명확한 에러로 중단)하므로, 여기서는 detached HEAD만 조기 차단한다.
    ```sh
    CURRENT=$(git -C "$MAIN_WT" rev-parse --abbrev-ref HEAD)
-   [ "$CURRENT" = "dev" ] || abort "메인 워크트리가 dev 아님 (현재: $CURRENT). taskery 정책 위배"
+   [ "$CURRENT" != "HEAD" ] || abort "메인 워크트리가 detached HEAD — 부모 브랜치로 체크아웃 필요"
    ```
 3. **워크트리 미커밋 변경 확인**:
    ```sh
    git -C "$WT_PATH" status --porcelain
    ```
    - 결과 *있음* = 정상 흐름 (taskery 정책: `/task-dev` = *git 작업 X*). 본 변경분은 Step 3 `close`가 *Dev Plan Phase 매핑 → Phase별 자동 커밋*으로 처리.
-   - 결과 *없음* = 변경분 0건 → Step 2 검증만 수행. **워크트리 브랜치가 dev보다 앞선 커밋이 0개면 Step 3 `close`가 추적 마커 빈커밋 1개 생성** (`.project` gitignore + docs/분석 전용 task → 채번 보존).
+   - 결과 *없음* = 변경분 0건 → Step 2 검증만 수행. **워크트리 브랜치가 부모보다 앞선 커밋이 0개면 Step 3 `close`가 추적 마커 빈커밋 1개 생성** (`.project` gitignore + docs/분석 전용 task → 채번 보존).
    - **차단 X** — 본 단계는 *상태 인지*용. close 중단 사유 X.
 4. **task 파일 + GIT_RULE 확인**:
    - task 문서 위치 분기 (`.gitignore` 케이스):
@@ -107,9 +107,9 @@ FAIL 시:
 - **Phase 기능 커밋** — uncommitted 코드 변경분(`.project/` 외)을 task.md `### Phase N`의 `- 파일:` 필드에 매핑해 Phase 순서대로 자동 커밋 (GIT_RULE 메시지 형식, 태그 자동: feature→`feat:` / bug→`fix:` / improve→`improve:` / refactor→`refactor:` / docs·chore→`docs:`).
 - **status → `closed`** — task 문서 헤더 (`.gitignore` 케이스 자동 판정 — 등록=메인WT / 미등록=워크트리).
 - **flows/문서 커밋** (미등록 케이스) — 워크트리 안 `.project/flows/` + task 문서.
-- **추적 마커 빈커밋** — dev보다 앞선 커밋이 0개(코드 0·`.project` gitignore인 docs/분석 task)면 채번 보존용 1개.
+- **추적 마커 빈커밋** — 부모 브랜치보다 앞선 커밋이 0개(코드 0·`.project` gitignore인 docs/분석 task)면 채번 보존용 1개.
 
-반환 JSON `{ prepped, branch, wtPath, registered, commits, aheadOfDev }`.
+반환 JSON `{ prepped, branch, parent, wtPath, registered, commits, aheadOfParent }`. **`parent`(= task 헤더에 기록된 부모 브랜치, 예 `dev` / `dev_feat_x`)가 이후 Step 4·5의 rebase·머지 대상이다** — 아래 명령의 `$PARENT`로 사용. (task-init이 fork 시점 현재 브랜치를 헤더에 기록해뒀다.)
 
 **콜백 (반환 `blocked` 필드 / npx는 특수 exit — 메인이 LLM 판단 후 처리):**
 - **`blocked:'mapping'`** (npx exit 2 — `{files, phases, reason}`): Dev Plan `- 파일:` 필드가 변경 파일을 못 덮음(미매핑) 또는 한 파일이 여러 Phase에 걸침. → 메인이 Dev Plan + `git -C "$WT_PATH" diff --name-only` 정독 후 **코드 변경분을 Phase별로 수동 커밋**(GIT_RULE 형식, 위 태그) → `task_close` 도구(또는 `npx ... close`) **재호출**. 코드가 이미 커밋돼 있으므로 close가 status=closed + 문서 커밋 + 마커를 자동 완료한다.
@@ -119,10 +119,10 @@ FAIL 시:
 
 ### Step 4 — 사전 rebase + 충돌 자체 해결 (락 외, UX용 조기 감지)
 
-`close`가 모든 변경을 커밋했으므로 rebase가 깨끗하게 replay된다.
+`close`가 모든 변경을 커밋했으므로 rebase가 깨끗하게 replay된다. `$PARENT` = Step 3 `close` 반환의 `parent`(머지 대상 부모 브랜치).
 
 ```sh
-git -C "$WT_PATH" rebase dev
+git -C "$WT_PATH" rebase "$PARENT"
 ```
 
 - 충돌 없음 → Step 5 (머지).
@@ -140,7 +140,7 @@ git -C "$WT_PATH" rebase dev
 | 순위 | 자료 | 위치 |
 |------|------|------|
 | 1 | 태스크 문서 + 제품/plan 문서 (양쪽 정독 후 의도 종합) | 태스크: `$MAIN_WT/.project/tasks/<NNN_slug>/...` (등록 케이스) / `~/.taskery/worktrees/<projectId>/TASK-...` 다른 워크트리 (미등록 케이스, SSoT 조회로 경로 산출). 제품 관통 문서(FEATURES / ARCHITECTURE / TECH-STACK / DATA-MODEL / API-SPEC 등) = `$MAIN_WT/.project/<doc>.md` (루트 평평). plan 로컬(ROADMAP / PLAN) = `$MAIN_WT/.project/plans/<NNN_slug>/` |
-| 2 | 커밋 메시지 | `git log dev --grep` (GIT_RULE 풍부 메시지) |
+| 2 | 커밋 메시지 | `git log --all --grep` (GIT_RULE 풍부 메시지) |
 | 3 | diff | 변경 코드 자체 |
 
 - 1순위 부재 시 2/3순위 자동 fallback + 사용자에게 *자료 한계* 보고
@@ -152,9 +152,9 @@ git -C "$WT_PATH" rebase dev
 - 해결 방향 후보 제시 + 사용자 결정 후 재개.
 - 사용자가 중단 결정 시: `git -C "$WT_PATH" rebase --abort` 자동 + close 중단.
 
-### Step 5 — 머지 락 + 락 안 재 rebase + dev 머지
+### Step 5 — 머지 락 + 락 안 재 rebase + 부모 브랜치 머지
 
-머지 락 안에서 [락 안 rebase → 메인WT 검증 → dev `--no-ff` 머지]를 직렬 수행한다 (`bin/lib.js` `withMergeLock(projectId, fn)` — 다른 세션 머지와 직렬화). Phase 커밋·status=closed·문서 커밋·추적마커는 Step 3 `close`가 이미 끝냈으므로 본 단계는 *락 + rebase + 머지*만 담당.
+머지 락 안에서 [락 안 rebase → 메인WT 검증 → 부모 브랜치 `--no-ff` 머지]를 직렬 수행한다 (`bin/lib.js` `withMergeLock(projectId, fn)` — 다른 세션 머지와 직렬화). Phase 커밋·status=closed·문서 커밋·추적마커는 Step 3 `close`가 이미 끝냈으므로 본 단계는 *락 + rebase + 머지*만 담당. 메인 워크트리는 부모 브랜치(`$PARENT`)에 서 있어야 하며(close가 이미 검증), 머지는 그 부모 위로 이뤄진다.
 
 #### 5-1. 머지 락 획득
 
@@ -163,13 +163,13 @@ git -C "$WT_PATH" rebase dev
 #### 5-2. 락 안에서 rebase 재실행
 
 ```sh
-git -C "$WT_PATH" rebase dev
+git -C "$WT_PATH" rebase "$PARENT"
 ```
 
-락 외(Step 4) rebase 이후 *다른 세션이 dev 머지했을 수 있음* — 락 안 rebase로 흡수.
+락 외(Step 4) rebase 이후 *다른 세션이 부모 브랜치에 머지했을 수 있음* — 락 안 rebase로 흡수.
 - 재충돌 발견 시 Step 4 에스컬레이션 재실행 (해결 내역은 커밋 메시지 — 문서 closed).
 
-> Phase 커밋 · flows/문서 커밋 · status=closed · 추적 마커는 **Step 3 `close`가 이미 완료**했다. 본 단계는 머지 락 안에서 *재 rebase + 메인WT 검증 + dev 머지*만 수행한다.
+> Phase 커밋 · flows/문서 커밋 · status=closed · 추적 마커는 **Step 3 `close`가 이미 완료**했다. 본 단계는 머지 락 안에서 *재 rebase + 메인WT 검증 + 부모 머지*만 수행한다.
 
 #### 5-3. 메인 워크트리 uncommitted 검증 (머지 직전)
 
@@ -180,7 +180,9 @@ git -C "$MAIN_WT" status --porcelain
 - 변경 있으면 → 사용자 호출 + 결정 (stash / 중단).
 - 등록 케이스에서 task 문서 직접 수정이 *.gitignore 차단으로 status에 안 잡힘* — 정상.
 
-#### 5-4. dev `--no-ff` 머지
+#### 5-4. 부모 브랜치 `--no-ff` 머지
+
+메인 워크트리는 부모 브랜치(`$PARENT`)에 체크아웃돼 있다(close 검증). 그 위로 작업 브랜치를 머지한다.
 
 ```sh
 git -C "$MAIN_WT" merge --no-ff "$BRANCH"
@@ -188,7 +190,7 @@ git -C "$MAIN_WT" merge --no-ff "$BRANCH"
 
 - `-m` 옵션 금지 (git 기본 메시지).
 - 머지 커밋 해시 캡처: `MERGE_COMMIT=$(git -C "$MAIN_WT" rev-parse HEAD)`
-- 브랜치가 dev보다 1커밋 이상 앞서야 머지 커밋이 생성된다 — Step 3 `close`의 추적 마커가 docs/분석 task의 0-커밋 케이스를 이미 보장(채번 보존).
+- 브랜치가 부모보다 1커밋 이상 앞서야 머지 커밋이 생성된다 — Step 3 `close`의 추적 마커가 docs/분석 task의 0-커밋 케이스를 이미 보장(채번 보존).
 
 #### 5-5. 머지 락 해제
 
@@ -220,7 +222,7 @@ git -C "$WT_PATH" ls-files --others --exclude-standard  # 추적 X 파일
 - 발견 시 사용자 호출 + 결정:
   - 보존 → 7-2, 7-3 모두 건너뜀 (브랜치도 보존 — 정합)
   - 삭제 → 7-2 진행
-  - 취소 → close 중단 (dev 머지는 이미 완료)
+  - 취소 → close 중단 (부모 브랜치 머지는 이미 완료)
 
 #### 7-2. 워크트리 제거
 
@@ -245,7 +247,7 @@ git -C "$MAIN_WT" worktree remove "$WT_PATH"
 - 작업 브랜치: <BRANCH> (삭제 / 보존)
 - 워크트리: <WT_PATH> (제거 / 보존)
 - 커밋: Phase <N>개 + 태스크 문서 + (CHANGELOG)
-- dev 병합: --no-ff 완료 ($MERGE_COMMIT)
+- 부모 브랜치 병합: <PARENT> ← --no-ff 완료 ($MERGE_COMMIT)
 - 충돌 해결: <건수, 자료 한계 보고 있으면 포함>
 - 상태: tested → closed
 - 다음: 새 task 시작은 /task-init. 마찰 신호 감지된 경우 /log-friction 등록 제안
@@ -262,14 +264,14 @@ git -C "$MAIN_WT" worktree remove "$WT_PATH"
 
 - **사용자 명시 호출 외 자체 진입 영구 금지** (stash FRICTION_LOG #6+10/#20) — task-close는 git 영역. 사용자가 *"X부터 Y까지"* 범위 명시했는데 Y가 close 이전 단계면 close 자체 진입 영구 X.
 - **검증 명령 재실행 게이트** — `/task-dev` self-check와 *별개*. 환경 변화 / 부분 작업 잡는 안전망.
-- **dev 직접 커밋 절대 X** — 작업 브랜치에서만. dev에서 `git commit` 시도 시 git-guard.sh 차단. 모든 git 명령은 cwd 무관 `git -C "$WT_PATH" ...` / `git -C "$MAIN_WT" ...` 형태 강제. 셸 prefix(`cd && git`) / `--git-dir=` / `--work-tree=` 변형 영구 금지 (§호출 위치 정책).
+- **부모 브랜치 직접 커밋 절대 X** — 작업 브랜치에서만. 부모가 dev/main이면 그 브랜치에서 `git commit` 시도 시 git-guard.sh가 차단(git-guard는 main/dev 보호). 모든 git 명령은 cwd 무관 `git -C "$WT_PATH" ...` / `git -C "$MAIN_WT" ...` 형태 강제. 셸 prefix(`cd && git`) / `--git-dir=` / `--work-tree=` 변형 영구 금지 (§호출 위치 정책).
 - **`--no-ff` 강제** — 머지 커밋 없으면 분기 정보 영구 손실.
 - **머지 락 직렬화** — 두 세션이 동시 머지 시도해도 한쪽씩 순차 진행. 락 외 rebase로 race 흡수 + 락 안 재 rebase로 다른 세션 머지 흡수.
 - **충돌 자체 해결 3단계** — 단순 자동 / 의미적 자료 / 판단 불가 사용자. 자료 한계 발견 시 *반드시 사용자에게 보고* (1순위 자료 부재 등).
 - **자료 한계 보고** — 충돌 분석 시 *2/3순위 fallback 사용했음*을 사용자에게 명시. 묵묵히 진행 X.
 - **destructive 명령 사용자 승인 필수** — `git reset --hard` / `git push --force` / `git branch -D` / `git clean -fd` 사용자 명시 승인 없이 절대 실행 X. (단 `/task-close` 자동 흐름 `git branch -d` + `worktree remove`는 §"작업 브랜치 삭제 정책 — 자동 삭제 면제 조항" 면제)
 - **민감 정보 staging X** — `.env` / `credentials.json` / API key 등 staging 절대 X.
-- **빈 commit 금지 (예외 1건)** — `close`가 변경 없는 영역은 빈 commit을 만들지 않는다. **단 Step 3 `close`의 추적 마커 빈커밋만 예외** — 워크트리 브랜치가 dev보다 앞선 커밋이 0개일 때 채번 보존용으로 1개 허용.
+- **빈 commit 금지 (예외 1건)** — `close`가 변경 없는 영역은 빈 commit을 만들지 않는다. **단 Step 3 `close`의 추적 마커 빈커밋만 예외** — 워크트리 브랜치가 부모보다 앞선 커밋이 0개일 때 채번 보존용으로 1개 허용.
 - **`-m` 옵션 머지 커밋에 사용 금지** — git 기본 메시지 사용.
 - **검수 서버/터널 정리는 자기 것만** — 본 task가 검수용으로 띄운 서버·터널(자기 포트 것)만 종료. `pkill -f` 류 광역 종료 금지 (다른 세션 프로세스까지 죽임). 상세: GIT_RULE "멀티세션 검수 환경".
 
@@ -287,4 +289,4 @@ git -C "$MAIN_WT" worktree remove "$WT_PATH"
 - **task 문서 단일 진실 소스** — `.gitignore` 케이스에 따라 메인 워크트리 또는 워크트리. 다른 세션의 충돌 해결 자료 정독 시 *SSoT 조회 → 워크트리 경로 산출* (미등록 케이스) 또는 *메인 워크트리 절대 경로* (등록 케이스).
 - **워크트리 + 브랜치 자동 제거** — GIT_RULE.md "작업 브랜치 삭제 정책" 면제 조항 (taskery 한정). 보존 키워드 시 양쪽 보존.
 - **safety net** — Step 8 복구 명령 출력. 사용자가 잘못 삭제 인지 시 즉시 복구 가능.
-- **BACKLOG.md 무관** — `.project/tasks/<NNN_slug>/BACKLOG.md` 체크 마킹은 `/task-init` Step 7.5가 처리(`[ ]` → `[x]` + `- TASK: TASK-NNN`). `[x]` = *task로 옮김* 의미라 close 시점에 추가 마킹 X. 완료 추적은 `npx @angar2/taskery status`(진행 중이면 dev 미머지가 정상) → 목록에 없을 때만 `git log dev --grep 'BL-NNN'` 순.
+- **BACKLOG.md 무관** — `.project/tasks/<NNN_slug>/BACKLOG.md` 체크 마킹은 `/task-init` Step 7.5가 처리(`[ ]` → `[x]` + `- TASK: TASK-NNN`). `[x]` = *task로 옮김* 의미라 close 시점에 추가 마킹 X. 완료 추적은 `npx @angar2/taskery status`(진행 중이면 부모 미머지가 정상) → 목록에 없을 때만 `git log --all --grep 'BL-NNN'` 순.

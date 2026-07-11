@@ -42,7 +42,7 @@ while IFS= read -r FILE_PATH; do
   # 존재하는 파일만 (Add File 신규 생성은 통과)
   [ -f "$FILE_PATH" ] || continue
 
-  # 헤더 status 추출 (5컬럼 표 — 생성일 / 플랜 / 유형 / 규모 / 상태)
+  # 헤더 status 추출 — status는 헤더 표의 *마지막* 셀 (5컬럼 구 / 6컬럼 0.6.0+ 양쪽).
   STATUS=$(TM="$FILE_PATH" python3 -c "
 import os, re
 try:
@@ -51,7 +51,7 @@ except Exception:
     print('')
     raise SystemExit(0)
 WL = r'(draft|planned|developing|developed|testing|tested|closed)'
-m = re.search(rf'^\|[^|]*\|[^|]*\|[^|]*\|[^|]*\|\s*{WL}\s*\|\s*\$', content, re.MULTILINE)
+m = re.search(rf'^\|(?:[^|]*\|){{4,5}}\s*{WL}\s*\|\s*\$', content, re.MULTILINE)
 print(m.group(1) if m else '')
 " 2>/dev/null)
 

@@ -48,7 +48,9 @@ if [ ! -f "$TASK_MD" ]; then
   exit 0
 fi
 
-# 헤더 status 추출 (5컬럼 표 — 생성일 / 플랜 / 유형 / 규모 / 상태)
+# 헤더 status 추출 — status는 헤더 표의 *마지막* 셀.
+#   5컬럼(구): 생성일 / 플랜 / 유형 / 규모 / 상태
+#   6컬럼(0.6.0+): 생성일 / 플랜 / 유형 / 규모 / 부모 브랜치 / 상태
 # python3 정규식 사용 (mac BSD grep -P 미지원)
 STATUS=$(TM="$TASK_MD" python3 -c "
 import os, re
@@ -59,8 +61,8 @@ except Exception:
     raise SystemExit(0)
 # 7-state whitelist
 WL = r'(draft|planned|developing|developed|testing|tested|closed)'
-# 5-column row: | 생성일 | 플랜 | 유형 | 규모 | 상태 |
-m = re.search(rf'^\|[^|]*\|[^|]*\|[^|]*\|[^|]*\|\s*{WL}\s*\|\s*\$', content, re.MULTILINE)
+# status = 마지막 셀. 선행 셀 4개(구 5컬럼) 또는 5개(신 6컬럼) 뒤에 온다.
+m = re.search(rf'^\|(?:[^|]*\|){{4,5}}\s*{WL}\s*\|\s*\$', content, re.MULTILINE)
 print(m.group(1) if m else '')
 " 2>/dev/null)
 
