@@ -160,7 +160,7 @@ sed -i '' 's/| closed |/| developing |/' .project/tasks/001_mvp/001_some-task.md
 
 **핵심**: hook 자체 비활성화는 *비권장*. 임시 케이스 외 closed 보호 안전망 유지.
 
-**구현**: `tool_input.file_path` 매칭 → task.md 결정 (단일 vs 폴더) → 헤더 5컬럼 + 7-state whitelist 정규식으로 status 추출 → `closed`이면 exit 2.
+**구현**: `tool_input.file_path` 매칭 → task.md 결정 (단일 vs 폴더) → 헤더 6컬럼(0.6.0+ — `부모 브랜치`가 `상태` 앞에 삽입) + 7-state whitelist 정규식으로 status 추출(상태는 항상 마지막 컬럼) → `closed`이면 exit 2.
 
 **본문**: [template/.claude/hooks/closed-immutable.sh](../template/.claude/hooks/closed-immutable.sh) (2,996 B)
 
@@ -243,3 +243,4 @@ hook 영역에서 부활 가능한 미래 옵션:
 | 2026-05-30 | 정합 검증 후속 정정 (Phase 5) — §2 본문 *hook 3종* 잔존 표기 *2종*으로 갱신 + process 영역 한정 표현 제거 (pre-commit-verify 폐기 정합). §4 git-guard 표 메시지 *pre-commit-verify hook 우회 금지* → *commit hook 우회 금지* 일반화. |
 | 2026-05-30 | 정합 검증 후속 정정 (3차) — §6 *차단 안 함 (의도적)* 본문에 `.project/tasks/v*/mockup/*.html` 행 추가 (vX.X 공통, 자유 수정) + 폴더 승격 추가 자료에서 *mockup* 제거 (vX.X 공통이라 폴더 안 X). closed-immutable.sh hook 동작 정합 (mockup은 task.md 매칭 X로 자동 보호 범위 외 — 본 정정은 가독성 정합). |
 | 2026-06-02 | 0.1.3 F3 정합 — §4 git-guard.sh #1 차단 룰 표 갱신: *5종 변형 인식 (0.1.3+, cwd 무관)* 명시 + `extract_target_path` 헬퍼 함수 + 변형 5종(`-C` / `--git-dir=` / `--git-dir` 공백 / `--work-tree=` / `--work-tree` 공백) 표 + 셸 prefix(`cd <경로> && git ...`) 영구 금지 안내 추가. stash FRICTION_LOG 2026-06-01 cwd 기준 브랜치 검사로 워크트리 브랜치 커밋이 dev 직접 커밋으로 오인 차단되던 마찰 해결 (cwd 무관 동작 보장 — 어느 운영 모델에서도 동등 동작). |
+| 2026-07-11 | 0.6.0 부모 브랜치 파라미터화 정합 — §6 `closed-immutable.sh` 구현 서술의 헤더 *5컬럼* → *6컬럼(0.6.0+ — `부모 브랜치`가 `상태` 앞에 삽입, 상태는 여전히 마지막 컬럼)* 갱신. git-guard의 main/dev 직접 커밋 보호 서술(§2/§3/§4/§10)은 유지 — git-guard는 main·dev를 보호하는 것이 정상. |

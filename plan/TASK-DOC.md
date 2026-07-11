@@ -30,11 +30,11 @@
 
 ---
 
-## 2. 헤더 표 — 5컬럼
+## 2. 헤더 표 — 6컬럼
 
-| 생성일 | 플랜 | 유형 | 규모 | 상태 |
-|--------|------|------|------|------|
-| 2026-05-08 | 001_mvp | feature | medium | developing |
+| 생성일 | 플랜 | 유형 | 규모 | 부모 브랜치 | 상태 |
+|--------|------|------|------|-----------|------|
+| 2026-05-08 | 001_mvp | feature | medium | dev | developing |
 
 | 컬럼 | 의미 |
 |------|------|
@@ -42,6 +42,7 @@
 | **플랜** | 어느 plan(기능 그룹) 하위인지 (예: 001_mvp, 002_compare-products) — `tasks/<NNN_slug>/` 디렉토리 명과 일치 |
 | **유형** | `feature` / `bug` / `improvement` / `refactor` / `docs` / `chore` (git 브랜치 타입과 직결) |
 | **규모** | `micro` (1 phase) / `small` (2-3) / `medium` (4-7) / `large` (8+ 또는 분리 검토) |
+| **부모 브랜치** | 이 task를 분기한 기점 브랜치 = `/task-init` 시점의 메인 워크트리 현재 브랜치 (`dev` / `dev_feat_x` / `master` 등). `/task-close`가 이 브랜치로 되병합. `/task-init`이 자동 기록 (수기 입력 X). 0.6.0+ — 이전 문서는 이 칸 부재로 close 시 `dev` 폴백 |
 | **상태** | 7 상태 머신 (§3) |
 
 ---
@@ -94,9 +95,9 @@ draft → planned → developing → developed → testing → tested → closed
 ```markdown
 # TASK-NNN — <태스크 이름>
 
-| 생성일 | 플랜 | 유형 | 규모 | 상태 |
-|--------|------|------|------|------|
-| ... | ... | ... | ... | ... |
+| 생성일 | 플랜 | 유형 | 규모 | 부모 브랜치 | 상태 |
+|--------|------|------|------|-----------|------|
+| ... | ... | ... | ... | ... | ... |
 
 ## Requirements
 <요구사항 + 메인이 증폭/구체화한 내용>
@@ -125,7 +126,7 @@ draft → planned → developing → developed → testing → tested → closed
 
 | 섹션 | 작성 주체 | 시점 |
 |------|---------|------|
-| **Header** (5컬럼 표) | `/task-init`이 작성 (status는 스킬별 갱신) | task 생성 시 + 상태 전이마다 |
+| **Header** (6컬럼 표) | `/task-init`이 작성 (부모 브랜치 자동 기록, status는 스킬별 갱신) | task 생성 시 + 상태 전이마다 |
 | **Requirements** | `/task-plan` Step 2 (사용자 인터뷰 + 메인 증폭) | `draft` → `planned` |
 | **Scope** | `/task-plan` Step 3 (코드 서치) | `draft` → `planned` |
 | **Dev Plan** | `/task-plan` Step 4 (Phase 분할 — 점진 추가 OK) | `draft` → `planned` (Phase 점진) |
@@ -170,7 +171,7 @@ draft → planned → developing → developed → testing → tested → closed
 
 | Layer | 내용 | 위치 |
 |-------|------|------|
-| **1. 양식 Spec** | 헤더 5컬럼 / 6 섹션 / 7 상태 | TASK_DOC_RULE §1 |
+| **1. 양식 Spec** | 헤더 6컬럼 / 6 섹션 / 7 상태 | TASK_DOC_RULE §1 |
 | **2. 작성 방법** | 단계별 절차 (헤더 작성 / Requirements / Scope / Dev Plan / Test Plan / Result 작성) | TASK_DOC_RULE §2 |
 | **3. 가이드라인** | 일관성 / 자기완결성 / 메인 가정 X / 점진 작성 OK / 짧고 명확하게 | TASK_DOC_RULE §3 |
 | **4. 섹션별 설명 + 예시 스니펫** | Header / Requirements / Scope / Dev Plan / Test Plan / Result 각각 짧은 설명 + 예시 | TASK_DOC_RULE §4 |
@@ -222,3 +223,4 @@ draft → planned → developing → developed → testing → tested → closed
 | 2026-05-30 | 정합 검증 후속 정정 (Phase 5) — §1.5 mockup path 표기 `<NNN>_<slug>-mockup.html` → `<task-doc-name>-mockup.html` 으로 통일 (MOCKUP_RULE 단일 진실 소스 표기 정합 — 폴더 승격 케이스도 커버). |
 | 2026-05-30 | 정합 검증 후속 정정 (3차) — §5 작성 주체 표의 Test Plan 표기 *자유 형식 — 자기완결성 가이드라인* → *실질 동작 시나리오 + `[AUTO]` / `[USER]` 분류 강제* 정합 (TASK_DOC_RULE §2.5 본질 재정의 정합). |
 | 2026-05-31 | 정합 순회 2차 — §7 본문 단일 진실 소스 표 스킬 path *`<skill>.md`* → *`<skill>/SKILL.md`* (0.1.1 디렉토리 마이그레이션 후 갱신 누락분 정합). 단순 path 표기 정합 |
+| 2026-07-11 | 0.6.0 부모 브랜치 파라미터화 정합 — 헤더를 *5컬럼* → *6컬럼*으로 갱신. §2 제목·헤더 표·컬럼 의미 표에 `부모 브랜치`(= task-init 시점 현재 브랜치, close가 되병합할 기점) 컬럼을 `상태` 앞에 신설 / §5 6 섹션 골격 예시 표·작성 주체 표(Header) / §6 4단 layer 양식 Spec 행의 *5컬럼* 표기 갱신. 상태는 여전히 마지막 컬럼. 과거 수정 이력의 *5컬럼* 표기는 시점 기록이라 유지. |

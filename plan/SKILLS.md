@@ -15,7 +15,7 @@
 | `/task-plan` | task | Requirements / Scope / Dev Plan / Test Plan 채우기 (워크트리 호출 default — 멀티세션. 호출 위치 자유, cwd 무관) | `draft` → `planned` | task마다 |
 | `/task-dev` | task | Phase 순서 구현 + self-check 게이트 (워크트리 호출 default. cwd 무관) | `planned`/`developing` → `developed` | task마다 |
 | `/task-test` | task | Task tool 격리 검증 (confirmation bias 회피. 워크트리 호출 default. cwd 무관) | `developed` → `tested` (또는 `developing`/`tested`+결함 명시) | task마다 |
-| `/task-close` | task | git 마무리 + 검증 명령 재실행 게이트 + **머지 락 직렬화** + dev `--no-ff` 병합 + **워크트리/브랜치 자동 정리**. BACKLOG.md 무관 (task-init이 처리) | `tested` → `closed` | task마다 |
+| `/task-close` | task | git 마무리 + 검증 명령 재실행 게이트 + **머지 락 직렬화** + 부모 브랜치 `--no-ff` 병합 + **워크트리/브랜치 자동 정리**. BACKLOG.md 무관 (task-init이 처리) | `tested` → `closed` | task마다 |
 | `/add-backlog` | **meta** | 사용자 발화로 *plan(기능 그룹)별* `tasks/<NNN_slug>/BACKLOG.md`에 항목 1건 추가 — 얕은 분석(개요 / 대상 영역) + BL-NNN 채번 + `withMetaLock` 직렬화 (0.1.2+) | — | 사용자 호출 / 백로그 발화 캐치 |
 | `/log-friction` | **meta** | FRICTION_LOG.md에 사용자 불편 한 행 기록 | — | 사용자 호출 / 불만 발화 캐치 / task-close 자체 감지 |
 | `/run-team` | **meta · Claude 전용** | agent teams로 다건 태스크를 팀원(독립 세션)에 분배해 자동 병렬 처리. 워크트리·머지는 기존 task 스킬이 담당 | — (오케스트레이터) | 트리거 발화 시에만 (실험 기능 전제) |
@@ -38,7 +38,7 @@
 | `/plan-init` | 기능 그룹 slug (예: mvp, compare-products) | 인자 없으면 사용자에게 질문. 단일 흐름: `computeNextPlanNumber`로 NNN 채번 → `plans/NNN_slug/` 생성 + PLAN.md/ROADMAP.md + 제품 관통 문서 FEATURES/UX-UI 의도 delta + AGENT-GUIDE 활성 plan 갱신. legacy(NNN 아닌) 폴더 감지 시 게이트 |
 | `/task-init` | 주제/유형/규모/플랜 | 직전 맥락 명확하면 메인 제안 + confirm. 맥락 부족 시 인터뷰. **자동 추정 진행 X** |
 | `/task-plan` ~ `/task-close` | TASK-NNN 인자 또는 자동 | 인자 없으면 *상태에 맞는 가장 최근 task* 자동 선택 + confirm |
-| `/add-backlog` | `<주제>` (예: "로그인 빈 화면 백로그에") 또는 백로그 발화 캐치 | 메인 워크트리/dev 검증 + 활성 plan(`AGENT-GUIDE.md`) 검출 + 얕은 분석(코드 탐색 X) + BL-NNN 채번 + append. 유형 모호 시 confirm |
+| `/add-backlog` | `<주제>` (예: "로그인 빈 화면 백로그에") 또는 백로그 발화 캐치 | 메인 워크트리/부모 브랜치 검증 + 활성 plan(`AGENT-GUIDE.md`) 검출 + 얕은 분석(코드 탐색 X) + BL-NNN 채번 + append. 유형 모호 시 confirm |
 | `/log-friction` | `<불편 내용>` 또는 무인자 호출 | 사용자 합의 → FRICTION_LOG.md 한 행 추가 |
 
 **자동 추정 진행 X 정신** — `/task-init`이 가장 강조. 메인이 *추정한 메타로* 파일 생성하지 X. 사용자 답 받기 전 작성 금지.
@@ -75,8 +75,8 @@ draft → planned → developing → developed → testing → tested → closed
 한 프로젝트에서 *여러 메인 세션이 독립 태스크를 병렬*로 진행하는 운영. git worktree로 작업 폴더 격리, 머지 시 직렬화.
 
 **핵심 정신**:
-- **SSoT = git 브랜치** — 별도 상태 파일/락 운영 X. `git branch --no-merged dev --list 'feature/*_TASK-*' ...` 단일 진실 소스
-- **메인 워크트리 = dev 전용** — 모든 태스크 작업은 별도 워크트리에서 수행
+- **SSoT = git 브랜치** — 별도 상태 파일/락 운영 X. `git branch --list 'feature/*_TASK-*' ...` 단일 진실 소스 (`--no-merged` 미사용 — 분기 직후 브랜치가 부모와 동일 commit이라 완전 머지로 오판돼 채번 충돌하기 때문. `getActiveTasks` 참조)
+- **메인 워크트리 = 부모 브랜치 고정 (기본 dev)** — 모든 태스크 작업은 별도 워크트리에서 수행
 - **race 차단 2층** — 결정적 슬러그(같은 항목 → 같은 브랜치명, git 자동 거부) + SSoT BL/RM-NNN grep 검사
 - **충돌 자체 해결 3단계** — 단순 자동 / 의미적 자료 분석 / 판단 불가 사용자 호출
 - **머지 락 직렬화** — `proper-lockfile` 기반 머지 락 (`~/.taskery/<projectId>.merge.lock`), 락 외 사전 rebase + 락 안 재 rebase로 race 흡수
@@ -100,7 +100,7 @@ draft → planned → developing → developed → testing → tested → closed
 
 **.gitignore 케이스 분기 (task 문서 위치)**:
 - 등록 (퍼블릭 리포 default) — 메인 워크트리 절대 경로 (`$MAIN_WT/.project/tasks/...`) 단일 소스. 동시 쓰기 `proper-lockfile`로 직렬화
-- 미등록 — 워크트리 안 (`$WT_PATH/.project/tasks/...`), 워크트리 커밋 + 머지 시 dev 반영
+- 미등록 — 워크트리 안 (`$WT_PATH/.project/tasks/...`), 워크트리 커밋 + 머지 시 부모 브랜치 반영
 
 상세 흐름은 → [template/.claude/skills/task-init/SKILL.md](../template/.claude/skills/task-init/SKILL.md) / [template/.claude/skills/task-close/SKILL.md](../template/.claude/skills/task-close/SKILL.md) 참조.
 
@@ -111,16 +111,16 @@ draft → planned → developing → developed → testing → tested → closed
 `/add-backlog`는 *plan(기능 그룹)별 백로그* `.project/tasks/<NNN_slug>/BACKLOG.md`에 task 후보를 1건씩 누적한다. 글로벌 `.project/BACKLOG.md`(다음 기능 그룹 후보 카탈로그)는 `/plan-init` 영역 — 별 차원.
 
 **흐름**:
-- 사용자 *"~ 백로그에"* 발화 → 메인 워크트리 검출 + dev 체크아웃 검증 + 활성 plan(`AGENT-GUIDE.md` 파싱) 검출
+- 사용자 *"~ 백로그에"* 발화 → 메인 워크트리 검출 + 부모 브랜치 체크아웃 검증 + 활성 plan(`AGENT-GUIDE.md` 파싱) 검출
 - 얕은 분석(코드 탐색 X, 추정 수준) — 유형 / 제목 / 개요 / 대상 영역
 - BL-NNN 채번(`BL-(\d+)` max + 1) + 결정적 슬러그(한국어 → 영어 의미 변환 → kebab-case 3 단어 이내)
 - `withMetaLock`으로 BACKLOG.md append (plan-init이 박은 placeholder 라인 치환 우선)
 
 **체크박스 의미**:
 - `[ ]` = 미확인 (task로 옮기지 않은 메모)
-- `[x]` = 확인 완료 (task로 옮김). **dev 머지 완료 의미 X**
+- `[x]` = 확인 완료 (task로 옮김). **부모 머지 완료 의미 X**
 
-진행중/완료 추적은 git branch SSoT + `git log dev --grep 'BL-NNN'` + `taskery status`가 담당. BACKLOG.md는 *메모지 + task 참조 마크*만.
+진행중/완료 추적은 git branch SSoT + `git log --all --grep 'BL-NNN'` + `taskery status`가 담당. BACKLOG.md는 *메모지 + task 참조 마크*만.
 
 **`/task-init` 연동**:
 - 사용자 *"백로그의 BL-NNN 진행"* → BACKLOG.md에서 BL-NNN 메타 파싱 → 슬러그 그대로 사용 → 개요/대상 영역을 task.md §1 초안으로 자동 복사 → 워크트리 생성 → `withMetaLock` 안에서 `[ ]` → `[x]` + `- TASK: TASK-NNN` 추가 (다회 진행 시 콤마)
@@ -314,7 +314,7 @@ CLAUDE.md `## 검증 명령` 단일 섹션이 *4 시점에 분산 실행* (self-
 7. /task-plan TASK-001      # 4 섹션 채우기
 8. /task-dev TASK-001       # Phase 구현 + self-check
 9. /task-test TASK-001      # Task tool 격리 검증
-10. /task-close TASK-001    # git 마무리 + dev 병합
+10. /task-close TASK-001    # git 마무리 + 부모 브랜치 병합
 ```
 
 **불편 발생 시**:
@@ -339,3 +339,4 @@ CLAUDE.md `## 검증 명령` 단일 섹션이 *4 시점에 분산 실행* (self-
 | 2026-05-31 | 정합 순회 1차 후속 정정 — 제목 + 캡션 *스킬 8종* → *9종* 갱신 (멀티세션 + 백로그 commit 후 잔존). 본문 링크 path 표기 `<skill>.md` → `<skill>/SKILL.md` (0.1.1 디렉토리 마이그레이션 정합 누락분). §6 컨텍스트 관리 표 `/add-backlog` 행 추가 (9 스킬 정합). §4 본문 표 7 스킬 분량 실측 갱신 (멀티세션 commit으로 분량 증가 후 갱신 누락 — project-init/plan-init/task-init/task-plan/task-dev/task-test/task-close). 단순 수치 정합, 행위 변경 X |
 | 2026-06-02 | 0.1.3 F3 정합 — §1 스킬 표 task-plan/dev/test 캡션 *워크트리 안 호출* → *워크트리 호출 default (멀티세션), 호출 위치 자유, cwd 무관* / §3.5 호출 위치 분기(task-close) → *호출 위치 정책 (0.1.3+ — cwd 무관 동작 보장)* 섹션 재작성: 운영 모델 3가지(멀티세션 병렬 default / 단일 메인 지휘 / 메인 spawn 서브 세션) 모두 지원 + cwd 무관 동작 + 내부 명령 형태 강제 (`git -C` 형태, 셸 prefix / `--git-dir=` / `--work-tree=` 변형 금지) + git-guard.sh 5종 변형 인식 명시. stash FRICTION_LOG 2026-06-01 반영. |
 | 2026-06-28 | `/run-team` (agent teams 자동 병렬, Claude 전용) 추가 — 제목·캡션 + §1 표 행 + 위계 정신 meta 그룹 + §3.7 신규 섹션 + §4 본문 표 행(12,749 B). 공통 9종은 유지, Claude 전용 1종 분리 표기(패리티 의도적 갈림). PLAYBOOK §15 본구현. |
+| 2026-07-11 | 0.6.0 부모 브랜치 파라미터화 정합 — 분기·되병합 기준을 `dev` 고정에서 *task-init 시점의 현재 브랜치(= 부모 브랜치)*로 일반화. §1 task-close 병합 캡션 / §2 add-backlog 위치 검증 / §3.5 SSoT 명령·메인 워크트리 고정·.gitignore 미등록 반영 / §3.6 체크박스 의미·완료 추적 grep(`git log --all --grep`) / §8 예시 흐름 주석의 *dev* 표기를 *부모 브랜치*로 갱신. git-guard의 main/dev 보호·상태명·`/task-dev` 스킬명은 유지. |
