@@ -22,11 +22,11 @@
  *   - getInitLockPath(projectId): ~/.taskery/<projectId>.init.lock (task 분기 직렬화용)
  *   - withMergeLock(projectId, fn, opts): proper-lockfile로 머지 락 + fn 실행 + 자동 release
  *   - withMetaLock(filePath, fn, opts): 메타 파일 쓰기 락 + fn 실행
- *   - getActiveTasks(mainWtPath): SSoT 조회 (git branch --no-merged dev --list 'feature/*_TASK-*' ...)
- *   - getNextTaskNumber(mainWtPath): (진행중 ∪ dev 머지 히스토리) 최대 + 1
- *   - forkTask(mainWtPath, {type,dev,src,slug}): init 락 안에서 채번+워크트리·브랜치 생성 원자 실행
- *   - assertMainWorktreeOnDev(mainWtPath): 메인 워크트리가 dev 체크아웃 상태인지 검증
- *   - assertDevExists(mainWtPath): dev 브랜치 존재 검증
+ *   - getActiveTasks(mainWtPath): SSoT 조회 (git branch --list 'feature/*_TASK-*' ...)
+ *   - getNextTaskNumber(mainWtPath): (진행중 ∪ 전 ref 머지 히스토리) 최대 + 1 (부모 무관 전역 채번)
+ *   - forkTask(mainWtPath, {type,dev,src,slug}): init 락 안에서 부모(현재 브랜치) 캡처+채번+워크트리·브랜치 생성 원자 실행
+ *   - currentBranch(mainWtPath): 메인 워크트리 현재 브랜치 = 부모 브랜치(detached면 'HEAD')
+ *   - assertMainWorktreeOn(mainWtPath, branch): 메인 워크트리가 지정 브랜치 체크아웃 상태인지 검증
  *
  * 백로그 (0.1.2+):
  *   - getActiveVersion(mainWtPath): .project/AGENT-GUIDE.md에서 활성 plan 식별자(버전 또는 기능 그룹명) 추출
@@ -308,17 +308,15 @@ async function withMetaLock(filePath, fn, opts = {}) {
   }
 }
 
-function assertDevExists(mainWtPath) {
-  const ok = gitCapture(mainWtPath, ['rev-parse', '--verify', 'dev'], { allowFail: true });
-  if (ok === null) {
-    throw new Error('dev 브랜치 부재. 사용자 결정 필요 (생성?).');
-  }
+function currentBranch(mainWtPath) {
+  // 메인 워크트리의 현재 브랜치 = 태스크의 부모 브랜치(0.6.0). detached HEAD면 'HEAD' 반환.
+  return gitCapture(mainWtPath, ['rev-parse', '--abbrev-ref', 'HEAD']);
 }
 
-function assertMainWorktreeOnDev(mainWtPath) {
-  const current = gitCapture(mainWtPath, ['rev-parse', '--abbrev-ref', 'HEAD']);
-  if (current !== 'dev') {
-    throw new Error(`메인 워크트리가 dev 아님 (현재: ${current}). taskery 정책 위배.`);
+function assertMainWorktreeOn(mainWtPath, branch) {
+  const current = currentBranch(mainWtPath);
+  if (current !== branch) {
+    throw new Error(`메인 워크트리가 ${branch} 아님 (현재: ${current}). 부모 브랜치로 체크아웃 필요.`);
   }
 }
 
@@ -341,8 +339,8 @@ function parseBranchName(branch) {
 }
 
 function getActiveTasks(mainWtPath) {
-  // SSoT — TASK-* 패턴 작업 브랜치 (분기 직후 빈 브랜치 포함). `--no-merged dev` 미사용:
-  // 워크트리 분기 직후 브랜치는 dev와 동일 commit이라 `--no-merged dev`가 *완전 머지 상태*로
+  // SSoT — TASK-* 패턴 작업 브랜치 (분기 직후 빈 브랜치 포함). `--no-merged <부모>` 미사용:
+  // 워크트리 분기 직후 브랜치는 부모와 동일 commit이라 `--no-merged`가 *완전 머지 상태*로
   // 처리 → 빈 결과 → getNextTaskNumber 충돌. 브랜치 존재 자체가 SSoT (정상 흐름은 task-close
   // 자동 삭제로 자연 정리, 보존 키워드 잔존분도 *진행중*으로 잡힘이 정합).
   const out = gitCapture(mainWtPath, ['branch', '--list', ...BRANCH_PATTERNS]);
@@ -358,12 +356,14 @@ function getActiveTasks(mainWtPath) {
 function getNextTaskNumber(mainWtPath) {
   // 1. 진행중 (SSoT)
   const activeNums = getActiveTasks(mainWtPath).map((t) => t.taskNum);
-  // 2. dev 머지 히스토리 (GIT_RULE 풍부 메시지)
-  //    --extended-regexp(ERE)에서 `+`는 수량자 — `\+`로 쓰면 *리터럴 +* 가 되어 "TASK-001"을
-  //    못 잡는다. 그러면 close로 활성 브랜치가 사라진 뒤 채번이 1로 리셋돼 순차 작업이 번호 충돌.
+  // 2. 머지 히스토리 (GIT_RULE 풍부 메시지) — 모든 ref(`--all`) 스캔.
+  //    부모 브랜치가 dev로 고정되지 않으므로(0.6.0) 닫힌 태스크는 각자의 부모에 병합돼 있다.
+  //    특정 부모(과거 'dev') 하나만 grep하면 다른 부모로 닫힌 번호를 놓쳐 채번 충돌 → `--all`로
+  //    전 ref의 TASK-NNN 최대를 취해 번호를 리포 전역으로 유지.
+  //    --extended-regexp(ERE)에서 `+`는 수량자 — `\+`는 *리터럴 +* 라 "TASK-001"을 못 잡는다.
   const log = gitCapture(mainWtPath, [
     'log',
-    'dev',
+    '--all',
     '--grep',
     'TASK-[0-9]+',
     '--extended-regexp',
@@ -383,8 +383,11 @@ async function forkTask(mainWtPath, { type, dev, src, slug }) {
   // getNextTaskNumber 직후 worktree add까지 끝내므로 다음 호출은 늘어난 번호를 본다.
   const projectId = getProjectId(mainWtPath);
   return withMetaLock(getInitLockPath(projectId), () => {
-    assertDevExists(mainWtPath);
-    assertMainWorktreeOnDev(mainWtPath);
+    // 부모 = 메인 워크트리의 현재 브랜치(0.6.0). dev 하드코딩 제거 — 서 있는 브랜치가 곧 부모.
+    const parent = currentBranch(mainWtPath);
+    if (parent === 'HEAD') {
+      throw new Error('메인 워크트리가 detached HEAD — 부모로 삼을 브랜치에 체크아웃 필요.');
+    }
     // SSoT 안전망 — 같은 출처(BL-NNN/RM-NNN)가 이미 진행중이면 거부. DR은 별도 ID 없어 검사 제외.
     if (src !== 'DR') {
       const dup = getActiveTasks(mainWtPath).find((t) => t.src === src);
@@ -397,11 +400,12 @@ async function forkTask(mainWtPath, { type, dev, src, slug }) {
     const branch = `${type}/${dev}_TASK-${nnn}_${src}_${slug}`;
     const wtPath = getWorktreePath(projectId, { taskNum, src, slug });
     mkdirp(getWorktreesRoot(projectId));
-    // 동일 브랜치명은 git이 거부(같은 항목 동시 분기 차단). 실패 시 throw → fork.js가 사용자 보고.
-    execFileSync('git', ['-C', mainWtPath, 'worktree', 'add', wtPath, '-b', branch, 'dev'], {
+    // 부모 브랜치를 base로 워크트리·브랜치 생성. 동일 브랜치명은 git이 거부(같은 항목 동시 분기
+    // 차단). 실패 시 throw → fork.js가 사용자 보고.
+    execFileSync('git', ['-C', mainWtPath, 'worktree', 'add', wtPath, '-b', branch, parent], {
       stdio: 'pipe',
     });
-    return { taskNum, nnn, branch, wtPath, projectId };
+    return { taskNum, nnn, branch, wtPath, projectId, parent };
   });
 }
 
@@ -593,7 +597,7 @@ async function markBacklogChecked(mainWtPath, blId, taskNum) {
 }
 
 // ─── task 헤더 / 상태 전이 (코드화) ─────────────────────────────────
-// 헤더 5컬럼 파싱 · task 문서 위치 판정 · 7상태 유효전이 검증을 코드로 단일화.
+// 헤더 파싱(6컬럼 · 구 5컬럼 폴백) · task 문서 위치 판정 · 7상태 유효전이 검증을 코드로 단일화.
 // 계약: TASK_DOC_RULE §1.1(헤더) · §1.2(7상태) · §1.5(문서 위치).
 
 // 7×7 유효전이표 (TASK_DOC_RULE §1.2 + FAIL/UNCERTAIN 분기). from → 허용 to 목록.
@@ -639,7 +643,10 @@ function _locateHeaderRow(content) {
 }
 
 function parseTaskHeader(taskMdPath) {
-  // 헤더 5컬럼을 구조화 → { created, plan, type, size, status }. 표 부재/컬럼 부족 시 throw.
+  // 헤더를 구조화 → { created, plan, type, size, parent, status }. 표 부재/컬럼 부족 시 throw.
+  // 6컬럼(0.6.0+): 생성일·플랜·유형·규모·부모 브랜치·상태. 부모 브랜치는 상태 *앞* — 상태를
+  // 항상 마지막 셀로 유지해 setStatus의 `length-2` 로직이 구·신 양쪽에서 성립하게 함.
+  // 5컬럼(구): 부모 칸 부재 → parent='dev' 폴백(0.6.0 이전 문서 하위호환).
   const content = fs.readFileSync(taskMdPath, 'utf8');
   const loc = _locateHeaderRow(content);
   if (!loc) throw new Error(`헤더 표 파싱 실패 (TASK_DOC_RULE §1.1 형식 아님): ${taskMdPath}`);
@@ -647,13 +654,17 @@ function parseTaskHeader(taskMdPath) {
   if (inner.length < 5) {
     throw new Error(`헤더 표 컬럼 부족(${inner.length}/5): ${taskMdPath}`);
   }
+  if (inner.length >= 6) {
+    const [created, plan, type, size, parent, status] = inner;
+    return { created, plan, type, size, parent, status };
+  }
   const [created, plan, type, size, status] = inner;
-  return { created, plan, type, size, status };
+  return { created, plan, type, size, parent: 'dev', status };
 }
 
 function isProjectRegistered(mainWtPath) {
   // .gitignore에 .project/ 등록 여부 — check-ignore exit 0 = 등록(퍼블릭 default, 문서는 메인WT 공유),
-  // exit 1 = 미등록(문서는 워크트리 안, 머지로 dev 반영). task-init Step7 분기와 동일 판정.
+  // exit 1 = 미등록(문서는 워크트리 안, 머지로 부모 반영). task-init Step7 분기와 동일 판정.
   try {
     execFileSync(
       'git',
@@ -719,7 +730,8 @@ async function setStatus(taskMdPath, next) {
     const content = fs.readFileSync(taskMdPath, 'utf8');
     const loc = _locateHeaderRow(content);
     if (!loc) throw new Error(`헤더 표 파싱 실패: ${taskMdPath}`);
-    const cur = loc.cells.slice(1, -1).map((c) => c.trim())[4];
+    const trimmed = loc.cells.slice(1, -1).map((c) => c.trim());
+    const cur = trimmed[trimmed.length - 1]; // 상태 = 항상 마지막 셀 (6컬럼: 부모 브랜치가 그 앞)
     if (cur === next) return { changed: false, from: cur, to: next, path: taskMdPath };
     const allowed = TRANSITIONS[cur] || [];
     if (!allowed.includes(next)) {
@@ -767,14 +779,14 @@ function _buildTaskDocPath(base, plan, { taskNum, slug, promoted }) {
   return { dir: planDir, file: path.join(planDir, `${nnn}_${slug}.md`) };
 }
 
-function _renderTaskSkeleton({ taskNum, title, created, plan, docType, size }) {
+function _renderTaskSkeleton({ taskNum, title, created, plan, docType, size, parent }) {
   const nnn = String(taskNum).padStart(3, '0');
   return [
     `# TASK-${nnn} — ${title}`,
     '',
-    '| 생성일 | 플랜 | 유형 | 규모 | 상태 |',
-    '|--------|------|------|------|------|',
-    `| ${created} | ${plan} | ${docType} | ${size} | draft |`,
+    '| 생성일 | 플랜 | 유형 | 규모 | 부모 브랜치 | 상태 |',
+    '|--------|------|------|------|-------------|------|',
+    `| ${created} | ${plan} | ${docType} | ${size} | ${parent} | draft |`,
     '',
     '## Requirements',
     '',
@@ -800,14 +812,16 @@ function _renderTaskSkeleton({ taskNum, title, created, plan, docType, size }) {
 }
 
 function scaffoldTaskDoc(mainWtPath, wtPath, meta) {
-  // meta: { taskNum, slug, title, type(브랜치 타입), size, plan?, promoted?, created? }
+  // meta: { taskNum, slug, title, type(브랜치 타입), size, parent, plan?, promoted?, created? }
   // 위치: 등록(.gitignore) 케이스 → 메인WT, 미등록 → 워크트리. plan 미지정 시 AGENT-GUIDE에서 검출.
+  // parent 미지정 시 현재 브랜치 캡처(단독 호출 안전망 — 통상 fork가 넘김).
   // taskNum이 고유(fork init 락 채번)라 동일 문서 동시 쓰기 경합 없음 → 락 불요.
   const registered = isProjectRegistered(mainWtPath);
   const base = registered ? mainWtPath : wtPath;
   const plan = meta.plan || getActiveVersion(mainWtPath);
   const docType = DOC_TYPE_OF[meta.type] || meta.type;
   const created = meta.created || _todayLocal();
+  const parent = meta.parent || currentBranch(mainWtPath);
   const { dir, file } = _buildTaskDocPath(base, plan, {
     taskNum: meta.taskNum,
     slug: meta.slug,
@@ -826,6 +840,7 @@ function scaffoldTaskDoc(mainWtPath, wtPath, meta) {
       plan,
       docType,
       size: meta.size,
+      parent,
     }),
   );
   return { registered, promoted: !!meta.promoted, plan, file };
@@ -934,7 +949,7 @@ function initPlan(mainWtPath, slug, opts = {}) {
 
 // ─── task close 결정적 준비 (코드화, D1·D2) ─────────────────────────
 // closeTask는 *결정적 준비만* 수행: 게이트(status=tested) → Phase 커밋(D2) → status=closed →
-// flows/문서 커밋 → 추적마커. 비가역 3종(dev --no-ff 머지 · worktree remove · branch -d)과
+// flows/문서 커밋 → 추적마커. 비가역 3종(부모 브랜치 --no-ff 머지 · worktree remove · branch -d)과
 // 충돌 해결·머지 락은 스킬(LLM)이 수행 — 위험 최소화 + 충돌은 LLM 판단 영역.
 
 // 브랜치 타입 → 커밋 태그 (GIT_RULE 6-3).
@@ -1051,18 +1066,22 @@ function splitUncommittedByPhase(wtPath, taskMdPath, meta) {
 
 async function closeTask(mainWtPath, { taskNum }, opts = {}) {
   // 결정적 준비만 — 비가역(머지·정리)·충돌 해결은 스킬이 후속 수행.
-  // 반환: { blocked } (게이트 미충족/매핑 모호) 또는 { prepped, branch, wtPath, registered, commits, aheadOfDev }.
+  // 반환: { blocked } (게이트 미충족/매핑 모호) 또는
+  //   { prepped, branch, parent, wtPath, registered, commits, aheadOfParent }. parent = 스킬 머지 대상.
   const active = getActiveTasks(mainWtPath).find((t) => t.taskNum === taskNum);
   if (!active) {
     throw new Error(`TASK-${String(taskNum).padStart(3, '0')} 진행중 브랜치 없음 (SSoT 조회).`);
   }
-  assertMainWorktreeOnDev(mainWtPath);
   const projectId = getProjectId(mainWtPath);
   const wtPath = getWorktreePath(projectId, { taskNum, src: active.src, slug: active.slug });
   const resolved = resolveTaskDocPath(mainWtPath, wtPath, { taskNum });
   if (!resolved) throw new Error(`TASK-${taskNum} 문서 못 찾음.`);
 
   const header = parseTaskHeader(resolved.file);
+  // 부모 = 헤더 기록값(0.6.0, 구 문서는 'dev' 폴백). 메인 워크트리가 그 부모에 서 있어야
+  // 스킬 후속 머지가 올바른 브랜치로 간다.
+  const parent = header.parent;
+  assertMainWorktreeOn(mainWtPath, parent);
   if (header.status !== 'tested') {
     return { blocked: 'status', current: header.status, docPath: resolved.file };
   }
@@ -1114,9 +1133,9 @@ async function closeTask(mainWtPath, { taskNum }, opts = {}) {
     }
   }
 
-  // 추적 마커 빈커밋 (dev보다 앞선 커밋 0개 — docs/분석 task + .project gitignore 케이스)
+  // 추적 마커 빈커밋 (부모보다 앞선 커밋 0개 — docs/분석 task + .project gitignore 케이스)
   const ahead = parseInt(
-    gitCapture(wtPath, ['rev-list', '--count', 'dev..HEAD'], { allowFail: true }) || '0',
+    gitCapture(wtPath, ['rev-list', '--count', `${parent}..HEAD`], { allowFail: true }) || '0',
     10,
   );
   if (ahead === 0) {
@@ -1136,18 +1155,19 @@ async function closeTask(mainWtPath, { taskNum }, opts = {}) {
   }
 
   const aheadFinal = parseInt(
-    gitCapture(wtPath, ['rev-list', '--count', 'dev..HEAD'], { allowFail: true }) || '0',
+    gitCapture(wtPath, ['rev-list', '--count', `${parent}..HEAD`], { allowFail: true }) || '0',
     10,
   );
   return {
     prepped: true,
     taskNum,
     branch: active.branch,
+    parent,
     wtPath,
     registered: resolved.registered,
     docPath: resolved.file,
     commits,
-    aheadOfDev: aheadFinal,
+    aheadOfParent: aheadFinal,
   };
 }
 
@@ -1187,8 +1207,8 @@ module.exports = {
   getInitLockPath,
   withMergeLock,
   withMetaLock,
-  assertDevExists,
-  assertMainWorktreeOnDev,
+  currentBranch,
+  assertMainWorktreeOn,
   parseBranchName,
   getActiveTasks,
   getNextTaskNumber,

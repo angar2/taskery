@@ -7,11 +7,11 @@
 
 ## 1. 양식 Spec
 
-### 1.1 헤더 표 — 5컬럼
+### 1.1 헤더 표 — 6컬럼
 
-| 생성일 | 플랜 | 유형 | 규모 | 상태 |
-|--------|------|------|------|------|
-| 2026-05-08 | 001_mvp | feature | medium | developing |
+| 생성일 | 플랜 | 유형 | 규모 | 부모 브랜치 | 상태 |
+|--------|------|------|------|-------------|------|
+| 2026-05-08 | 001_mvp | feature | medium | dev | developing |
 
 - **생성일**: ISO 형식 (YYYY-MM-DD)
 - **플랜**: 어느 plan(기능 그룹) 하위인지 (예: 001_mvp, 002_compare-products) — `tasks/<NNN_slug>/` 디렉토리 명과 일치
@@ -21,7 +21,8 @@
   - `small` — 구현 파트 2-3개 (단순 기능)
   - `medium` — 구현 파트 4-7개 (일반 기능 또는 새 모듈)
   - `large` — 구현 파트 8개 이상 (또는 분리 검토 권장)
-- **상태**: 7상태 머신 (1.2 참조)
+- **부모 브랜치**: 이 task를 분기한 기점 브랜치 = `/task-init` 시점의 메인 워크트리 현재 브랜치 (`dev` / `dev_feat_x` / `master` 등). `/task-close`가 이 브랜치로 되병합한다. `/task-init`이 자동 기록 — 수기 입력 아님. (0.6.0 이전 문서는 이 칸이 없으며, close 시 `dev`로 폴백.)
+- **상태**: 7상태 머신 (1.2 참조) — 표의 *마지막* 컬럼(부모 브랜치가 그 앞)
 
 ### 1.2 상태 set — 7상태 (-ing/-ed 페어 일관성)
 
@@ -53,9 +54,9 @@ draft → planned → developing → developed → testing → tested → closed
 ```markdown
 # TASK-NNN — <태스크 이름>
 
-| 생성일 | 플랜 | 유형 | 규모 | 상태 |
-|--------|------|------|------|------|
-| ... | ... | ... | ... | ... |
+| 생성일 | 플랜 | 유형 | 규모 | 부모 브랜치 | 상태 |
+|--------|------|------|------|-------------|------|
+| ... | ... | ... | ... | ... | ... |
 
 ## Requirements
 <요구사항 + 메인이 증폭/구체화한 내용>
@@ -121,11 +122,12 @@ draft → planned → developing → developed → testing → tested → closed
 2. kebab-slug = 태스크 이름 한국어 → 영어 kebab-case (예: "로그인 기능 추가" → `login-feature`)
 3. 파일명 = `NNN_kebab-slug.md` (예: `003_login-feature.md`). *사용자 명시 시* 폴더 승격 (`TASK-003_login-feature/task.md`) — 규모 large여도 자동 승격 X.
 4. 파일 제목 작성: `# TASK-003 — 로그인 기능 추가`
-5. 헤더 표 작성 (5컬럼 모두 채움):
+5. 헤더 표 작성 (6컬럼 모두 채움):
    - 생성일: 오늘 (YYYY-MM-DD)
    - 플랜: 현재 active plan (예: 001_mvp — `NNN_slug` 폴더명)
    - 유형: 사용자/메인 합의 (feature/bug/...)
    - 규모: 사용자/메인 합의 (micro/small/medium/large)
+   - 부모 브랜치: `/task-init`(fork) 시점의 현재 브랜치 — 코드가 자동 기록(수기 X)
    - 상태: `draft` (고정)
 6. 6 섹션 placeholder 작성 (Requirements / Scope / Dev Plan / Test Plan / Result는 빈 헤딩만).
 
@@ -263,7 +265,7 @@ Test Plan 작성 완료 후 *반드시* 점검. *"누적/리셋 안 함"* 같은
 ### 3.1 일관성
 
 - 양식 그대로 채워. 섹션 추가/삭제 금지.
-- 헤더 5컬럼 모두 채움 — *"미정"* 같은 placeholder 금지 (의사결정 위임 X).
+- 헤더 6컬럼 모두 채움 — *"미정"* 같은 placeholder 금지 (의사결정 위임 X). 부모 브랜치는 코드 자동 기록.
 - 상태 7개 외 단어 사용 금지.
 
 ### 3.2 자기완결성

@@ -213,6 +213,7 @@ server.registerTool(
           title: a.title,
           type: a.type,
           size: a.size,
+          parent: result.parent,
           promoted: !!a.promote,
         });
         out = { ...result, docPath: doc.file, registered: doc.registered, promoted: doc.promoted };
@@ -228,7 +229,7 @@ server.registerTool(
   'task_close',
   {
     description:
-      'close 결정적 준비만 — Phase 커밋·status=closed·문서 커밋·추적마커. 게이트(status=tested)·매핑 모호 시 blocked 반환. 비가역(dev --no-ff 머지·worktree/branch 정리·충돌 해결)은 스킬(task-close)이 후속 수행.',
+      'close 결정적 준비만 — Phase 커밋·status=closed·문서 커밋·추적마커. 게이트(status=tested)·매핑 모호 시 blocked 반환. 반환 parent = 스킬 머지 대상 부모 브랜치. 비가역(부모 --no-ff 머지·worktree/branch 정리·충돌 해결)은 스킬(task-close)이 후속 수행.',
     inputSchema: { task: z.union([z.string(), z.number()]).describe('TASK-NNN 또는 번호') },
   },
   handler(async (a) => {
@@ -245,7 +246,7 @@ server.registerTool(
         `Phase↔파일 매핑 모호 (${result.reason}) — Dev Plan '파일' 필드 확인 후 수동 Phase 커밋 → task_close 재호출.`,
       );
     }
-    return ok(result, `prep 완료. 비가역(사전 rebase·충돌해결·머지 락·dev 머지·정리)은 task-close 스킬이 후속 수행.`);
+    return ok(result, `prep 완료 (부모=${result.parent}). 비가역(사전 rebase·충돌해결·머지 락·부모 --no-ff 머지·정리)은 task-close 스킬이 후속 수행.`);
   }),
 );
 

@@ -43,4 +43,4 @@ description: 사용자 발화로 *plan(기능 그룹)별* tasks/<NNN_slug>/BACKL
 
 - **얕은 분석만** — 도메인 코드 Read · Grep 금지. 본격 분석은 `/task-plan`.
 - **글로벌 `.project/BACKLOG.md`(plan 기획 후보)와 혼동 X** — 본 스킬은 *활성 plan별*만. 글로벌은 `/plan-init` 영역.
-- **체크박스 의미** — `[ ]` = 미확인(메모) / `[x]` = 확인(task로 옮김). dev 머지·완료 여부와 무관 — 완료 추적은 `taskery status` + dev 머지커밋.
+- **체크박스 의미** — `[ ]` = 미확인(메모) / `[x]` = 확인(task로 옮김). 부모 머지·완료 여부와 무관 — 완료 추적은 `taskery status` + 부모 머지커밋.
