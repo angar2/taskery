@@ -7,6 +7,18 @@
 
 ## [Unreleased]
 
+### 변경
+
+- **기점 브랜치 파라미터화 — `dev` 하드코딩 제거 (부모 브랜치 기록·재사용)** — task의 분기·되병합 기준을 `dev` 고정에서 **`/task-init` 시점의 현재 브랜치(= 부모 브랜치)**로 일반화했다. 개인은 그대로 `dev`에 서서 쓰면 동작이 동일하고, 회사·팀·로드맵처럼 통합 브랜치가 `dev`가 아닌 환경(`voyager`/`master`/`dev_feat_x` 등)에서는 그 브랜치에 서서 시작하면 taskery가 거기서 분기해 거기로 되병합한다. taskery는 *부모 브랜치 안쪽*(항상 본인 소유 브랜치 → 항상 로컬 `--no-ff`)만 담당하고, 부모→상위(dev/voyager/master, PR 포함) 승격은 사용자 몫이다(taskery는 PR을 다루지 않음). 설계 = [plan/PLAYBOOK.md](plan/PLAYBOOK.md) §16.
+  - **부모 브랜치를 task 문서 헤더에 기록** — git은 브랜치의 분기 출처를 저장하지 않으므로, `/task-init`(fork)이 현재 브랜치를 붙잡아 헤더에 적고 `/task-close`가 그 값을 읽어 되병합한다. 이를 위해 task 헤더가 **5컬럼 → 6컬럼**(`부모 브랜치`를 `상태` 앞에 삽입 — 상태를 마지막 셀로 유지). 0.6.0 이전 문서(5컬럼)는 부모 칸이 없으므로 close 시 `dev`로 폴백(하위호환).
+  - **채번을 리포 전역으로 견고화** — `getNextTaskNumber`가 닫힌 태스크 번호를 찾을 때 특정 부모(`git log dev`) 대신 모든 ref(`git log --all`)를 스캔한다. 부모가 여러 개여도 서로 다른 부모에 병합된 번호를 놓치지 않는다(TASK-NNN은 전역 식별자).
+  - **"메인 워크트리 = dev 전용" → "메인 워크트리 = 부모 브랜치 고정"** — 안전 불변식(진행 중 태스크가 있는 동안 메인 워크트리 HEAD를 옮기지 않음, task 브랜치는 워크트리에서만)은 유지하고, 브랜치 이름 고정만 해제. `CLAUDE.md`/`AGENTS.md`/`GIT_RULE`/`TASK_DOC_RULE`/스킬(task-init·task-close·task-plan·plan-init·add-backlog) 정합. git-guard의 main/dev 직접 커밋 차단은 안전선으로 유지.
+  - `fork`/`close` CLI·MCP 도구(`task_init`/`task_close`) 반환에 `parent` 추가, `close`의 `aheadOfDev` → `aheadOfParent`.
+
+### 수정
+
+- **`closed-immutable` 훅 상태 추출 정규식 — 6컬럼 헤더 미인식** — 훅(`.claude`·`.codex` 양판)이 status를 5컬럼 고정 정규식으로 추출해, 6컬럼 헤더(0.6.0)에선 매치에 실패해 **`closed` task 재수정 차단이 걸리지 않을** 위험이 있었다. status는 표의 *마지막 셀*이라는 사실을 이용해 5·6컬럼 양쪽을 잡도록 교정(`(?:[^|]*\|){4,5}` + 마지막 status 셀).
+
 ## [0.5.0] - 2026-07-01
 
 ### 추가
