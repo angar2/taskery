@@ -53,6 +53,7 @@ MAIN_WT=$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")
    - 인자 없음 → `developed` 상태 가장 최근 task. 발견 시 confirm. 없으면 *"검증할 task 없음."* + 종료.
 3. 상태 = `developed` 검증. `testing`이면 이어가기 (Step 2 skip). 그 외면 종료.
 4. `## Test Plan` 섹션 + `## Dev Plan`의 Phase별 *완료 기준* 정독. 자기완결성 점검 — 다른 문서 참조나 *"위에서 만든 X"* 같은 표현 있으면 사용자에게 보고 + Test Plan 보강 후 재시도.
+5. **프로젝트 로컬 룰 확인** — `$MAIN_WT/.project/rules/TEST_RULE.local.md`가 있으면 Read한다 (없으면 넘어간다). 검증 범위·방식에서 본 스킬 조항과 겹치면 **로컬 룰 우선**. 단 멀티세션 불변식·destructive 승인·상태 전이 유효성은 로컬이 뒤집지 못한다.
 
 ### Step 2 — status 전환 (developed → testing)
 
@@ -71,9 +72,11 @@ Task tool로 sub-agent spawn. prompt는 *자기완결적* — task.md 경로 + �
 
 task 파일 경로: <ABSOLUTE_PATH_TO_TASK_MD>
 검증 방법 문서: <ABSOLUTE_PATH_TO_TEST_GUIDE_MD>
+프로젝트 검증 정책(있을 때만): <ABSOLUTE_PATH_TO_TEST_RULE_LOCAL_MD>
 
 task 파일을 직접 Read 해서 ## Test Plan 섹션 + ## Dev Plan의 Phase별 완료 기준을 정독하세요. 그리고 *검증 방법 문서(TEST-GUIDE.md)* 도 직접 Read — 각 테스트 방식을 *이 프로젝트에서 실제로 어떻게 실행하나*(DB 조회 경로 / API 호출법 / E2E 셋업 등)의 단일 소스입니다. 위에 경로로 명시된 문서(task 파일 · 검증 방법 문서 · 프로젝트 검증 정책) + 목업 외 다른 문서 참조 X.
 (단 task.md가 `mockup/<task-doc-name>-mockup.html` 참조하면 해당 목업 파일도 직접 Read — *승인된 목업 = 시각 시나리오의 정답지*입니다. 시각 시나리오 = 실제 화면 캡처 → 이 목업과 자동 대조.)
+프로젝트 검증 정책 파일이 경로로 주어졌으면 그것도 Read한다 — 이 프로젝트 고유의 검증 범위·방식 규칙이며, 위 수행 룰과 겹치는 항목은 그쪽을 우선한다(멀티세션 불변식·안전 조항 제외).
 
 ## 수행 룰
 
@@ -139,18 +142,19 @@ task 파일을 직접 Read 해서 ## Test Plan 섹션 + ## Dev Plan의 Phase별 
 - <시나리오 N: 무엇이 [AUTO]인데 기대값을 못 만들었나 + 무엇을 시도했나 + 왜 불가한가>
   → task-plan으로 Test Plan 보수 필요 (이 시나리오를 [실행 명령 + 구체적 기대값]으로 다시 작성).
 
-## 종료 조건
-
-위 형식 그대로 리턴 후 종료. 코드 수정 시도 금지 — 결과 리턴만.
 ### 실행 보류 (UNCERTAIN 실행 보류 — 해당 시)
 - <어느 시나리오/명령을 실행하지 않았나 + 무엇을 점유하는가(화면·마우스·키보드·전역 단축키 등) + 비점유 부분만 실행했다면 그 범위>
   → 메인이 사용자 승인을 받아 실행하거나, TEST-GUIDE *테스트 실행 환경* 절에 격리 실행 경로를 마련한 뒤 재검증 필요.
 
+## 종료 조건
+
+위 형식 그대로 리턴 후 종료. 코드 수정 시도 금지 — 결과 리턴만.
 ```
 
 **구현 디테일**:
 - `<ABSOLUTE_PATH_TO_TASK_MD>` 자리에 `.project/tasks/<NNN_slug>/<NNN>_<slug>.md` (또는 폴더 승격 시 `<...>/task.md`)의 절대 경로 삽입.
 - `<ABSOLUTE_PATH_TO_TEST_GUIDE_MD>` 자리에 `$MAIN_WT/.project/TEST-GUIDE.md`의 절대 경로 삽입 (위 "멀티세션 메타 위치"의 `MAIN_WT` 사용 — 워크트리에서 호출돼도 메인 워크트리의 단일 소스를 읽도록).
+- `<ABSOLUTE_PATH_TO_TEST_RULE_LOCAL_MD>` 자리에 `$MAIN_WT/.project/rules/TEST_RULE.local.md`의 절대 경로 삽입. **파일이 없으면 그 줄 자체를 prompt에서 제외**한다 (없는 경로를 넘기면 격리 세션이 헤맨다).
 - Task tool의 `subagent_type`: `general-purpose` (도구 풀 다 필요).
 - Task tool의 `description`: `Isolated test for TASK-<NNN>`.
 - **코덱스 spawn (플랫폼 패리티)**: 코덱스에선 `.codex/agents/task-tester.toml`의 `task-tester` 서브에이전트로 spawn하되, *위 펜스 전체를 task prompt로 그대로 전달*한다 — 펜스가 양 플랫폼 공통 단일 룰 소스다(클로드 = `general-purpose` + 펜스 / 코덱스 = `task-tester` + 펜스, 동일 효과). `task-tester`의 `developer_instructions`는 같은 룰의 코덱스 기준선 미러 — 본 펜스의 수행 룰을 바꾸면 그 `developer_instructions`도 함께 갱신한다.
@@ -224,10 +228,6 @@ task 파일을 직접 Read 해서 ## Test Plan 섹션 + ## Dev Plan의 Phase별 
 ```
 3. `/task-plan`은 *Test Plan 섹션만* 보수 (Requirements / Scope / Dev Plan / 코드 보존). 보수 후 `/task-test` 재실행 (코드 미변경이므로 `/task-dev` 재실행 없음). status는 `testing` 유지.
 
-#### UNCERTAIN(사람 검수) 분기 (USER 검수 흐름)
-
-격리 세션이 `[USER]` 시나리오(정답지가 *주관*인 영역 — 시각 미세 취향 / UX 느낌) 발견 시. **자동 PASS 전이 X — 사용자 직접 검수 PASS 받은 후에만 `tested` 전이**. (시각 *객관* 깨짐은 여기 아니라 FAIL — 격리 세션이 캡처-목업 대조로 이미 잡음.)
-
 #### UNCERTAIN(실행 보류) 분기 — 환경 제약 → 승인 또는 격리 경로
 
 격리 세션이 화면·입력 점유(룰 17)를 이유로 실행하지 않은 시나리오를 보고한 경우. 코드 결함도 시험문제 결함도 아니므로 `/task-dev`·`/task-plan` 어느 쪽으로도 보내지 않는다.
@@ -252,6 +252,10 @@ task 파일을 직접 Read 해서 ## Test Plan 섹션 + ## Dev Plan의 Phase별 
    - **"보류인 채로 마무리해"** (알려진 미검증 감수) → FAIL 분기의 *"OK 마무리"*와 동일 처리 — `set_status` 도구로 `tested` 전이(또는 `npx @angar2/taskery set-status TASK-<NNN> tested`) + Result 섹션에 *"미검증 영역: <보류 시나리오> — 사유: 화면·입력 점유, 사용자 판단으로 미실행"* 명시 후 `/task-close` 안내.
 4. **묵묵히 PASS 처리 금지** — 어느 경로로 가든 보류된 시나리오는 Result에 *미검증 영역*으로 남긴다. 실행하지 않은 것을 통과로 적지 않는다.
 
+#### UNCERTAIN(사람 검수) 분기 (USER 검수 흐름)
+
+격리 세션이 `[USER]` 시나리오(정답지가 *주관*인 영역 — 시각 미세 취향 / UX 느낌) 발견 시. **자동 PASS 전이 X — 사용자 직접 검수 PASS 받은 후에만 `tested` 전이**. (시각 *객관* 깨짐은 여기 아니라 FAIL — 격리 세션이 캡처-목업 대조로 이미 잡음.)
+
 > **검수 서버 먼저 기동** (`## 검수 실행 명령` 선언 + 시각/UI 검수 항목 포함 시): 체크리스트를 제시하기 *전에* 서버를 백그라운드 기동(포트 = 기준 포트 + TASK번호)하고 접속 URL을 함께 제공한다 — 사용자가 실제 화면을 보며 ✓/✗ 검수하도록. 격리 세션이 기능상 이미 띄웠으면 재사용. 사용자 *"안 띄워도 돼"* 시 생략. 기동 전 포트·프로세스 확인 + 종료 시 자식까지 정리. 상세: GIT_RULE "멀티세션 검수 환경".
 
 1. 메인이 사용자에게 *체크리스트 형식*으로 항목 보고 (stash FRICTION_LOG #14+19 반영):
@@ -266,11 +270,6 @@ USER 검수 — N 항목 (목업 기준: <mockup path — 있을 시>)
 각 항목 ✓/✗ 응답
 ```
 
-2. **시각 영역 fix 사이클 사전 예고** — 시각 영역 항목 있으면 *"시각 영역은 한 사이클로 100% 일치 보장 X. fix 사이클 1~2회 예상. ✗ 발견 시 정상."* 안내. 사용자 기대치 사전 정렬, 부정 반응 누적 방지.
-3. **사용자가 스크린샷·산출물을 주면 체크리스트 전 항목과 1:1 대조** — 사용자가 물은 항목만 답하지 않는다. 받은 증거를 검수 항목 전체와 하나씩 맞춰 보고, 사용자가 언급하지 않은 어긋남도 먼저 지목한다 (stash FRICTION 2026-07-29 — 첫 스크린샷에 이미 찍혀 있던 결함을 세션이 짚지 못해 발견이 한 사이클 늦었다).
-4. 사용자 응답 받음:
-   - 모두 ✓ → PASS 분기로 (`tested` 전이).
-   - ✗ 1개 이상 → FAIL 분기로 (`developing` 회귀 + ✗ 항목별 fix).
 **검수 항목 작성 규칙 (recordion FRICTION 2026-08-05 반영)**:
 
 - 각 항목은 **① 왜 이 검수가 필요한지 → ② 화면 어디를 어떻게 조작하는지 → ③ 무엇이 보이면 정상이고 무엇이 문제인지** 세 요소를 모두 담는다. 하나라도 빠지면 사용자가 무엇을 봐야 할지 알 수 없다.
@@ -281,6 +280,11 @@ USER 검수 — N 항목 (목업 기준: <mockup path — 있을 시>)
 - ❌ `[ ] popover 토글 동작 확인`
 - ✅ `[ ] 메뉴바 아이콘을 클릭하면 목록 창이 열리는지 — 창이 뜨고 항목이 세로로 나열되면 정상. 창이 안 뜨거나 항목이 겹쳐 보이면 문제.`
 
+2. **시각 영역 fix 사이클 사전 예고** — 시각 영역 항목 있으면 *"시각 영역은 한 사이클로 100% 일치 보장 X. fix 사이클 1~2회 예상. ✗ 발견 시 정상."* 안내. 사용자 기대치 사전 정렬, 부정 반응 누적 방지.
+3. **사용자가 스크린샷·산출물을 주면 체크리스트 전 항목과 1:1 대조** — 사용자가 물은 항목만 답하지 않는다. 받은 증거를 검수 항목 전체와 하나씩 맞춰 보고, 사용자가 언급하지 않은 어긋남도 먼저 지목한다 (stash FRICTION 2026-07-29 — 첫 스크린샷에 이미 찍혀 있던 결함을 세션이 짚지 못해 발견이 한 사이클 늦었다).
+4. 사용자 응답 받음:
+   - 모두 ✓ → PASS 분기로 (`tested` 전이).
+   - ✗ 1개 이상 → FAIL 분기로 (`developing` 회귀 + ✗ 항목별 fix).
 
 ### Step 6 — 결과 보고 (위 분기별 메시지)
 
@@ -292,11 +296,11 @@ USER 검수 — N 항목 (목업 기준: <mockup path — 있을 시>)
 - 격리 세션 검증이 *기능상* 이미 서버를 띄워 둔 경우 — 죽였다 다시 띄우지 말고 그대로 두고 URL만 보고.
 - **FAIL → 수정 흐름에서는 기동하지 않는다** (수정하러 가는 단계라 검수 무의미). **UNCERTAIN 검수는 Step 5에서 이미 기동**했으므로 여기서 중복 기동 X.
 - `## 검수 실행 명령` 미선언 또는 사용자 *"안 띄워도 돼"* 발화 시 생략. 상세: GIT_RULE "멀티세션 검수 환경".
+- **기동 전 포트·프로세스 확인 + 종료 시 자식까지 정리** — `Port … is in use` 류 경고는 이미 떠 있다는 뜻이므로 재기동하지 않는다 (GIT_RULE "멀티세션 검수 환경" 참조).
 
 ## 도구 가이드
 
 - **Read**: task 파일 / `## Test Plan` + `## Dev Plan` 정독
-- **기동 전 포트·프로세스 확인 + 종료 시 자식까지 정리** — `Port … is in use` 류 경고는 이미 떠 있다는 뜻이므로 재기동하지 않는다 (GIT_RULE "멀티세션 검수 환경" 참조).
 - **Edit**: Result 섹션 기록
 - **Bash / 도구**: `set_status` 도구(또는 `npx @angar2/taskery set-status`) status 전이 (유효전이 코드 검증)
 - **Task tool**: 격리 세션 호출 (Step 3 prompt 사용)
@@ -312,7 +316,7 @@ USER 검수 — N 항목 (목업 기준: <mockup path — 있을 시>)
 - **사용자검수 시나리오는 자동화 못 잡음** — UI 미세 취향 / UX 느낌 / 외부 결제 등 *정답지가 주관*인 것만 UNCERTAIN(사람 검수)으로 가야 정상. PASS 강제 X. **단 시각 *객관* 깨짐(요소 빠짐 / 빈 화면 / 배치 딴판 / 색 완전히 틀림)은 사람 검수가 아니라 격리 세션이 캡처-목업 대조로 직접 잡아 FAIL** — 사용자에게 흠 사냥을 떠넘기지 않는다.
 - **FAIL → developing 자동 되돌림 X** — 사용자 *"고쳐"* 답 받기 전 status 갱신 금지. *대화로 OK = 자동 전이* 룰의 핵심.
 - **테스트 후 plumbing fix 발견 시** — 격리 PASS 후에도 plumbing(빌드 산출물 정리, 설정 수정 등) fix 필요할 수 있음. 분기:
-  - 검증 명령 *동작 자체에 영향 X* (예: 산출물 위치 정리, 주석 수정) → 메인 자체 재검증 OK (lint/typecheck/build/test 재실행)
+  - 검증 명령 *동작 자체에 영향 X* (예: 산출물 위치 정리, 주석 수정) → 메인 자체 재검증 OK. **재실행 범위는 변경에 비례** — 린트·타입체크 + *변경이 닿는 테스트*만. 전체 스위트 재실행은 불필요하다 (`/task-dev` Step 6.5 "수정 루프 국면" 참조)
   - 검증 명령 *동작 변경* (예: build 명령 자체 변경, 새 검증 명령 추가, 환경 변수 추가) → **격리 세션 재호출 필수** (환경 변경으로 격리 가정 무효화 — 재검증 가치 사라짐)
 
 ## 상태 전이
@@ -324,8 +328,8 @@ USER 검수 — N 항목 (목업 기준: <mockup path — 있을 시>)
 | `developed` | `tested` | FAIL + 사용자 *"OK 마무리"* (알려진 결함 명시) |
 | `developed` / `testing` | `testing` (유지) | UNCERTAIN(사람 검수) — 사용자 직접 검수 대기 |
 | `developed` / `testing` | `testing` (유지) | UNCERTAIN(검증 불가, 시험문제 결함) → `/task-plan`으로 Test Plan 보수 → `/task-test` 재실행 (코드·status 보존) |
+| `developed` / `testing` | `testing` (유지) | UNCERTAIN(실행 보류, 환경 제약) → 사용자 승인 실행 / *"나중에"* 보류 / 격리 실행 경로 마련 후 재검증 (코드·시험문제 모두 보존) |
+| `testing` | `tested` | UNCERTAIN(실행 보류) + 사용자 *"보류인 채로 마무리해"* — Result에 미검증 영역 명시 |
 | `testing` (이어가기) | 동일 분기 | — |
 
 > **네 갈래 요약**: PASS → `tested` / 코드 결함 → `developing`(사용자 *"고쳐"*) / 시험문제 결함 → Test Plan 보수(`task-plan`, 코드·status 보존) → 재검사 / 환경 제약(실행 보류) → 사용자 승인 실행 또는 격리 실행 경로 마련 후 재검증. UNCERTAIN(사람 검수)은 검수 ✓ 받으면 `tested`, ✗면 `developing`.
-| `developed` / `testing` | `testing` (유지) | UNCERTAIN(실행 보류, 환경 제약) → 사용자 승인 실행 / *"나중에"* 보류 / 격리 실행 경로 마련 후 재검증 (코드·시험문제 모두 보존) |
-| `testing` | `tested` | UNCERTAIN(실행 보류) + 사용자 *"보류인 채로 마무리해"* — Result에 미검증 영역 명시 |
