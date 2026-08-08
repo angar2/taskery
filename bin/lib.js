@@ -438,12 +438,15 @@ const BACKLOG_PLACEHOLDER =
 function getActiveVersion(mainWtPath) {
   // .project/AGENT-GUIDE.md '## 활성 plan 버전' 섹션 다음 비어 있지 않은 첫 줄에서 활성 plan 식별자 추출.
   // plan = 기능 그룹 단위 → 식별자는 vX.X 버전명 또는 기능 그룹 slug(compare-products 등) 모두 가능.
+  // 헤딩 줄 끝 부가 텍스트(HTML 주석 등) 허용 — project-init 골격이 헤딩에 주석을 달므로
+  // 접두 일치로 판정(_setActivePlan의 findIndex 기준과 동일). 완전 일치 요구 시
+  // 자기 골격을 자기가 못 읽는 자기모순 (recordion FRICTION 2026-08-06, scaffoldError 6회).
   const guidePath = path.join(mainWtPath, '.project', 'AGENT-GUIDE.md');
   if (!fs.existsSync(guidePath)) {
     throw new Error(`.project/AGENT-GUIDE.md 부재. /project-init 먼저 호출.`);
   }
   const content = fs.readFileSync(guidePath, 'utf8');
-  const sec = content.match(/##\s*활성 plan 버전\s*\n+([^\n]+)/);
+  const sec = content.match(/^##\s*활성 plan 버전[^\n]*\n+([^\n]+)/m);
   if (!sec) {
     throw new Error(`.project/AGENT-GUIDE.md '## 활성 plan 버전' 섹션 부재.`);
   }
