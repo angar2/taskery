@@ -22,6 +22,7 @@
  *   - getInitLockPath(projectId): ~/.taskery/<projectId>.init.lock (task 분기 직렬화용)
  *   - withMergeLock(projectId, fn, opts): proper-lockfile로 머지 락 + fn 실행 + 자동 release
  *   - withMetaLock(filePath, fn, opts): 메타 파일 쓰기 락 + fn 실행
+ *   - withMetaLockSync(filePath, fn, opts): 위의 동기 변형 (sync 호출 체인용 — manifest 갱신)
  *   - getActiveTasks(mainWtPath): SSoT 조회 (git branch --list 'feature/*_TASK-*' ...)
  *   - getNextTaskNumber(mainWtPath): (진행중 ∪ 전 ref 머지 히스토리) 최대 + 1 (부모 무관 전역 채번)
  *   - forkTask(mainWtPath, {type,dev,src,slug}): init 락 안에서 부모(현재 브랜치) 캡처+채번+워크트리·브랜치 생성 원자 실행
@@ -29,7 +30,8 @@
  *   - assertMainWorktreeOn(mainWtPath, branch): 메인 워크트리가 지정 브랜치 체크아웃 상태인지 검증
  *
  * 백로그 (0.1.2+):
- *   - getActiveVersion(mainWtPath): .project/AGENT-GUIDE.md에서 활성 plan 식별자(버전 또는 기능 그룹명) 추출
+ *   - getActiveVersion(mainWtPath): 활성 plan 식별자 — manifest.activePlan 우선, 구형 AGENT-GUIDE.md 폴백 (0.7.0+)
+ *   - setActivePlan(mainWtPath, plan): manifest.activePlan 갱신 (plan 폴더 실재 검증 포함 — plan-switch)
  *   - getBacklogPath(mainWtPath, activeVersion?): .project/tasks/<활성 plan>/BACKLOG.md 절대 경로
  *   - parseBacklogItem(mainWtPath, blId): BL-NNN 항목 메타 파싱 ({ status, type, title, slug, summary, target, taskNums })
  *   - appendBacklogItem(mainWtPath, meta): withMetaLock + BL-NNN 채번 + 항목 append (placeholder 치환 우선)
@@ -63,8 +65,10 @@ const SHARED_DEST = {
 function platformOf(relPath) {
   if (relPath.startsWith('shared/')) return 'shared'; // 공통 — 설치 시 플랫폼별 매핑
   if (relPath === 'CLAUDE.md' || relPath.startsWith('.claude/')) return 'claude';
-  if (relPath === 'AGENTS.md' || relPath.startsWith('.codex/')) return 'codex';
-  return 'agnostic'; // .project/, .gitignore 등 — 항상 설치
+  if (relPath.startsWith('.codex/')) return 'codex';
+  // AGENTS.md는 0.7.0부터 agnostic — 진입 문서 본문의 단일 소스이고
+  // CLAUDE.md는 이를 `@AGENTS.md`로 임포트만 한다(Claude Code는 AGENTS.md를 자동 로드하지 않음).
+  return 'agnostic'; // AGENTS.md, .project/, .gitignore 등 — 항상 설치
 }
 
 // shared/ 상대경로를 특정 플랫폼의 설치 경로로 변환.
@@ -104,9 +108,9 @@ function resolveInstallPlan(templateFiles, platforms, { includeAgnostic = true }
 
 // .gitignore 등록 패턴 (플랫폼별)
 const GITIGNORE_PATTERNS = {
-  agnostic: ['.project/', '.taskery-manifest.json'],
+  agnostic: ['.project/', '.taskery-manifest.json', 'AGENTS.md'],
   claude: ['.claude/', 'CLAUDE.md'],
-  codex: ['.codex/', '.agents/', 'AGENTS.md'],
+  codex: ['.codex/', '.agents/'],
 };
 
 // 선택 플랫폼 + agnostic의 gitignore 패턴 합성 (중복 제거)
@@ -308,6 +312,27 @@ async function withMetaLock(filePath, fn, opts = {}) {
   }
 }
 
+function withMetaLockSync(filePath, fn, opts = {}) {
+  // withMetaLock의 동기 변형. manifest 갱신 경로(initPlan → plan.js main)가 전부 sync라
+  // async 락을 쓰면 호출 사슬 전체를 async로 바꿔야 해 동기 락을 별도로 둔다.
+  const lockfile = require('proper-lockfile');
+  if (!fs.existsSync(filePath)) {
+    mkdirp(path.dirname(filePath));
+    fs.writeFileSync(filePath, '');
+  }
+  // sync API는 retries를 지원하지 않는다(proper-lockfile 제약). 경합 시 즉시 던지는데,
+  // manifest 쓰기는 사용자가 직접 부르는 명령들뿐이라 동시 실행이 실질적으로 없다.
+  const release = lockfile.lockSync(filePath, {
+    stale: opts.stale ?? DEFAULT_LOCK_TIMEOUT_MS,
+    realpath: false,
+  });
+  try {
+    return fn();
+  } finally {
+    release();
+  }
+}
+
 function currentBranch(mainWtPath) {
   // 메인 워크트리의 현재 브랜치 = 태스크의 부모 브랜치(0.6.0). detached HEAD면 'HEAD' 반환.
   return gitCapture(mainWtPath, ['rev-parse', '--abbrev-ref', 'HEAD']);
@@ -436,29 +461,49 @@ function computeNextPlanNumber(mainWtPath) {
 const BACKLOG_PLACEHOLDER =
   '(사용자 발화 또는 task-close 직후 메인 감지로 한 행씩 추가. 빈 상태 default.)';
 
-function getActiveVersion(mainWtPath) {
-  // .project/AGENT-GUIDE.md '## 활성 plan 버전' 섹션 다음 비어 있지 않은 첫 줄에서 활성 plan 식별자 추출.
-  // plan = 기능 그룹 단위 → 식별자는 vX.X 버전명 또는 기능 그룹 slug(compare-products 등) 모두 가능.
-  // 헤딩 줄 끝 부가 텍스트(HTML 주석 등) 허용 — project-init 골격이 헤딩에 주석을 달므로
-  // 접두 일치로 판정(_setActivePlan의 findIndex 기준과 동일). 완전 일치 요구 시
-  // 자기 골격을 자기가 못 읽는 자기모순 (recordion FRICTION 2026-08-06, scaffoldError 6회).
+// 구형(0.7.0 미만) 활성 plan 저장소 — .project/AGENT-GUIDE.md '## 활성 plan 버전' 섹션.
+// 0.7.0에서 SSoT가 manifest.activePlan으로 이관됐으나, update 전 리포를 무중단으로 굴리기 위해
+// 읽기 폴백으로만 남긴다. 쓰기는 하지 않는다(_setActivePlan은 manifest만 갱신).
+// 헤딩 줄 끝 부가 텍스트(HTML 주석 등) 허용 — project-init 골격이 헤딩에 주석을 달므로 접두 일치로 판정.
+// 완전 일치를 요구하면 자기 골격을 자기가 못 읽는 자기모순 (recordion FRICTION 2026-08-06, scaffoldError 6회).
+function _readLegacyActivePlan(mainWtPath) {
   const guidePath = path.join(mainWtPath, '.project', 'AGENT-GUIDE.md');
-  if (!fs.existsSync(guidePath)) {
-    throw new Error(`.project/AGENT-GUIDE.md 부재. /project-init 먼저 호출.`);
-  }
-  const content = fs.readFileSync(guidePath, 'utf8');
-  const sec = content.match(/^##\s*활성 plan 버전[^\n]*\n+([^\n]+)/m);
-  if (!sec) {
-    throw new Error(`.project/AGENT-GUIDE.md '## 활성 plan 버전' 섹션 부재.`);
-  }
+  if (!fs.existsSync(guidePath)) return null;
+  const sec = fs.readFileSync(guidePath, 'utf8').match(/^##\s*활성 plan 버전[^\n]*\n+([^\n]+)/m);
+  if (!sec) return null;
   // 첫 토큰 = plan 폴더 이름(' — 설명' 앞부분). '<예: ...>' 자리표시자는 미설정으로 간주.
   const firstLine = sec[1].trim();
-  if (!firstLine || firstLine.startsWith('<')) {
-    throw new Error(
-      `'## 활성 plan 버전' 값 미설정(${firstLine || '빈 줄'}) — /plan-init으로 활성 plan 갱신 필요.`,
-    );
-  }
+  if (!firstLine || firstLine.startsWith('<')) return null;
   return firstLine.split(/\s+/)[0];
+}
+
+function getActiveVersion(mainWtPath) {
+  // 활성 plan 식별자 = manifest.activePlan (0.7.0+ SSoT). plan = 기능 그룹 단위라
+  // 식별자는 NNN_slug 폴더명(구형은 vX.X 버전명도 가능).
+  const manifest = readManifest(path.join(mainWtPath, MANIFEST_NAME));
+  if (manifest && manifest.activePlan) return manifest.activePlan;
+
+  // 구형 폴백 — update 전 리포. 읽기만 하고 승격은 update가 1회 수행한다.
+  const legacy = _readLegacyActivePlan(mainWtPath);
+  if (legacy) return legacy;
+
+  if (!manifest) {
+    throw new Error(`${MANIFEST_NAME} 부재. 'npx @angar2/taskery init' 먼저 실행.`);
+  }
+  throw new Error(
+    `활성 plan 미설정 (manifest.activePlan 없음) — /plan-init으로 plan을 생성하거나 ` +
+      `'npx @angar2/taskery plan-switch <NNN_slug>'로 지정 필요.`,
+  );
+}
+
+function setActivePlan(mainWtPath, plan) {
+  // plan-switch — 대상 plan 폴더 실재 검증 후 manifest.activePlan 갱신.
+  const planDir = path.join(mainWtPath, '.project', 'plans', plan);
+  if (!fs.existsSync(planDir)) {
+    throw new Error(`plan 폴더 부재: ${planDir} — 존재하는 plan만 활성으로 지정 가능.`);
+  }
+  _setActivePlan(mainWtPath, plan);
+  return { plan, planDir };
 }
 
 function getBacklogPath(mainWtPath, activeVersion) {
@@ -817,7 +862,7 @@ function _renderTaskSkeleton({ taskNum, title, created, plan, docType, size, par
 
 function scaffoldTaskDoc(mainWtPath, wtPath, meta) {
   // meta: { taskNum, slug, title, type(브랜치 타입), size, parent, plan?, promoted?, created? }
-  // 위치: 등록(.gitignore) 케이스 → 메인WT, 미등록 → 워크트리. plan 미지정 시 AGENT-GUIDE에서 검출.
+  // 위치: 등록(.gitignore) 케이스 → 메인WT, 미등록 → 워크트리. plan 미지정 시 활성 plan(manifest.activePlan)에서 검출.
   // parent 미지정 시 현재 브랜치 캡처(단독 호출 안전망 — 통상 fork가 넘김).
   // taskNum이 고유(fork init 락 채번)라 동일 문서 동시 쓰기 경합 없음 → 락 불요.
   const registered = isProjectRegistered(mainWtPath);
@@ -851,7 +896,7 @@ function scaffoldTaskDoc(mainWtPath, wtPath, meta) {
 }
 
 // ─── plan 생성 (코드화, C3) ─────────────────────────────────────────
-// 채번 + legacy 게이트 + 폴더 mkdir + ROADMAP/PLAN/BACKLOG 골격 + AGENT-GUIDE 활성 plan 갱신을 코드로.
+// 채번 + legacy 게이트 + 폴더 mkdir + ROADMAP/PLAN/BACKLOG 골격 + manifest.activePlan 갱신을 코드로.
 // LLM 몫(FEATURES/UX-UI delta · ROADMAP Stage 내용 · PLAN 링크)은 골격의 placeholder로 남긴다.
 
 function _renderRoadmap(plan) {
@@ -906,29 +951,23 @@ function _renderPlanBacklog(plan) {
 }
 
 function _setActivePlan(mainWtPath, plan) {
-  // AGENT-GUIDE.md '## 활성 plan 버전' 섹션 다음 비어있지 않은 첫 줄을 plan 값으로 교체(헤딩 텍스트 불변).
-  const guidePath = path.join(mainWtPath, '.project', 'AGENT-GUIDE.md');
-  if (!fs.existsSync(guidePath)) {
-    throw new Error('.project/AGENT-GUIDE.md 부재. /project-init 먼저 호출.');
+  // 활성 plan SSoT = manifest.activePlan (0.7.0+). 구형 AGENT-GUIDE.md는 갱신하지 않는다
+  // (읽기 폴백 전용 — 두 곳에 쓰면 다시 갈린다).
+  // manifest는 읽고-고쳐-쓰기라 다른 기록자(init/update/add)와 겹치면 필드가 유실될 수 있어 락으로 감싼다.
+  const manifestPath = path.join(mainWtPath, MANIFEST_NAME);
+  if (!fs.existsSync(manifestPath)) {
+    throw new Error(`${MANIFEST_NAME} 부재. 'npx @angar2/taskery init' 먼저 실행.`);
   }
-  const lines = fs.readFileSync(guidePath, 'utf8').split('\n');
-  const hIdx = lines.findIndex((l) => /^##\s*활성 plan 버전/.test(l));
-  if (hIdx === -1) {
-    throw new Error("AGENT-GUIDE.md '## 활성 plan 버전' 섹션 부재.");
-  }
-  const valueLine = `${plan} — \`.project/plans/${plan}/\` 참조`;
-  let i = hIdx + 1;
-  while (i < lines.length && lines[i].trim() === '') i++;
-  if (i < lines.length && !/^#/.test(lines[i])) {
-    lines[i] = valueLine; // 기존 값 줄 교체
-  } else {
-    lines.splice(hIdx + 1, 0, '', valueLine); // 값 줄 부재 → 헤딩 뒤 삽입
-  }
-  fs.writeFileSync(guidePath, lines.join('\n'));
+  withMetaLockSync(manifestPath, () => {
+    const manifest = readManifest(manifestPath);
+    if (!manifest) throw new Error(`${MANIFEST_NAME} 읽기 실패.`);
+    manifest.activePlan = plan;
+    writeManifest(manifest, manifestPath);
+  });
 }
 
 function initPlan(mainWtPath, slug, opts = {}) {
-  // 채번 → legacy 게이트 → 폴더 + 골격 + AGENT-GUIDE 갱신. slug 검증은 CLI 측.
+  // 채번 → legacy 게이트 → 폴더 + 골격 + manifest.activePlan 갱신. slug 검증은 CLI 측.
   // legacy 폴더(NNN_ 아닌 plan 폴더) 잔존 + !force → { gated:true } 반환(CLI가 사용자 confirm 후 force 재호출).
   const { next, legacyDirs } = computeNextPlanNumber(mainWtPath);
   if (legacyDirs.length && !opts.force) {
@@ -1258,6 +1297,7 @@ module.exports = {
   getInitLockPath,
   withMergeLock,
   withMetaLock,
+  withMetaLockSync,
   currentBranch,
   assertMainWorktreeOn,
   parseBranchName,
@@ -1268,6 +1308,7 @@ module.exports = {
   // 백로그 (0.1.2+)
   BACKLOG_PLACEHOLDER,
   getActiveVersion,
+  setActivePlan,
   getBacklogPath,
   computeNextBLNumber,
   formatBacklogBlock,

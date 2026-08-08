@@ -7,7 +7,7 @@
  * 도구 8종 = CLI 명령과 동일한 lib.js 함수의 다른 입구(네이티브 구조화 인자/반환).
  *   backlog_add / backlog_get / backlog_mark — 활성 plan BACKLOG.md 조작
  *   set_status   — task 헤더 상태 전이 (7×7 유효전이 검증, closed 거부)
- *   plan_init    — plan 생성 (채번+골격+AGENT-GUIDE 갱신)
+ *   plan_init    — plan 생성 (채번+골격+manifest.activePlan 갱신)
  *   task_init    — task 분기 (fork 원자 채번 + §1.3 골격 자동 생성)
  *   task_close   — close 결정적 준비만 (Phase커밋·status=closed·마커). 비가역 머지/정리는 스킬.
  *   status       — 멀티세션 현황 + 활성 plan
@@ -159,7 +159,7 @@ server.registerTool(
   'plan_init',
   {
     description:
-      'plan(기능 그룹) 생성 — 채번 + 폴더 + ROADMAP/PLAN/BACKLOG 골격 + AGENT-GUIDE 활성plan 갱신. 이후 골격 내용은 LLM이 채움. legacy 폴더 잔존 시 gated 반환(force로 재호출).',
+      'plan(기능 그룹) 생성 — 채번 + 폴더 + ROADMAP/PLAN/BACKLOG 골격 + 활성 plan 갱신. 이후 골격 내용은 LLM이 채움. legacy 폴더 잔존 시 gated 반환(force로 재호출).',
     inputSchema: {
       slug: z.string().regex(/^[a-z0-9]+(-[a-z0-9]+)*$/, '영어 kebab-case'),
       force: z.boolean().optional().describe('legacy 게이트 무시'),

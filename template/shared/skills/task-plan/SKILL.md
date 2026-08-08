@@ -13,7 +13,7 @@ description: task 기획 채우기 — Requirements / Scope / Dev Plan / Test Pl
 
 ## 멀티세션 메타 위치 (0.1.2+)
 
-본 스킬은 워크트리에서 호출되는 게 default (멀티세션 — 각 워크트리 = 독립 세션). 다만 호출 위치 자유 — 메인 cwd / 서브 세션 호출 등 다른 운영 모델에서도 cwd 무관 동작. 메타(`.project/`, `CLAUDE.md`) 접근 시 **메인 워크트리 절대 경로** 우선 — *task 문서 단일 진실 소스* 유지.
+본 스킬은 워크트리에서 호출되는 게 default (멀티세션 — 각 워크트리 = 독립 세션). 다만 호출 위치 자유 — 메인 cwd / 서브 세션 호출 등 다른 운영 모델에서도 cwd 무관 동작. 메타(`.project/`, `AGENTS.md`) 접근 시 **메인 워크트리 절대 경로** 우선 — *task 문서 단일 진실 소스* 유지.
 
 ```sh
 MAIN_WT=$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")
@@ -23,8 +23,8 @@ MAIN_WT=$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")
 
 | 케이스 | task 문서 위치 | 제품 관통 문서 위치 | 동시 쓰기 |
 |--------|--------------|----------------|----------|
-| 등록 (퍼블릭 리포 default) | `$MAIN_WT/.project/tasks/<NNN_slug>/...` | `$MAIN_WT/.project/<doc>.md` (루트 평평) | `withMetaLock` (`bin/lib.js`) |
-| 미등록 | `$WT_PATH/.project/tasks/<NNN_slug>/...` (워크트리 안, 머지 시 부모 브랜치 반영) | `$MAIN_WT/.project/<doc>.md` (제품 문서는 여전히 단일 소스) | 단일 세션 가정 (워크트리 내부) |
+| 등록 (`.project/`가 `.gitignore`에 있음) | `$MAIN_WT/.project/tasks/<NNN_slug>/...` | `$MAIN_WT/.project/<doc>.md` (루트 평평) | `withMetaLock` (`bin/lib.js`) |
+| 미등록 (**기본 설치값** — `fork`/`status` 반환의 `registered:false`) | `$WT_PATH/.project/tasks/<NNN_slug>/...` (워크트리 안, 머지 시 부모 브랜치 반영) | `$MAIN_WT/.project/<doc>.md` (제품 문서는 여전히 단일 소스) | 단일 세션 가정 (워크트리 내부) |
 
 본문 모든 `.project/...` 경로는 *위 분기에 따라* 적용. spec-diff / mockup / screenshots는 task 문서와 같은 위치.
 
@@ -46,15 +46,15 @@ MAIN_WT=$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")
 
 ### Step 1 — task 파일 + active plan 확인
 
-1. `.project/AGENT-GUIDE.md` Read → 활성 plan 버전 확인.
+1. `status` 도구(또는 `npx @angar2/taskery status`)로 활성 plan 확인.
 2. task 파일 Read:
    - 인자 있음 → 해당 파일.
-   - 인자 없음 → `ls .project/tasks/<NNN_slug>/` 결과 중 status=draft인 가장 최근 파일. 발견 시 *"TASK-<NNN> 진행할까요?"* confirm. 없으면 *"draft 상태 task가 없네요. `/task-init` 먼저 호출하세요."* + 종료.
+   - 인자 없음 → `status` 도구(또는 `npx @angar2/taskery status`)의 *진행중 태스크* 목록에서 후보를 찾는다 — task 문서는 미등록 케이스에서 **각 task의 워크트리 안에만** 있으므로, 메인 워크트리에서 `ls .project/tasks/<NNN_slug>/`로 찾으면 아무것도 안 나와 *"task가 없다"*고 잘못 끝난다. 각 후보의 문서 경로는 `status`가 알려주는 워크트리 경로 아래 `.project/tasks/<NNN_slug>/`다. 그중 status=`draft`인 가장 최근 task. 발견 시 *"TASK-<NNN> 진행할까요?"* confirm. 진행중 목록 자체가 비어 있을 때만 *"draft 상태 task가 없네요. `/task-init` 먼저 호출하세요."* + 종료.
 3. 상태 검증 — 두 진입만 허용, 그 외 종료 + 안내:
    - **`draft`** → 일반 기획 (Step 2~ 전체 진행).
    - **`testing` + Test Plan 보수 모드** → `/task-test`가 *시험문제 결함*으로 반려해 되돌아온 경우에 한해 허용. 이때는 **Test Plan 섹션만 보수**(Requirements / Scope / Dev Plan 보존), Step 2~4는 건너뛰고 Step 5(Test Plan)만 수행, status는 `testing` 그대로 둔다(전이 X — 보수 후 `/task-test` 재실행).
    - **그 외(`planned` / `developing` / `developed` / `tested` / `closed`)** → 종료 + 안내. (특히 `tested` / `closed`는 보수 모드로도 진입 거부 — 우회 방지.)
-4. **프로젝트 로컬 룰 확인** — `$MAIN_WT/.project/rules/TEST_RULE.local.md`가 있으면 Read한다 (없으면 넘어간다). Test Plan의 검증 범위·방식 선택에서 본 스킬 조항과 겹치면 **로컬 룰 우선** (멀티세션 불변식·안전 조항 제외).
+4. **프로젝트 로컬 룰 확인** — `$MAIN_WT/.project/rules/TEST_RULE.local.md`를 Read한다. 모든 리포에 있어야 하는 필수 문서다(`TASKERY_RULE` §8) — **없으면 Step 5 실행 경로 확인 단계에서 생성**한다. 로컬 룰의 조항은 코어와 동등한 구속력을 가진다 — 겹치면 로컬이 최우선이고, **겹치지 않는 로컬 조항도 그대로 준수한다** (안전선 제외 — `TASKERY_RULE` §7).
 
 ### Step 2 — Requirements 인터뷰 + 증폭
 
@@ -188,7 +188,7 @@ Step 2 Requirements 인터뷰 결과로 본 task가 *UX/UI 구현 (페이지/컴
 승인된 목업 = task-test의 **시각 *자동 대조* 정답지** (+ 미세 취향은 사용자 최종 사인). 사용자가 맘에 들 때까지 승인 안 하므로 목업 = 이미 사용자가 검증한 정답지 — task-test 격리 세션이 *실제 화면 캡처 → 이 목업과 자동 대조*해 객관적 깨짐을 잡는다. Step 5 Test Plan 작성 시:
 - **시각 *객관* 영역(레이아웃/요소 유무/색/배치) → `[AUTO]`** (캡처-목업 대조) + 목업 경로 참조 명시.
 - **시각 *미세 취향*(2px·색조·느낌) → `[USER]`** (사용자 최종 사인, 증거 캡처).
-- **`[AUTO]` 승격 조건 — 실행 경로 확인 필수**: 시각 객관 영역의 `[AUTO]` 분류는 `$MAIN_WT/.project/TEST-GUIDE.md` *시각 실행* 절에 **이 프로젝트의 캡처 실행 경로가 적혀 있을 때만** 성립한다. 목업 존재는 *정답지 확보*일 뿐 *실행 경로 확보*가 아니다. 경로가 없거나, 앱 기동이 사용자 실데이터·전역 단축키·화면 입력을 건드리는 구조면 `[USER]` 폴백으로 둔다 (stash FRICTION 2026-07-27 — 경로 없는 `[AUTO]` 분류로 `/task-test` 2회 왕복). **다른 방식과 달리 시각은 경로가 없다고 사용자에게 도구 도입을 요구하며 멈추지 않는다** — 조용히 `[USER]`로 두고 진행한다. 자동화 도입 여부는 사용자가 원할 때 별도로 정한다.
+- **`[AUTO]` 승격 조건 — 실행 경로 확인 필수**: 시각 객관 영역의 `[AUTO]` 분류는 `$MAIN_WT/.project/rules/TEST_RULE.local.md` *시각 실행* 절에 **이 프로젝트의 캡처 실행 경로가 적혀 있을 때만** 성립한다. 목업 존재는 *정답지 확보*일 뿐 *실행 경로 확보*가 아니다. 경로가 없거나, 앱 기동이 사용자 실데이터·전역 단축키·화면 입력을 건드리는 구조면 `[USER]` 폴백으로 둔다 (stash FRICTION 2026-07-27 — 경로 없는 `[AUTO]` 분류로 `/task-test` 2회 왕복). **다른 방식과 달리 시각은 경로가 없다고 사용자에게 도구 도입을 요구하며 멈추지 않는다** — 조용히 `[USER]`로 두고 진행한다. 자동화 도입 여부는 사용자가 원할 때 별도로 정한다.
 (이전의 "승인 목업 = USER 검수 기준 / 시각=전부 [USER]"는 폐기 — 사용자에게 흠 사냥을 떠넘기던 원인.)
 
 ---
@@ -235,14 +235,14 @@ Test Plan = *본 task에서 구현한 요구사항이 정상 동작하는지* �
 | 회귀 시나리오 | 기존 기능 영향 | 이전과 동일 결과 | test 자동 | 직전 동작하던 시나리오 재실행 |
 | E2E 자동화 도구 | UI 동작 자동화 (도구 있을 시) | 액션 후 관측 변화 | 도구면 test, 아니면 사람 | Playwright / Cypress / XCTest UI Test 등 — 가능하면 자동화, 안 되면 수동 검수. **화면·입력 점유 여부를 먼저 확인** (아래) |
 
-> **점유 스위트의 `[AUTO]` 조건** — UI를 실제 조작하는 자동화(XCUITest·headed 브라우저 E2E 등)는 실행 중 사용자의 화면·마우스·키보드를 점유한다. 이런 방식을 `[AUTO]`로 두려면 `TEST-GUIDE.md` *테스트 실행 환경* 절에 **격리 실행 경로**(창 숨김·헤드리스 플래그 / 컨테이너·가상 디스플레이 / VM / CI 러너)가 있어야 한다. 없으면 `[USER]`로 두거나 *사용자 승인 후 실행*을 시나리오에 명시한다 — 그냥 `[AUTO]`로 두면 격리 세션이 실행하지 못하고 *실행 보류*로 돌려보내 왕복이 생긴다 (stash FRICTION 2026-07-25 · recordion FRICTION 2026-08-05 — 자동 게이트가 사용자 작업을 중단시킨 마찰).
+> **점유 스위트의 `[AUTO]` 조건** — UI를 실제 조작하는 자동화(XCUITest·headed 브라우저 E2E 등)는 실행 중 사용자의 화면·마우스·키보드를 점유한다. 이런 방식을 `[AUTO]`로 두려면 `TEST_RULE.local.md` *테스트 실행 환경* 절에 **격리 실행 경로**(창 숨김·헤드리스 플래그 / 컨테이너·가상 디스플레이 / VM / CI 러너)가 있어야 한다. 없으면 `[USER]`로 두거나 *사용자 승인 후 실행*을 시나리오에 명시한다 — 그냥 `[AUTO]`로 두면 격리 세션이 실행하지 못하고 *실행 보류*로 돌려보내 왕복이 생긴다 (stash FRICTION 2026-07-25 · recordion FRICTION 2026-08-05 — 자동 게이트가 사용자 작업을 중단시킨 마찰).
 
 #### UX/UI 영역 분리 + 검증 방식 매트릭스 (UX/UI 구현 task 한정)
 
 | 영역 | 분류 | 기준 |
 |------|------|------|
 | 동작 (클릭/호버/드래그/입력 → 결과) | 도구 있고 *점유하지 않게 돌릴 경로*가 있으면 `[AUTO]` E2E, 없으면 `[USER]` 체크리스트 | 액션 후 관측되는 변화 |
-| 시각 *객관* (레이아웃/요소 유무/색/배치 깨짐) | TEST-GUIDE에 캡처 실행 경로 **있으면** `[AUTO]` 캡처-목업 대조 (원칙), **없으면** `[USER]` 폴백 | 승인된 목업 (격리 세션이 화면 캡처 → 대조 → 어긋남 목록) |
+| 시각 *객관* (레이아웃/요소 유무/색/배치 깨짐) | TEST_RULE.local.md에 캡처 실행 경로 **있으면** `[AUTO]` 캡처-목업 대조 (원칙), **없으면** `[USER]` 폴백 | 승인된 목업 (격리 세션이 화면 캡처 → 대조 → 어긋남 목록) |
 | 시각 *미세 취향* (2px·색조·호버 강도·느낌) | `[USER]` 체크리스트 + 목업 참조 | 사용자 최종 사인 (증거 캡처 첨부) |
 
 #### 시나리오 형식 — [명령/입력] + [구체적 기대값] 한 쌍 강제
@@ -309,19 +309,19 @@ Test Plan 작성 완료 후 *반드시* 점검 단계 수행. *"누적/리셋 �
 
 방식을 골랐어도, **격리 세션이 *이 프로젝트의* DB/API/E2E에 실제로 어떻게 접근하는지 모르면 그 시나리오는 실행 불가능한 허울뿐인 명세다.** 스택마다 다르다(NestJS+TypeORM이면 그 DataSource/repository, 다른 프로젝트는 또 다름). 그래서 *모르면 묻고, 알면 재사용*:
 
-1. 필요 방식마다 `$MAIN_WT/.project/TEST-GUIDE.md`를 Read → **이 프로젝트에 실행 경로가 적혀 있나** 확인. **데이터·API·E2E뿐 아니라 *시각(앱 기동 + 화면 캡처)* 방식도 동일하게 확인 대상이다** — 목업이 있다는 사실은 실행 경로 확보가 아니다.
+1. 필요 방식마다 `$MAIN_WT/.project/rules/TEST_RULE.local.md`를 Read → **이 프로젝트에 실행 경로가 적혀 있나** 확인. **데이터·API·E2E뿐 아니라 *시각(앱 기동 + 화면 캡처)* 방식도 동일하게 확인 대상이다** — 목업이 있다는 사실은 실행 경로 확보가 아니다.
 2. **있으면** → 그 경로를 시나리오의 *방식* 칸에 반영(재사용). 앱은 기존 실행 명령으로 띄움.
 3. **없으면** → *멈추고 사용자에게 요구*: 예) *"이 요구사항은 DB 검증이 필요한데 이 프로젝트에 실행 경로가 없다. 어떻게 검증할지 알려주거나 도구를 깔아줘."* → 사용자가 경로를 주거나 결정. **단 시각 방식은 예외** — 멈추지 않고 `[USER]` 폴백으로 두고 진행한다 (Step 4.5 §5 참조).
-4. **확인받은 즉시 `TEST-GUIDE.md`에 기록** → 다음 task/세션부터 안 묻고 재사용. (재사용 = 기억이 아니라 *파일* — 세션/컴팩트로 사라지지 않게.)
+4. **확인받은 즉시 `TEST_RULE.local.md`에 기록** → 다음 task/세션부터 안 묻고 재사용. (재사용 = 기억이 아니라 *파일* — 세션/컴팩트로 사라지지 않게.)
 
-> TEST-GUIDE는 init이 빈 골격으로 깔아둔다(`.project/TEST-GUIDE.md`). 방식별 섹션(데이터 검증 / API 호출 / UI·E2E / 시각 실행 / 기타)에 *이 프로젝트의 실제 실행 방법*을 채운다.
+> `TEST_RULE.local.md`는 `/project-init`이 골격을 만들어 둔다. 파일이 없으면(사후 도입·구형 리포) **본 단계에서 생성**한다 — 골격은 `TASKERY_RULE` §8 구성을 따른다. 방식별 섹션(데이터 검증 / API 호출 / UI·E2E / 시각 실행 / 기타)에 *이 프로젝트의 실제 실행 방법*을 채운다.
 
 #### 검증/테스트 명령 참조
 
-`/task-test` 격리 세션은 프로젝트 루트 `CLAUDE.md`의 두 섹션 + `TEST-GUIDE.md`를 자동 참조 — Test Plan에 재인용 불필요:
+`/task-test` 격리 세션은 진입 문서(`AGENTS.md`)의 두 섹션 + `TEST_RULE.local.md`를 자동 참조 — Test Plan에 재인용 불필요:
 - `## 검증 명령` (코드 상태 — 빌드/린트/타입체크)
 - `## 테스트 명령` (테스트 실행 — 단위/통합/E2E)
-- `.project/TEST-GUIDE.md` (각 방식의 *이 프로젝트 실제 실행 방법*)
+- `.project/rules/TEST_RULE.local.md` (각 방식의 *이 프로젝트 실제 실행 방법*)
 
 ### Step 6 — spec-diff 처리 (Phase 0 변경 있을 시)
 

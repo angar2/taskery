@@ -1,6 +1,6 @@
 ---
 name: task-init
-description: task 시작 — 워크트리 분기 + 6 섹션 빈 골격 + 헤더 6컬럼 (부모 브랜치 자동 기록 · status=draft) task.md 생성 (멀티세션 0.1.2+)
+description: task 시작 — 워크트리 분기 + 빈 골격(헤더 6컬럼 + 본문 5 섹션) (부모 브랜치 자동 기록 · status=draft) task.md 생성 (멀티세션 0.1.2+)
 ---
 
 # /task-init
@@ -23,7 +23,7 @@ description: task 시작 — 워크트리 분기 + 6 섹션 빈 골격 + 헤더 
 직전 대화 정독 → 추정 가능하면 분기 1(제안), 불가하면 분기 2(인터뷰):
 - Q1 *"무슨 작업? (한 줄로)"* / Q2 *"유형? (feature / bug / improvement / refactor / docs / chore)"* / Q3 *"출처? (백로그 BL-NNN / 로드맵 Stage ST-N / 직접 요구사항 DR)"* / Q4 *"규모? (micro / small / medium / large)"* / (필요 시) Q5 *"plan `<NNN_slug>` 맞나요?"*
 
-수집 항목(모두 확정 후 진행): 주제(한국어) · 유형 · 출처 · 규모 · plan(활성 plan — `status` 도구나 AGENT-GUIDE에서). 활성 plan 부재 시 *"`/plan-init` 먼저 실행할까요?"* 안내 + 중단.
+수집 항목(모두 확정 후 진행): 주제(한국어) · 유형 · 출처 · 규모 · plan(활성 plan — `status` 도구에서). 활성 plan 부재 시 *"`/plan-init` 먼저 실행할까요?"* 안내 + 중단.
 
 ## Step 2 — 출처별 메타 + 슬러그
 
@@ -49,7 +49,7 @@ description: task 시작 — 워크트리 분기 + 6 섹션 빈 골격 + 헤더 
 
 ## Step 5 — 골격 확인 + 보고
 
-반환 `docPath`(절대 경로)를 Read해 헤더 6컬럼 + 6 섹션 placeholder + status=draft 확인만 한다. **본문 작성 금지** — Requirements / Scope / Dev Plan / Test Plan은 *반드시* `/task-plan`에서.
+반환 `docPath`(절대 경로)를 Read해 헤더 6컬럼 + 본문 5 섹션(Requirements / Scope / Dev Plan / Test Plan / Result) placeholder + status=draft 확인만 한다. (`TASK_DOC_RULE`이 말하는 "6 섹션"은 헤더 표를 1개로 세는 표기다.) **본문 작성 금지** — Requirements / Scope / Dev Plan / Test Plan은 *반드시* `/task-plan`에서.
 
 > **폴백** (반환에 `docPath` 없이 `scaffoldError`만 있을 때만): TASK_DOC_RULE §1.3 형식으로 해당 위치에 직접 작성(생성일=오늘, status=draft, 단일=`<NNN>_<slug>.md` / 폴더=`TASK-<NNN>_<slug>/task.md`).
 

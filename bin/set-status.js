@@ -22,6 +22,9 @@ const {
   resolveTaskDocPath,
   setStatus,
   TRANSITIONS,
+  getActiveTasks,
+  getWorktreePath,
+  getProjectId,
 } = require('./lib');
 
 async function main() {
@@ -60,13 +63,25 @@ async function main() {
     process.exit(1);
   }
 
-  // 현재 작업트리 toplevel = 미등록 케이스의 문서 base (호출 위치 = 해당 워크트리).
+  // 현재 작업트리 toplevel = 미등록 케이스의 문서 base.
   const wtPath = gitCapture(process.cwd(), ['rev-parse', '--show-toplevel'], { allowFail: true }) || mainWt;
 
-  const resolved = resolveTaskDocPath(mainWt, wtPath, { taskNum });
+  let resolved = resolveTaskDocPath(mainWt, wtPath, { taskNum });
+
+  // 미등록 케이스에서 메인 워크트리(또는 다른 task의 워크트리)에서 호출하면 문서가 그 트리에 없다.
+  // 호출 위치를 강요하는 대신 SSoT에서 해당 task의 워크트리를 역조회해 한 번 더 찾는다
+  // — 스킬이 "호출 위치 자유"를 전제하므로 CLI가 그 약속을 지켜야 한다.
+  if (!resolved) {
+    const hit = getActiveTasks(mainWt).find((t) => t.taskNum === taskNum);
+    if (hit) {
+      const owner = getWorktreePath(getProjectId(mainWt), hit);
+      if (owner !== wtPath) resolved = resolveTaskDocPath(mainWt, owner, { taskNum });
+    }
+  }
+
   if (!resolved) {
     console.error(
-      `TASK-${String(taskNum).padStart(3, '0')} 문서를 찾지 못함 (.project/tasks/*/ 아래 단일 파일/폴더 승격 모두 탐색).`,
+      `TASK-${String(taskNum).padStart(3, '0')} 문서를 찾지 못함 (.project/tasks/*/ 아래 단일 파일/폴더 승격 모두 탐색 + 진행중 task 워크트리 역조회).`,
     );
     process.exit(1);
   }

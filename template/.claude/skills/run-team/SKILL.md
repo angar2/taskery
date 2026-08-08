@@ -24,7 +24,7 @@ description: agent teams로 다건 태스크를 독립 워크트리에서 자동
 | 통신 | 결과만 리더에 반환 | 팀원↔리더 자동 통지 + 팀원끼리 직접 통신 (리더가 다 봄) |
 | 스킬 호출 | 제한적 | 프로젝트 `.claude/skills/` 그대로 로드 → taskery 5스킬 직접 호출 |
 
-팀원은 각자 새 세션으로 시작하며 프로젝트 `CLAUDE.md`를 자동 로드하므로 taskery 룰을 그대로 따른다.
+팀원은 각자 새 세션으로 시작하며 진입 문서(`CLAUDE.md` → `@AGENTS.md`)를 자동 로드하므로 taskery 룰을 그대로 따른다.
 
 ## 호출 시점
 
@@ -62,7 +62,7 @@ description: agent teams로 다건 태스크를 독립 워크트리에서 자동
   MAIN_WT=$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")
   ```
 - 대상이 명시 작업 목록이면 그 발화를 그대로.
-- 활성 plan은 `$MAIN_WT/.project/AGENT-GUIDE.md`에서 검출.
+- 활성 plan은 `status` 도구(또는 `npx @angar2/taskery status`)로 검출.
 
 ### Step 2 — 태스크 묶기 판단
 
@@ -112,8 +112,8 @@ description: agent teams로 다건 태스크를 독립 워크트리에서 자동
 
 ## 도구 가이드
 
-- **Bash**: 메인 워크트리 검출 / 활성화 가드 확인 / BACKLOG·AGENT-GUIDE 정독용 경로 산출
-- **Read**: `$MAIN_WT/.project/tasks/<활성 plan>/BACKLOG.md` / `$MAIN_WT/.project/AGENT-GUIDE.md`
+- **Bash**: 메인 워크트리 검출 / 활성화 가드 확인 / `status`로 활성 plan 검출 / BACKLOG 정독용 경로 산출
+- **Read**: `$MAIN_WT/.project/tasks/<활성 plan>/BACKLOG.md` / `$MAIN_WT/.project/rules/TASKERY_RULE.md`
 - **agent teams (자연어)**: 팀원 생성 + 태스크별 지시 + 모니터링. (전용 슬래시 명령은 없음 — 리더가 자연어로 팀을 가동)
 - **AskUserQuestion**: 태스크 묶음 / 팀원 수 / 중단점 모드 확인
 

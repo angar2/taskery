@@ -23,18 +23,18 @@ plan(기능 그룹)마다 호출. **plan = 작업을 묶는 기능 그룹 단위
 - 인자 = plan slug (예: `/plan-init compare-products`). 없으면 *"어느 기능 그룹? slug 알려줘 (예: mvp, compare-products)"*. 한국어면 영어 *의미 변환* → kebab-case(공백 불가, 3 단어 이내).
 - **자투리는 plan 없이** — 단발 버그·오타·의존성 업데이트는 plan-init 없이 `/task-init`로 바로(무소속). 전역 TASK-NNN이 순서 보장.
 
-## 생성 (CLI — 채번+폴더+골격+AGENT-GUIDE)
+## 생성 (CLI — 채번+폴더+골격+활성 plan 갱신)
 
-`plan_init` 도구로 생성한다 (MCP 도구 `plan_init` 또는 동일 `npx @angar2/taskery plan-init <slug>`). 한 번으로 코드가 원자 수행: **NNN 채번**(3자리, 최대+1) · **폴더**(`plans/<NNN_slug>/` + `tasks/<NNN_slug>/{spec-diffs,screenshots,mockup}/`) · **골격 Write**(ROADMAP/PLAN/BACKLOG, 아래 형식 placeholder) · **AGENT-GUIDE `## 활성 plan 버전` 갱신**. 성공 반환 `{ plan, nnn, planDir, tasksDir }` — 이후 단계는 이 `plan`(=`<NNN_slug>`) 사용. PROJECT.md/AGENT-GUIDE 부재 시 에러 → *"`/project-init` 먼저 호출 필요"* 안내 후 중단.
+`plan_init` 도구로 생성한다 (MCP 도구 `plan_init` 또는 동일 `npx @angar2/taskery plan-init <slug>`). 한 번으로 코드가 원자 수행: **NNN 채번**(3자리, 최대+1) · **폴더**(`plans/<NNN_slug>/` + `tasks/<NNN_slug>/{spec-diffs,screenshots,mockup}/`) · **골격 Write**(ROADMAP/PLAN/BACKLOG, 아래 형식 placeholder) · **활성 plan 갱신**(`.taskery-manifest.json`의 `activePlan`). 성공 반환 `{ plan, nnn, planDir, tasksDir }` — 이후 단계는 이 `plan`(=`<NNN_slug>`) 사용. manifest 부재 시 에러 → *"`npx @angar2/taskery init` 먼저 실행 필요"* 안내 후 중단.
 
-**legacy 게이트** — `plans/`에 NNN 채번 아닌 폴더(구버전 `v1.0`/`alpha` 등) 잔존 시 `{gated:true, legacyDirs}`로 멈춘다(폴더 생성 X). 사용자 호출 + 경고: *"`plans/`에 NNN 채번 아닌 폴더(<legacyDirs>)가 있어. 새 plan을 NNN로 채번하면 활성 plan이 갈려 원래 문제 재발. 수동 이전(문서 루트 이동 + `NNN_slug` 리네임 + AGENT-GUIDE 갱신) 후 진행할지, 그래도 진행할지 결정해줘."* → 강행 시 `force:true`(CLI는 `--force`)로 재호출.
+**legacy 게이트** — `plans/`에 NNN 채번 아닌 폴더(구버전 `v1.0`/`alpha` 등) 잔존 시 `{gated:true, legacyDirs}`로 멈춘다(폴더 생성 X). 사용자 호출 + 경고: *"`plans/`에 NNN 채번 아닌 폴더(<legacyDirs>)가 있어. 새 plan을 NNN로 채번하면 활성 plan이 갈려 원래 문제 재발. 수동 이전(문서 루트 이동 + `NNN_slug` 리네임 + `plan-switch`로 활성 plan 갱신) 후 진행할지, 그래도 진행할지 결정해줘."* → 강행 시 `force:true`(CLI는 `--force`)로 재호출.
 
-> 폴더 생성·`tasks/<NNN_slug>/`·AGENT-GUIDE 갱신은 코드가 완료 — 아래는 골격 placeholder를 *내용으로 채우는* 단계(LLM 판단)다.
+> 폴더 생성·`tasks/<NNN_slug>/`·활성 plan 갱신은 코드가 완료 — 아래는 골격 placeholder를 *내용으로 채우는* 단계(LLM 판단)다.
 
 ## ROADMAP.md 내용 채우기
 
 *현재 plan 한정* task 단계를 placeholder에 채운다. *ROADMAP 작성 4룰*:
-1. *현재 plan 한정* — 다른 기능 그룹 후보는 글로벌 `.project/BACKLOG.md`. 프로젝트 전체 거시 빌드 순서는 `PROJECT.md ## 초기 빌드 로드맵`(별개).
+1. *현재 plan 한정* — 다른 기능 그룹 후보는 글로벌 `.project/BACKLOG.md`(**없으면 본 스킬이 이때 생성한다**: 제목 + `## 다음 기능 그룹 후보` 헤더만). 프로젝트 전체 거시 빌드 순서는 `PROJECT.md ## 초기 빌드 로드맵`(별개).
 2. 진행 순서에 task 번호(TASK-NNN) 강제 금지 — *Stage(영역) 단위*로만 (task 합류 시 번호 어긋남 방지).
 3. Stage 안 *작업 단위 명시*(한 task 분량 권장 — 다음 task 진행 시 메인이 ROADMAP 보고 범위 판단).
 4. 작업 단위에 task 번호 컬럼 X / *상태 컬럼만*(⏳ 대기 / 🔧 진행 중 / ✅ 완료 / ❌ 폐기) — Living document.
@@ -57,7 +57,7 @@ PLAN.md는 *얇은 인덱스*다 — 이 기능 그룹이 건드린 루트 문�
 
 **하드룰 (중복 차단):**
 - **각 항목 = 루트 문서 섹션 *링크 1줄*. 본문 복제 금지.** 기능 상세는 `.project/` 루트 문서에만(단일 홈).
-- `## 활성 task 버전` 류 *자기선언 라인 작성 금지* — 활성 plan 단일 진실은 `AGENT-GUIDE.md`뿐.
+- `## 활성 task 버전` 류 *자기선언 라인 작성 금지* — 활성 plan 단일 진실은 `.taskery-manifest.json`의 `activePlan`뿐(조회는 `status`, 전환은 `plan-switch`).
 
 ```markdown
 # PLAN — <NNN_slug>
@@ -77,7 +77,7 @@ PLAN.md는 *얇은 인덱스*다 — 이 기능 그룹이 건드린 루트 문�
 
 `.project/` 루트 문서에 이 기능 그룹의 *의도*를 명시한다. **의도 레벨만 — 상세 선작성 금지.**
 
-- **FEATURES.md / UX-UI.md (필수)**: 이 기능 그룹의 *섹션 헤더 + 의도 스텁* append. "무엇 / 어떤 화면" — 구현 전에도 선언 가능(기능 그룹 기획의 본질). 섹션은 *기능/도메인 자기기술* — 어느 plan이 추가했는지 태그 X(기능 분류 = 제품 관통 문서 섹션 구조가 단일 진실).
+- **FEATURES.md / UX-UI.md (있을 때 필수)**: 이 기능 그룹의 *섹션 헤더 + 의도 스텁* append. **파일이 없으면**(=`/project-init` 미실행 또는 타입상 해당 없음) 새로 만들지 말고 이 항목을 생략한 뒤, CLI가 쓴 `PLAN.md` 골격의 해당 링크 줄도 지운다 — 없는 문서를 가리키는 링크가 남으면 이후 세션이 계속 헤맨다. "무엇 / 어떤 화면" — 구현 전에도 선언 가능(기능 그룹 기획의 본질). 섹션은 *기능/도메인 자기기술* — 어느 plan이 추가했는지 태그 X(기능 분류 = 제품 관통 문서 섹션 구조가 단일 진실).
   ```markdown
   ## <기능 그룹 이름>
   <의도 1~3줄: 무엇을 / 누구를 위해 / 핵심 화면·동작. 상세 스펙은 task 진행에서.>
@@ -90,7 +90,7 @@ PLAN.md는 *얇은 인덱스*다 — 이 기능 그룹이 건드린 루트 문�
 ## 결과 보고
 
 작성 산출물 목록 + 다음 단계:
-- *"`<NNN_slug>/` plan 생성 완료 — PLAN/ROADMAP + FEATURES/UX-UI 의도 stub. AGENT-GUIDE 활성 plan `<NNN_slug>` 갱신. 다음은 `/task-init`으로 첫 task (스키마/엔드포인트 상세는 task 진행에서 구현 동반)."*
+- *"`<NNN_slug>/` plan 생성 완료 — PLAN/ROADMAP + FEATURES/UX-UI 의도 stub. 활성 plan `<NNN_slug>` 갱신. 다음은 `/task-init`으로 첫 task (스키마/엔드포인트 상세는 task 진행에서 구현 동반)."*
 
 **commit 흐름** (GIT_RULE): 현재 브랜치(= 부모)가 dev/main이면 직접 commit *금지*(git-guard 차단). default 둘:
 1. **첫 task에 묶기 (권장)**: `/project-init` 직후면 init 산출물과 같은 작업 브랜치(보통 TASK-001 부트스트랩 chore)에 함께. 새 기능 그룹이면 새 task 브랜치 또는 임시 docs 브랜치.
