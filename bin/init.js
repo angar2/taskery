@@ -31,6 +31,8 @@ const {
   gitignorePatternsFor,
 } = require('./lib');
 
+const { ENTRY_DOCS_MARKER } = require('./migrate');
+
 async function confirm(msg) {
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
   return new Promise((resolve) => {
@@ -125,6 +127,8 @@ async function main() {
     platforms,
     stale_days: DEFAULT_STALE_DAYS,
     lock_timeout_ms: DEFAULT_LOCK_TIMEOUT_MS,
+    activePlan: null, // /plan-init이 채운다 (0.7.0+ 활성 plan SSoT)
+    entryDocs: ENTRY_DOCS_MARKER, // 신규 설치는 이미 새 진입 문서 체계 — update가 이행을 시도하지 않도록
     files: manifestFiles,
   };
   writeManifest(manifest, manifestPath);
@@ -189,10 +193,11 @@ async function main() {
   console.log(`   카피: ${copied}개 / 스킵: ${skipped}개`);
   console.log(`   플랫폼: ${platforms.join(', ')}`);
   console.log(`   manifest: ${MANIFEST_NAME}\n`);
-  const entryFile = platforms.includes('claude') ? 'CLAUDE.md' : 'AGENTS.md';
   console.log(`다음 단계:`);
   let step = 1;
-  console.log(`  ${step++}. ${entryFile} 정독 + 프로젝트 메타 + 검증 명령 채우기`);
+  // 진입 문서 본문은 AGENTS.md 한 벌 — CLAUDE.md는 `@AGENTS.md` 임포트 한 줄이라 채울 것이 없다.
+  console.log(`  ${step++}. AGENTS.md 정독 + 프로젝트 메타 + 검증/테스트 명령 채우기`);
+  console.log(`     (.project/rules/TASKERY_RULE.md = taskery 사용 설명서 — 세션이 필독)`);
   if (platforms.includes('claude')) {
     console.log(`  ${step++}. Claude 첫 세션에서 taskery MCP 서버 승인 (.mcp.json — 구조화 도구 8종; 미승인 시 npx CLI 폴백)`);
   }
