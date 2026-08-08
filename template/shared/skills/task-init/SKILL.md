@@ -43,7 +43,7 @@ description: task 시작 — 워크트리 분기 + 6 섹션 빈 골격 + 헤더 
 
 `task_init` 도구(또는 `npx @angar2/taskery fork <타입> <개발자> <출처> <슬러그> --size <규모> --title "<한국어 제목>" [--promote]`) 한 번으로 **채번 → 워크트리·브랜치 생성**(init 락 원자 — 병렬 task-init 번호 충돌·동일 출처 중복(**BL·구형 RM 한정** — `ST-N`은 Stage 하나에서 복수 task가 정상, `DR`은 ID 없음이라 둘 다 중복 검사 제외)·동일 브랜치명을 코드가 차단)에 더해 **빈 골격 task.md 자동 생성**(생성일=오늘 · plan=활성 plan · 유형 자동매핑 `improve`→`improvement` · **부모 브랜치=fork 시점 현재 브랜치 자동 기록**(dev 고정 아님) · status=draft · `.gitignore` 케이스로 위치 자동 판정)까지 수행한다.
 
-- 반환 `{ taskNum, nnn, branch, wtPath, projectId, docPath, registered, promoted }`. 폴더 승격은 `--promote`/`promote:true`.
+- 반환 `{ taskNum, nnn, branch, wtPath, projectId, parent, docPath, registered, promoted }` (`parent` = fork 시점 현재 브랜치 = 이 task의 부모 브랜치. `/task-close`가 이 브랜치로 되병합한다). 폴더 승격은 `--promote`/`promote:true`.
 - 에러 시(*"… 이미 진행중"* / *"… detached HEAD"* — 부모 브랜치(현재 브랜치) 확인·SSoT를 fork가 강제) stderr 메시지 그대로 보고 + 중단.
 - **BL 출처면** 직후 `backlog_mark` 도구(또는 `npx @angar2/taskery backlog-mark BL-NNN TASK-NNN`)로 `[ ]→[x]` + `- TASK:` 마크(콤마 누적, withMetaLock). ST/DR은 skip.
 
@@ -64,7 +64,7 @@ description: task 시작 — 워크트리 분기 + 6 섹션 빈 골격 + 헤더 
 ## 주의사항
 
 - **워크트리 생성 + 골격 작성만** — 본문 채우기 금지. Requirements / Scope / Dev Plan / Test Plan은 *반드시* `/task-plan`.
-- **단계 경계** — 허용: ROADMAP §4 확인 / SSoT 조회 / `task_init` 호출 / 빈 골격 확인. 금지: ARCHITECTURE/API-SPEC/FEATURES 등 루트 제품 관통 문서 본문 Read · 도메인 코드 Read·Grep · 기존 task 본문 Read (그건 `/task-plan` 영역).
+- **단계 경계** — 허용: ROADMAP의 해당 Stage 확인(출처가 `ST-N`일 때) / SSoT 조회 / `task_init` 호출 / 빈 골격 확인. 금지: ARCHITECTURE/API-SPEC/FEATURES 등 루트 제품 관통 문서 본문 Read · 도메인 코드 Read·Grep · 기존 task 본문 Read (그건 `/task-plan` 영역).
 - **자동 추정 진행 X** — 맥락 명확해도 *제안 + OK* 후 생성.
 - **상태는 `draft` 고정** · **slug 영어 kebab-case** · **헤더 6컬럼 모두 채움**(*"미정"* placeholder X — 코드가 채움. 부모 브랜치도 코드 자동 기록).
 - **fork 실패(같은 브랜치명 / 같은 출처 진행중 — BL·구형 RM 한정) → 사용자 호출** + 중단(*"다른 세션이 같은 항목 진행 중"*). `ST-N`·`DR`은 중복 게이트가 없으므로 같은 Stage로 두 번째 task를 만들 때 코드가 막아주지 않는다 — 중복 진행 여부는 메인이 `status`로 확인한다.

@@ -80,6 +80,7 @@ LOCK_FILE="$HOME/.taskery/${PROJECT_ID}.merge.lock"
      - `$MAIN_WT/.project/rules/GIT_RULE.md` (프로젝트별 — 우선)
      - `~/.claude/rules/GIT_RULE.md` (글로벌)
      둘 다 없으면 종료 + *"GIT_RULE 누락"* 보고.
+   - **로컬 오버라이드** — `$MAIN_WT/.project/rules/GIT_RULE.local.md`가 있으면 함께 Read하고, 겹치는 항목은 **로컬 우선** 적용한다 (`npx update` 미터치 영역). 단 로컬 룰이 뒤집을 수 없는 것: 부모 브랜치 직접 커밋 금지 · `--no-ff` 강제 · 머지 락 직렬화 · destructive 명령 사용자 승인.
 
 ### Step 2 — 최종 검증 명령 재실행 (게이트)
 
@@ -101,7 +102,6 @@ FAIL 시:
   - *"고쳐"* → status `developing`으로 되돌림 + `/task-dev` 안내 + close 중단.
   - *"OK 마무리"* → 결함 명시한 채 진행 (Result 섹션에 *"검증 명령 X FAIL 알려진 결함 — 사유: ..."* 추가).
 
-### Step 3 — 결정적 준비 (`task_close` 도구)
 ### Step 2.5 — 문서 갱신 훑기 (게이트 통과 후 · `close` 호출 전)
 
 본 task로 갱신돼야 할 문서를 *목록으로* 훑는다. 이 단계가 없어 PLAN.md 체크리스트·수정이력·CHANGELOG가 연속으로 누락된 사례가 있다 (recordion FRICTION 2026-08-05, 5태스크 연속·26문서 무이력·6태스크 무CHANGELOG). 개별 항목이 아니라 *목록 훑기*가 본 단계의 요지다 — 하나씩 규칙을 더하는 방식으로는 습관 밖의 문서가 계속 빠진다.
@@ -124,6 +124,7 @@ FAIL 시:
 - 갱신 결과는 Step 8 보고의 `- 문서 갱신:` 줄에 적는다.
 - 본 단계에서 git 명령을 실행하지 않는다 (커밋은 Step 3 `close`와 Step 5 머지가 담당).
 
+### Step 3 — 결정적 준비 (`task_close` 도구)
 
 `task_close` 도구 (또는 `npx @angar2/taskery close TASK-NNN`) 한 번으로 다음을 코드가 수행:
 - **Phase 기능 커밋** — uncommitted 코드 변경분(`.project/` 외)을 task.md `### Phase N`의 `- 파일:` 필드에 매핑해 Phase 순서대로 자동 커밋 (GIT_RULE 메시지 형식, 태그 자동: feature→`feat:` / bug→`fix:` / improve→`improve:` / refactor→`refactor:` / docs·chore→`docs:`). 매핑 폴백은 GIT_RULE §"Phase↔파일 매핑 규칙" — 한 파일이 여러 Phase에 걸치면 *가장 이른 Phase*, Dev Plan에 없는 *빌드 산출물*(`*.pbxproj`·잠금파일)은 *마지막 Phase*에 자동 편입(커밋 메시지에 사유 표기).
@@ -271,8 +272,8 @@ git -C "$MAIN_WT" worktree remove "$WT_PATH"
 - 작업 브랜치: <BRANCH> (삭제 / 보존)
 - 워크트리: <WT_PATH> (제거 / 보존)
 - 커밋: Phase <N>개 + 태스크 문서 + (CHANGELOG)
-- 자동 편입: <multiPhase / autoAssigned 있을 때만 — 예: `src/ipc.ts` Phase 2·5 → Phase 2 / `project.pbxproj` → Phase 3(빌드 산출물)>
 - 문서 갱신: <Step 2.5 점검 6항 중 실제 갱신한 것 — 예: PLAN.md 체크리스트 [x] / changelog 2026-08 신규 / ARCHITECTURE 수정이력 1행. 없으면 "해당 없음">
+- 자동 편입: <multiPhase / autoAssigned 있을 때만 — 예: `src/ipc.ts` Phase 2·5 → Phase 2 / `project.pbxproj` → Phase 3(빌드 산출물)>
 - 부모 브랜치 병합: <PARENT> ← --no-ff 완료 ($MERGE_COMMIT)
 - 충돌 해결: <건수, 자료 한계 보고 있으면 포함>
 - 상태: tested → closed
