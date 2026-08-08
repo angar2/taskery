@@ -1,13 +1,13 @@
 ---
 name: project-init
-description: taskery 도입 직후 1회성 — 진입 문서(PROJECT/AGENT-GUIDE/…) + 제품 관통 기획 문서(그룹 A 작성 / 그룹 B 골격) 생성
+description: taskery 도입 직후 1회성 — AGENTS.md 리포 값 + 진입 문서(PROJECT/GLOSSARY/…) + 리포 로컬 룰 초안 + 제품 관통 기획 문서(그룹 A 작성 / 그룹 B 골격) 생성
 ---
 
 # /project-init
 
 ## 개요
 
-taskery 도입 직후 **1회성**으로 호출. 사용자 또는 동료가 새 리포에 npx로 taskery 세팅 직후 처음 부르는 스킬. `.project/` 영역의 사람용/메인용 진입 문서와 **제품 관통 기획 문서**(루트 평평 배치)를 만든다.
+taskery 도입 직후 **1회성**으로 호출. 사용자 또는 동료가 새 리포에 npx로 taskery 세팅 직후 처음 부르는 스킬. 진입 문서 `AGENTS.md`의 리포 값(메타·명령)을 채우고, `.project/` 영역의 사람용/메인용 문서와 **제품 관통 기획 문서**(루트 평평 배치), 그리고 이 리포의 로컬 룰 초안을 만든다.
 
 제품 관통 문서 2그룹 (`.project/` 루트):
 - **그룹 A — 정적(내용까지 작성)**: SERVICE-POLICY.md / TECH-STACK.md / ARCHITECTURE.md. project-init이 인터뷰로 *작성*. (이후 plan-init은 부수적 add/mod만.)
@@ -52,6 +52,25 @@ taskery 도입 직후 **1회성**으로 호출. 사용자 또는 동료가 새 �
    - Q3: 도메인/한 줄 비전?
    - Q4: 단일 리포 / 멀티 리포?
    - Q5: (멀티 리포 시) 연결 리포 목록 + 각 역할?
+
+### Step 2.5 — `AGENTS.md` 리포 값 채우기
+
+진입 문서 `AGENTS.md`(프로젝트 루트)에는 **이 리포의 값이 들어갈 빈 칸 4개**가 있다. 이 칸이 placeholder(`<예: ...>`)로 남으면 `/task-dev` self-check 게이트, `/task-close` 최종 게이트, `/task-test` 격리 세션이 **실행할 명령을 찾지 못한다.** 본 단계에서 반드시 채운다.
+
+> `CLAUDE.md`는 `@AGENTS.md` 임포트 한 줄이라 채울 것이 없다. 값은 `AGENTS.md`에만 쓴다.
+
+| 절 | 채울 내용 | 출처 |
+|----|----------|------|
+| `## 프로젝트 메타` | 이름 / 타입 / 한 줄 소개 | Step 2 수집 결과 그대로 |
+| `## 검증 명령` | 린트 · 타입체크 · 빌드 — *코드 상태* 검증 | 기존 코드면 `package.json` scripts·`Makefile` 등에서 탐지 후 confirm / 빈 프로젝트면 스택 확정 후 기입 |
+| `## 테스트 명령` | 단위 · 통합 · E2E — *테스트 실행* | 위와 동일 |
+| `## 검수 실행 명령` | 기준 포트 · 실행 명령 | 앱을 띄워 사람이 확인하는 프로젝트만. 아니면 **절 전체를 삭제** |
+
+규칙:
+- 백틱 안 명령은 *그대로 실행 가능한* 형태여야 한다. 추상 서술 금지.
+- 해당 없는 항목은 **행 자체를 삭제**한다. 빈 백틱(``)을 남기지 않는다.
+- 아직 정할 수 없으면 placeholder를 지우고 *"미정 — 첫 `/task-plan`에서 확정"*이라고 명시한다. 방치 금지.
+- 최종안을 사용자에게 보여주고 confirm 받은 후 기록한다.
 
 ### Step 3 — `.project/PROJECT.md` 작성
 
@@ -138,45 +157,63 @@ taskery 도입 직후 **1회성**으로 호출. 사용자 또는 동료가 새 �
 <!-- 기능 그룹 / 도메인 섹션이 여기 누적된다. 초기엔 비어 있음. -->
 ```
 
-### Step 4 — `.project/AGENT-GUIDE.md` 작성
+### Step 4 — 리포 로컬 룰 초안 작성 (`TEST_RULE.local.md` · `DEV_RULE.local.md`)
 
-메인 세션 진입 가이드. 새 메인 세션이 부르는 *"읽고 시작"* 문서.
+이 둘은 코어 짝이 없는 로컬 전용 문서이나 **모든 리포에 반드시 존재해야 한다** (`TASKERY_RULE` §8). 없으면 이후 세션이 이 프로젝트의 검증·구현 방식을 모른 채 일반론으로 진행한다.
+
+1. **리포 분석** — 기존 코드가 있으면 테스트 러너·빌드 도구·실행 스크립트를 탐지한다(`package.json` scripts, `Makefile`, `*.xcodeproj`, `pytest.ini` 등).
+2. **초안 제시 → 사용자 confirm → 생성.** 탐지 결과를 근거로 채운 초안을 보여주고 승인받은 후 `.project/rules/`에 작성한다.
+3. 빈 프로젝트라 정할 것이 없으면 **섹션 헤더만 있는 골격을 생성**한다 (각 절에 *"첫 `/task-plan`에서 확인 후 기록"* 표시). **파일 자체는 어떤 경우에도 생성한다.**
+
+`TEST_RULE.local.md` 골격:
 
 ```markdown
-# AGENT-GUIDE.md
+# TEST_RULE.local.md — 이 리포의 검증 규칙
 
-## 활성 plan 버전   <!-- 값 = NNN_slug 폴더명(버전 아님). 헤딩 텍스트는 lib.js/스킬이 의존하므로 변경 X -->
-<예: 001_mvp — `.project/plans/001_mvp/` 참조>
+> 이 프로젝트에서 각 테스트 방식을 *실제로 어떻게 실행하나* + *무엇을 얼마나 검증하나*의 단일 소스.
+> 구성과 의무는 `.project/rules/TASKERY_RULE.md` §8 참조.
+> `*.local.md`는 taskery update가 건드리지 않는다 — 이 리포가 소유한다.
 
-## 메인이 매 세션 시작 시 읽을 것
-1. `CLAUDE.md` — 프로젝트 메타 + 검증 명령 + 룰 참조
-2. `.project/PROJECT.md` — 프로젝트 개요 + 초기 빌드 로드맵
-3. `.project/` 루트 제품 관통 문서 — SERVICE-POLICY / TECH-STACK / ARCHITECTURE / DATA-MODEL / API-SPEC / FEATURES / UX-UI (해당 시. 기능 분류 단일 진실)
-4. `.project/plans/<활성 plan>/PLAN.md` — 활성 plan(기능 그룹) 인덱스 (이 그룹이 건드린 루트 문서 요약 + task 체크리스트)
-5. `.project/GLOSSARY.md` — 도메인 용어집 (영문/한글 표기 일관성 단일 진실 소스)
-6. `.project/tasks/<활성 plan>/BACKLOG.md` — 현재 plan 진행 중 누적된 후속 task 후보 (사용자 발화 *"이건 다음 task로"* / task-close 직후 메인 감지로 추가)
-7. `.project/AGENT-GUIDE.md` — 본 파일 (그대로)
-8. `.project/TEST-GUIDE.md` — 검증 방법 문서 (각 테스트 방식의 이 프로젝트 실제 실행 경로). 매 세션 통독 아니라 *`/task-plan`·`/task-test` 시 참조* — 발견성 위해 등재
+## 방식별 실행 경로
 
-## 작업 흐름
-- task 시작: `/task-init` 또는 `/task-plan`
-- task 진행: `/task-dev` → `/task-test` → `/task-close`
-- 불편 등록: `/log-friction` (사용자 호출 / 발화 캐치 / task-close 자체 감지)
+> 그대로 실행 가능한 명령·경로로 적는다. 모르면 비워 두지 말고 `/task-plan`이 사용자에게 확인한 즉시 기록한다.
 
-## 폴더 구조
-- `.project/rules/` — 코어 룰 (TASK_DOC_RULE / GIT_RULE / CHANGELOG_RULE / MOCKUP_RULE)
-- `.project/*.md` (루트) — 제품 관통 문서 (SERVICE-POLICY / TECH-STACK / ARCHITECTURE / DATA-MODEL / API-SPEC / FEATURES / UX-UI)
-- `.project/plans/<NNN_slug>/` — plan(기능 그룹) 로컬: PLAN.md / ROADMAP.md
-- `.project/tasks/<NNN_slug>/` — task 문서
-- `.project/flows/` — 도메인 흐름
-- `.project/shared/` — 멀티리포 메시지
-- `.project/changelog/` — 월별 변경 이력
-- `.project/FRICTION_LOG.md` — 불편 데이터
-- `.project/TEST-GUIDE.md` — 검증 방법 문서 (각 테스트 방식의 이 프로젝트 실제 실행 경로. 제품 관통 문서 아님)
+- **데이터 검증** (DB / 파일 / 상태 조회): <아직 미정>
+- **API 호출** (엔드포인트 / 외부 인터페이스): <아직 미정>
+- **UI 동작 · E2E** (클릭 / 입력 / 흐름 자동화): <아직 미정>
+- **시각 실행** (앱 기동 + 화면 캡처): <아직 미정>
+- **기타**: <아직 미정>
 
-## 멀티리포
-<단일 리포면 "단일 리포. LINKED-REPOS.md 빈 템플릿."
-멀티 리포면 "LINKED-REPOS.md 참조">
+## 테스트 실행 환경 (격리 실행 경로)
+
+> 실제 앱을 띄워 UI를 자동 조작하는 스위트를 **사용자의 화면·마우스·키보드를 뺏지 않고** 돌리는 경로.
+> 여기가 비어 있으면 자동 게이트·격리 세션은 그 스위트를 실행하지 않고 사용자 승인을 받는다.
+> 적을 수 있는 것: 창 숨김·헤드리스 플래그 / 가상 디스플레이·컨테이너 / VM / CI 러너 위임 / 점유 스위트를 제외하는 한정 실행 옵션.
+
+<아직 미정>
+
+## 범위·방식 정책
+
+> 무엇을 얼마나 검증하나 — 수정 루프에서의 실행 범위, 테스트 신설 상한 등.
+
+<아직 미정>
+```
+
+`DEV_RULE.local.md` 골격:
+
+```markdown
+# DEV_RULE.local.md — 이 리포의 구현 규칙
+
+> 이 프로젝트 고유의 구현 정책. 구성과 의무는 `.project/rules/TASKERY_RULE.md` §8 참조.
+> `*.local.md`는 taskery update가 건드리지 않는다 — 이 리포가 소유한다.
+
+## 구현 정책
+
+<아직 미정 — 코드 배치 관행 · 금지 패턴 · 의존성 추가 기준 등>
+
+## 빌드·실행 전제
+
+<아직 미정 — 테스트 전 빌드 필요 여부 등>
 ```
 
 ### Step 4.5 — `.project/GLOSSARY.md` 작성 (도메인 용어집)
@@ -243,8 +280,7 @@ stash FRICTION_LOG #3 반영 — 프로젝트 도메인 용어를 *영문/한글
 - `.project/plans/` (`.gitkeep` — `/plan-init`이 `NNN_slug/` 하위 작성)
 - `.project/tasks/` (`.gitkeep` — `/task-init`이 `NNN_slug/TASK-<NNN>_<slug>.md` 작성)
 - `.project/shared/{sent,received}/completed/` (`.gitkeep`)
-- `.project/FRICTION_LOG.md` (빈 템플릿)
-- `.project/rules/{TASK_DOC_RULE,GIT_RULE,CHANGELOG_RULE,MOCKUP_RULE}.md` (코어 룰)
+- `.project/rules/{TASKERY_RULE,TASK_DOC_RULE,GIT_RULE,CHANGELOG_RULE,MOCKUP_RULE}.md` (코어 룰 5종)
 
 → `/project-init`은 폴더 생성 X. 누락 시(`init` 안 거치고 수동 셋업한 경우)에만 `mkdir -p` 실행.
 
@@ -254,7 +290,7 @@ mkdir -p .project/{changelog,flows,plans,tasks}
 mkdir -p .project/shared/sent/completed .project/shared/received/completed
 ```
 
-`.project/FRICTION_LOG.md`도 `init`이 카피한 빈 템플릿 그대로 사용. **이미 있으면 덮어쓰기 X** — 사용자 데이터 보호.
+`.project/FRICTION_LOG.md`는 배포되지 않는다 — `/log-friction`이 첫 기록 때 생성한다. **이미 있으면 덮어쓰기 X** — 사용자 데이터 보호.
 
 ### Step 7.5 — git 초기화 + 첫 ref 분기 (빈 폴더 케이스)
 
@@ -284,11 +320,11 @@ git branch -a                                        # main(또는 master) + dev
 ### Step 8 — 결과 보고
 
 작성된 파일 목록 + 다음 단계 안내:
-- *"PROJECT.md(초기 빌드 로드맵 포함) / AGENT-GUIDE.md / LINKED-REPOS.md / GLOSSARY.md / .env + 제품 관통 문서(그룹 A 작성: SERVICE-POLICY·TECH-STACK·ARCHITECTURE / 그룹 B 골격: DATA-MODEL·API-SPEC·FEATURES·UX-UI, 타입 해당분) 생성. (FRICTION_LOG.md / TEST-GUIDE.md(검증 방법 문서, 빈 골격) / 빈 골격 폴더는 npx init이 이미 카피한 것 그대로 — project-init이 생성 X). **빈 폴더 케이스라 git init + dev 분기까지 완료** (이미 git 리포면 건너뜀). 다음은 `/plan-init <기능그룹>`으로 첫 plan(MVP면 여러 기능 그룹을 묶은 큰 plan) 작성."*
+- *"AGENTS.md 리포 값 4칸(메타·검증·테스트·검수 명령) 기입 + PROJECT.md(초기 빌드 로드맵 포함) / LINKED-REPOS.md / GLOSSARY.md / .env + 제품 관통 문서(그룹 A 작성: SERVICE-POLICY·TECH-STACK·ARCHITECTURE / 그룹 B 골격: DATA-MODEL·API-SPEC·FEATURES·UX-UI, 타입 해당분) + 리포 로컬 룰 초안(TEST_RULE.local.md · DEV_RULE.local.md) 생성. (빈 골격 폴더·코어 룰은 npx init이 이미 카피한 것 그대로 — project-init이 생성 X). **빈 폴더 케이스라 git init + dev 분기까지 완료** (이미 git 리포면 건너뜀). 다음은 `/plan-init <기능그룹>`으로 첫 plan(MVP면 여러 기능 그룹을 묶은 큰 plan) 작성."*
 
 **결과 commit 흐름** (GIT_RULE 정합):
 - 현재 브랜치(= 부모, 기본 dev)가 dev/main이면 직접 commit *금지* (git-guard.sh 차단). 두 가지 default 흐름:
-  1. **첫 task에 묶기 (권장)**: `/plan-init` 끝나고 첫 `/task-init` (보통 TASK-001 부트스트랩 chore)으로 만든 작업 브랜치에서 init 산출물(PROJECT/AGENT-GUIDE/LINKED-REPOS/.env)도 함께 commit. task-close 단계의 "태스크 문서 커밋"에 자연스럽게 묶임.
+  1. **임시 docs 브랜치 (권장)**: `git checkout -b docs/{개발자}_init-bootstrap` 후 commit → 현재 브랜치(부모)에 `--no-ff` 머지. **첫 task 브랜치에 묶는 방식은 쓰지 않는다** — init 산출물은 메인 워크트리에 남고 task는 별도 워크트리라 같은 브랜치에 담을 경로가 없다.
   2. **임시 docs 브랜치**: `git checkout -b docs/{개발자}_init-bootstrap` 후 commit → 현재 브랜치(부모)에 `--no-ff` 머지. 첫 task 생성 *전*에 init 결과를 깔끔히 기록하고 싶을 때.
 
 ## 도구 가이드
