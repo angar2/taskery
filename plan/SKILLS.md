@@ -9,7 +9,7 @@
 
 | 스킬 | 레벨 | 역할 | 상태 전이 | 호출 빈도 |
 |------|------|------|---------|----------|
-| `/project-init` | **project** | 진입 문서(PROJECT/AGENT-GUIDE/LINKED-REPOS/GLOSSARY/.env) + 제품 관통 문서(그룹 A 작성 / 그룹 B 골격, `.project/` 루트) 생성 | — | **1회성** (프로젝트 첫 셋업) |
+| `/project-init` | **project** | 진입 문서(PROJECT/LINKED-REPOS/GLOSSARY/.env) + 리포 로컬 룰 초안(TEST_RULE/DEV_RULE.local.md) + 제품 관통 문서(그룹 A 작성 / 그룹 B 골격, `.project/` 루트) 생성 | — | **1회성** (프로젝트 첫 셋업) |
 | `/plan-init` | **plan** | `.project/plans/<NNN_slug>/` PLAN.md / ROADMAP.md + 제품 관통 문서 FEATURES/UX-UI 의도 delta | — | 기능 그룹마다 |
 | `/task-init` | **task** | **워크트리 분기** + task.md 6 섹션 placeholder + 헤더 status=draft. BL 출처 진행 시 `tasks/<NNN_slug>/BACKLOG.md` 항목 확인 마킹 (`[ ]` → `[x]` + TASK 마크) | — → `draft` | task마다 |
 | `/task-plan` | task | Requirements / Scope / Dev Plan / Test Plan 채우기 (워크트리 호출 default — 멀티세션. 호출 위치 자유, cwd 무관) | `draft` → `planned` | task마다 |
@@ -35,10 +35,10 @@
 | 스킬 | 입력 | 처리 |
 |------|------|------|
 | `/project-init` | (자동 분석 또는 질문) | 빈 프로젝트 → 질문 라운드 / 기존 코드 → 소스 분석 + 제안 + confirm. **1회성** — `.project/PROJECT.md` 있으면 경고 |
-| `/plan-init` | 기능 그룹 slug (예: mvp, compare-products) | 인자 없으면 사용자에게 질문. 단일 흐름: `computeNextPlanNumber`로 NNN 채번 → `plans/NNN_slug/` 생성 + PLAN.md/ROADMAP.md + 제품 관통 문서 FEATURES/UX-UI 의도 delta + AGENT-GUIDE 활성 plan 갱신. legacy(NNN 아닌) 폴더 감지 시 게이트 |
+| `/plan-init` | 기능 그룹 slug (예: mvp, compare-products) | 인자 없으면 사용자에게 질문. 단일 흐름: `computeNextPlanNumber`로 NNN 채번 → `plans/NNN_slug/` 생성 + PLAN.md/ROADMAP.md + 제품 관통 문서 FEATURES/UX-UI 의도 delta + manifest.activePlan 갱신. legacy(NNN 아닌) 폴더 감지 시 게이트 |
 | `/task-init` | 주제/유형/규모/플랜 | 직전 맥락 명확하면 메인 제안 + confirm. 맥락 부족 시 인터뷰. **자동 추정 진행 X** |
 | `/task-plan` ~ `/task-close` | TASK-NNN 인자 또는 자동 | 인자 없으면 *상태에 맞는 가장 최근 task* 자동 선택 + confirm |
-| `/add-backlog` | `<주제>` (예: "로그인 빈 화면 백로그에") 또는 백로그 발화 캐치 | 메인 워크트리/부모 브랜치 검증 + 활성 plan(`AGENT-GUIDE.md`) 검출 + 얕은 분석(코드 탐색 X) + BL-NNN 채번 + append. 유형 모호 시 confirm |
+| `/add-backlog` | `<주제>` (예: "로그인 빈 화면 백로그에") 또는 백로그 발화 캐치 | 메인 워크트리/부모 브랜치 검증 + 활성 plan(manifest.activePlan) 검출 + 얕은 분석(코드 탐색 X) + BL-NNN 채번 + append. 유형 모호 시 confirm |
 | `/log-friction` | `<불편 내용>` 또는 무인자 호출 | 사용자 합의 → FRICTION_LOG.md 한 행 추가 |
 
 **자동 추정 진행 X 정신** — `/task-init`이 가장 강조. 메인이 *추정한 메타로* 파일 생성하지 X. 사용자 답 받기 전 작성 금지.
@@ -111,7 +111,7 @@ draft → planned → developing → developed → testing → tested → closed
 `/add-backlog`는 *plan(기능 그룹)별 백로그* `.project/tasks/<NNN_slug>/BACKLOG.md`에 task 후보를 1건씩 누적한다. 글로벌 `.project/BACKLOG.md`(다음 기능 그룹 후보 카탈로그)는 `/plan-init` 영역 — 별 차원.
 
 **흐름**:
-- 사용자 *"~ 백로그에"* 발화 → 메인 워크트리 검출 + 부모 브랜치 체크아웃 검증 + 활성 plan(`AGENT-GUIDE.md` 파싱) 검출
+- 사용자 *"~ 백로그에"* 발화 → 메인 워크트리 검출 + 부모 브랜치 체크아웃 검증 + 활성 plan(manifest.activePlan) 검출
 - 얕은 분석(코드 탐색 X, 추정 수준) — 유형 / 제목 / 개요 / 대상 영역
 - BL-NNN 채번(`BL-(\d+)` max + 1) + 결정적 슬러그(한국어 → 영어 의미 변환 → kebab-case 3 단어 이내)
 - `withMetaLock`으로 BACKLOG.md append (plan-init이 박은 placeholder 라인 치환 우선)
@@ -253,13 +253,13 @@ CLAUDE.md `## 검증 명령` 단일 섹션이 *4 시점에 분산 실행* (self-
 1. task.md 정독 → Test Plan + Dev Plan 완료 기준 추출 (목업 있으면 mockup/<task-doc-name>-mockup.html 도 정독)
 2. status를 testing으로 갱신 (격리 세션 호출 직전)
 3. Task tool 호출, 격리 prompt:
-   - task.md 절대 경로 + TEST-GUIDE.md 절대 경로 ($MAIN_WT/.project/) (격리 세션이 직접 정독 — 자기완결적)
+   - task.md 절대 경로 + TEST_RULE.local.md 절대 경로 ($MAIN_WT/.project/rules/) (격리 세션이 직접 정독 — 자기완결적)
    - 본질 — Test Plan 시나리오 기반 *실질 동작 검증* (유닛 테스트 카운트 단정 X)
    - ④ 문 앞 검사 — 각 [AUTO]가 [명령+구체적 기대값] 자격 갖췄나, 미달이면 시험문제 결함 반려
    - 증거 일치 시만 PASS (코드 정독 PASS 금지)
    - [AUTO] / [USER] 분류 — [USER]는 주관(미세 취향/느낌)만 사용자 검수, 시각 객관 깨짐은 [AUTO] 캡처-목업 대조
    - ⑤ UNCERTAIN 2종 — (사람 검수) 주관 / (검증 불가) [AUTO]인데 기대값 구성 불가 = 시험문제 결함 (근거 의무)
-   - CLAUDE.md `## 검증 명령` + `## 테스트 명령` + TEST-GUIDE.md 참조
+   - AGENTS.md `## 검증 명령` + `## 테스트 명령` + TEST_RULE.local.md 참조
    - 신규 테스트 식별자 grep 직접 등장 확인
    - PASS / FAIL / UNCERTAIN + 근거
 4. 결과 리턴받아 task.md Result 섹션 기록
@@ -307,7 +307,7 @@ CLAUDE.md `## 검증 명령` 단일 섹션이 *4 시점에 분산 실행* (self-
 ```
 1. cd <user-project>
 2. npx @angar2/taskery init  # template/ 자산 카피 + manifest 생성
-3. claude code              # 메인 세션 진입 (CLAUDE.md 자동 정독)
+3. claude code              # 메인 세션 진입 (CLAUDE.md → @AGENTS.md 자동 정독)
 4. /project-init            # 진입 문서 + 제품 관통 문서(루트, 그룹 A 작성/B 골격)
 5. /plan-init mvp           # 기능 그룹 plan — PLAN/ROADMAP + 제품 문서 의도
 6. /task-init               # 첫 task — Requirements 인터뷰

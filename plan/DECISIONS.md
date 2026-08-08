@@ -133,7 +133,7 @@ draft → planned → developing → developed → testing → tested → closed
 | git 룰 (브랜치/커밋/머지) | `template/.project/rules/GIT_RULE.md` (프로젝트별) → `~/.claude/rules/GIT_RULE.md` (글로벌) |
 | CHANGELOG 작성 룰 | `template/.project/rules/CHANGELOG_RULE.md` |
 | UX/UI HTML 목업 룰 | `template/.project/rules/MOCKUP_RULE.md` |
-| 검증 명령 (사용자 프로젝트 — 코드 상태) | 사용자 프로젝트 `CLAUDE.md` `## 검증 명령` (빌드/린트/타입체크) |
+| 검증 명령 (사용자 프로젝트 — 코드 상태) | 사용자 프로젝트 `AGENTS.md` `## 검증 명령` (빌드/린트/타입체크) |
 | 테스트 명령 (사용자 프로젝트 — 테스트 실행) | 사용자 프로젝트 `CLAUDE.md` `## 테스트 명령` (단위/통합/E2E) |
 | manifest 구조 | `bin/lib.js` + `bin/init.js` |
 | 미래 옵션 9 항목 | `plan/PLAYBOOK.md` |

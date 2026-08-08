@@ -70,9 +70,7 @@ taskery/                                  ← 본 리포 (시스템 자체)
     │   ├─ skills/                       ← 9 스킬 본문 (add-backlog 포함, 0.1.2+) + Claude 전용 run-team (0.3.x+)
     │   └─ hooks/                        ← 2 catastrophic 안전망
     └─ .project/
-        ├─ FRICTION_LOG.md               ← 불편 누적 빈 템플릿
-        ├─ TEST-GUIDE.md                 ← 검증 방법 빈 템플릿 (방식별 이 프로젝트 실행 경로)
-        ├─ rules/                        ← 코어 룰 (TASK_DOC_RULE / GIT_RULE / CHANGELOG_RULE / MOCKUP_RULE)
+        ├─ rules/                        ← 코어 룰 5종 (TASKERY_RULE / TASK_DOC_RULE / GIT_RULE / CHANGELOG_RULE / MOCKUP_RULE)
         ├─ changelog/.gitkeep            ← 사용자 영역 빈 골격 (/task-close 갱신)
         ├─ flows/.gitkeep                ← 사용자 영역 빈 골격 (/task-dev 갱신)
         ├─ plans/.gitkeep                ← 사용자 영역 빈 골격 (/plan-init이 NNN_slug/ PLAN·ROADMAP 작성)
@@ -99,7 +97,6 @@ my-app/                                   ← 사용자 프로젝트
 │
 ├─ .project/                              ← 사용자 영역
 │   ├─ PROJECT.md                        ← /project-init 생성
-│   ├─ AGENT-GUIDE.md                    ← /project-init 생성
 │   ├─ LINKED-REPOS.md                   ← /project-init 생성
 │   ├─ GLOSSARY.md                       ← /project-init 생성 (도메인 용어집, stash FRICTION_LOG #3)
 │   ├─ SERVICE-POLICY.md / TECH-STACK.md / ARCHITECTURE.md  ← /project-init 작성 (제품 관통 — 정적 그룹 A)
@@ -121,8 +118,7 @@ my-app/                                   ← 사용자 프로젝트
 │   │   │   └─ completed/                ← 처리 완료 송신 메시지 보관
 │   │   └─ received/
 │   │       └─ completed/                ← 처리 완료 수신 메시지 보관
-│   ├─ FRICTION_LOG.md                   ← 불편 누적 (template에서 빈 템플릿)
-│   └─ TEST-GUIDE.md                     ← 검증 방법 (template에서 빈 템플릿) → /task-plan이 방식별 실행 경로 채움
+│   └─ FRICTION_LOG.md                   ← 불편 누적 (/log-friction 첫 기록 시 생성)
 │
 ├─ src/ ...                               ← 사용자 코드
 └─ package.json                           ← 사용자 프로젝트
@@ -158,7 +154,7 @@ my-app/                                   ← 사용자 프로젝트
 | 프로젝트별 git 룰 | [template/.project/rules/GIT_RULE.md](../template/.project/rules/GIT_RULE.md) → `~/.claude/rules/GIT_RULE.md` (글로벌 fallback) |
 | CHANGELOG 작성 룰 | [template/.project/rules/CHANGELOG_RULE.md](../template/.project/rules/CHANGELOG_RULE.md) |
 | UX/UI HTML 목업 룰 | [template/.project/rules/MOCKUP_RULE.md](../template/.project/rules/MOCKUP_RULE.md) |
-| 검증 명령 (사용자 프로젝트 — 코드 상태) | 사용자 프로젝트 `CLAUDE.md` `## 검증 명령` (빌드/린트/타입체크) |
+| 검증 명령 (사용자 프로젝트 — 코드 상태) | 사용자 프로젝트 `AGENTS.md` `## 검증 명령` (빌드/린트/타입체크) |
 | 테스트 명령 (사용자 프로젝트 — 테스트 실행) | 사용자 프로젝트 `CLAUDE.md` `## 테스트 명령` (단위/통합/E2E) |
 | manifest 구조 + 머지 로직 | [bin/lib.js](../bin/lib.js) + [bin/init.js](../bin/init.js) + [bin/update.js](../bin/update.js) |
 | 미래 옵션 카탈로그 | [plan/PLAYBOOK.md](PLAYBOOK.md) |
@@ -186,7 +182,7 @@ my-app/                                   ← 사용자 프로젝트
 
 | 자료 | 위치 | 용도 |
 |------|------|------|
-| 사용자 프로젝트 메인 진입점 | `<user-project>/CLAUDE.md` | 메인 세션 자동 정독 (검증 명령 + 룰 참조 + 스킬 9종 + Claude 전용 run-team) |
+| 사용자 프로젝트 메인 진입점 | `<user-project>/AGENTS.md` | 메인 세션 자동 정독 — 최상위 지침 + 리포 값(메타·명령). 사용법 전체는 `.project/rules/TASKERY_RULE.md`. Claude Code는 `CLAUDE.md`의 `@AGENTS.md` 임포트 경유 |
 | 스킬 본문 | `<user-project>/.claude/skills/*/SKILL.md` | 스킬 호출 시 메인이 정독 |
 | Hook | `<user-project>/.claude/hooks/*.sh` | Claude Code PreToolUse 자동 실행 |
 | task 양식 룰 | `<user-project>/.project/rules/TASK_DOC_RULE.md` | task 작성 시 메인이 정독 |
@@ -209,9 +205,9 @@ my-app/                                   ← 사용자 프로젝트
 
 **사용자 프로젝트에서 작업 시 정독 순서** (npx @angar2/taskery init 후):
 
-1. `<user-project>/CLAUDE.md` (메인 세션 자동 정독)
-2. `<user-project>/.project/AGENT-GUIDE.md` (활성 plan + 폴더 구조)
-3. `<user-project>/.project/plans/<활성 plan>/PLAN.md` (활성 plan 인덱스 진입)
+1. `<user-project>/AGENTS.md` (메인 세션 자동 정독 — Claude Code는 `CLAUDE.md`의 `@AGENTS.md` 임포트 경유)
+2. `<user-project>/.project/rules/TASKERY_RULE.md` (taskery 사용법 전체 — 필독)
+3. `npx @angar2/taskery status` (활성 plan) → `<user-project>/.project/plans/<활성 plan>/PLAN.md`
 4. 스킬 호출 시 메인이 해당 `<user-project>/.claude/skills/<skill>/SKILL.md` 정독
 
 **글로벌 룰** (`~/.claude/CLAUDE.md`)은 모든 세션에서 자동 적용 — 사용자 닉네임 / 반말 대화 / md 수정 이력 의무 등.
