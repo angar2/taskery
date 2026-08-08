@@ -12,7 +12,8 @@
  *   fork    — task 분기 (채번+워크트리+브랜치 생성 init 락 원자 실행, 0.3.2+) + 골격 task.md 자동 생성(--size/--title)
  *   backlog-add/get/mark — 활성 plan BACKLOG.md 조작 (채번/조회/확인 마킹, 코드화)
  *   set-status — task 헤더 상태 전이 (7×7 유효전이 검증, 코드화)
- *   plan-init — plan 생성 (채번+폴더+ROADMAP/PLAN/BACKLOG 골격+AGENT-GUIDE 갱신, 코드화)
+ *   plan-init — plan 생성 (채번+폴더+ROADMAP/PLAN/BACKLOG 골격+manifest.activePlan 갱신, 코드화)
+ *   plan-switch — 활성 plan 전환 (manifest.activePlan 갱신, 0.7.0+)
  *   close   — close 결정적 준비 (Phase커밋+status=closed+문서커밋+추적마커; 비가역 머지/정리는 스킬, 코드화)
  *   mcp     — stdio MCP 서버 기동 (lib core를 도구 8종으로 노출; Claude/Codex 등록)
  *   help    — 사용법 출력
@@ -47,6 +48,7 @@ function help() {
   npx @angar2/taskery backlog-mark <BL-NNN> <TASK-NNN> 백로그 확인 마킹
   npx @angar2/taskery set-status <TASK-NNN> <state>    task 상태 전이 (유효전이 검증)
   npx @angar2/taskery plan-init <slug> [--force]       plan 생성 (채번+폴더+골격+활성plan 갱신)
+  npx @angar2/taskery plan-switch <NNN_slug>           활성 plan 전환
   npx @angar2/taskery close <TASK-NNN>                 close 결정적 준비 (Phase커밋+status=closed+추적마커)
   npx @angar2/taskery mcp                              MCP stdio 서버 기동 (Claude .mcp.json / Codex codex mcp add 등록)
   npx @angar2/taskery help      도움말
@@ -105,7 +107,10 @@ switch (sub) {
     runScript('set-status.js');
     break;
   case 'plan-init':
-    runScript('plan.js');
+    runScript('plan.js', ['init']);
+    break;
+  case 'plan-switch':
+    runScript('plan.js', ['switch']);
     break;
   case 'close':
     runScript('close.js');
