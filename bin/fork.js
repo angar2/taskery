@@ -57,8 +57,10 @@ async function main() {
     console.error(`type은 ${VALID_TYPES.join(' | ')} 중 하나 (받음: ${type})`);
     process.exit(1);
   }
-  if (!/^(BL-\d+|RM-\d+|DR)$/.test(src)) {
-    console.error(`src는 BL-NNN | RM-NNN | DR 형식 (받음: ${src})`);
+  // ST-N = 로드맵 Stage 출처 (ROADMAP은 Stage 단위·RM 채번 없음 — recordion FRICTION 2026-08-03 반영).
+  // RM-NNN은 구형 호환으로 계속 수용.
+  if (!/^(BL-\d+|RM-\d+|ST-\d+|DR)$/.test(src)) {
+    console.error(`src는 BL-NNN | ST-N(로드맵 Stage) | DR 형식 (받음: ${src}. 구형 RM-NNN도 호환)`);
     process.exit(1);
   }
   if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(slug)) {
