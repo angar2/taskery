@@ -247,7 +247,7 @@ function getWorktreesRoot(projectId) {
 }
 
 function getWorktreePath(projectId, { taskNum, src, slug }) {
-  // src = 'BL-NNN' | 'RM-NNN' | 'DR'
+  // src = 'BL-NNN' | 'ST-N'(로드맵 Stage) | 'DR' (구형 'RM-NNN' 호환)
   const nnn = String(taskNum).padStart(3, '0');
   return path.join(getWorktreesRoot(projectId), `TASK-${nnn}_${src}_${slug}`);
 }
@@ -388,8 +388,9 @@ async function forkTask(mainWtPath, { type, dev, src, slug }) {
     if (parent === 'HEAD') {
       throw new Error('메인 워크트리가 detached HEAD — 부모로 삼을 브랜치에 체크아웃 필요.');
     }
-    // SSoT 안전망 — 같은 출처(BL-NNN/RM-NNN)가 이미 진행중이면 거부. DR은 별도 ID 없어 검사 제외.
-    if (src !== 'DR') {
+    // SSoT 안전망 — 같은 항목 출처(BL-NNN/구형 RM-NNN)가 이미 진행중이면 거부.
+    // DR(별도 ID 없음)·ST-N(Stage 하나에서 복수 task가 정상)은 검사 제외.
+    if (/^(BL|RM)-/.test(src)) {
       const dup = getActiveTasks(mainWtPath).find((t) => t.src === src);
       if (dup) {
         throw new Error(`${src} 이미 진행중 (${dup.branch}) — 다른 세션이 같은 항목 진행`);

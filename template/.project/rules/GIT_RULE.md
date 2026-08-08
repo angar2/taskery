@@ -51,7 +51,7 @@
 | 출처 | 의미 | 채번 주체 |
 |------|------|---------|
 | `BL-NNN` | 백로그 항목 | `/add-backlog` 스킬 (0.1.2). plan(기능 그룹)별 `.project/tasks/<NNN_slug>/BACKLOG.md`에 누적 |
-| `RM-NNN` | 로드맵 항목 | `/plan-init` (RM-NNN 채번 자동화는 후속 — 1차는 사용자 수동 명시) |
+| `ST-N` | 로드맵 Stage | 별도 채번 없음 — ROADMAP의 Stage 번호 그대로 (`ST-2` = Stage 2). Stage 하나에서 복수 task 정상(동일 출처 중복 게이트 미적용). 구형 `RM-NNN`은 호환 수용만 |
 | `DR` | 직접 요구사항 (별도 ID 없음) | 사용자 발화 → `/task-init` |
 
 ### 브랜치 예시
@@ -59,7 +59,7 @@
 ```
 feature/claude_TASK-007_BL-003_login-feature
 bug/angar2_TASK-012_DR_mobile-form-refresh
-refactor/claude_TASK-018_RM-002_api-cleanup
+refactor/claude_TASK-018_ST-2_api-cleanup
 docs/claude_TASK-021_DR_readme-rewrite
 ```
 
@@ -316,3 +316,4 @@ git -C "$MAIN_WT" branch --list \
 | 2026-06-28 | 워크트리 생성 메커니즘 갱신 — `git worktree add` 직접 실행 → `npx @angar2/taskery fork`(init 락 안에서 채번+분기 원자 실행). 병렬 task-init 번호 충돌(레이스) 차단 |
 | 2026-06-25 | §멀티세션 워크트리 정책에 "워크트리 실행 환경" 추가 — 워크트리에 의존성 심링크 금지(개발 서버 fs 접근 제한으로 로딩 실패), 실행·검수 task는 워크트리 안에 의존성 실제 마련. FRICTION 검토 F6 반영 |
 | 2026-06-25 | §멀티세션 워크트리 정책에 "멀티세션 검수 환경" 추가 — task별 dev 서버 포트 격리(메인=기준 포트, task=기준+TASK번호) + 터널 독립 + close 시 자기 것만 종료(광역 종료 금지) + 사용자 검수 시점 서버 자동 기동(task-test UNCERTAIN/PASS·task-dev 종료, FAIL 제외). FRICTION 검토 F7 반영 |
+| 2026-08-08 | 출처 표기 개편 — `RM-NNN`(로드맵 항목 채번, 미구현) → `ST-N`(ROADMAP Stage 번호 그대로, 채번 불요·동일 출처 중복 게이트 미적용). 구형 RM-NNN은 호환 수용만. + §커밋 순서에 "Phase↔파일 매핑 규칙" 신설 — 다중 Phase 파일=이른 Phase 편입+표기 / 빌드 산출물=마지막 Phase 자동 편입 / 일반 미매핑만 blocked / 중간 커밋 독립 빌드 비보장 명문화. stash·recordion FRICTION_LOG 반영 |
