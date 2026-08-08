@@ -205,6 +205,7 @@ stash FRICTION_LOG #14+19 / #25 반영 — 유닛 테스트는 본 단계에서 
 
 self-check FAIL → `developing` 그대로 유지 (수정 + 재PASS 시까지).
 
+- **기동 전 확인 필수** — 새로 띄우기 전에 해당 포트·프로세스가 이미 살아 있는지 확인한다. `Port … is in use` 류 경고는 *이미 떠 있다*는 뜻이므로 무시하고 재기동하지 않는다. 종료할 때는 부모 프로세스만이 아니라 **자식 프로세스(브라우저·렌더러 창 등)까지** 확인해 정리한다 (recordion FRICTION 2026-08-05 — 중복 기동 + 창 잔존으로 두 번 지적, TASK-005 재발).
 **self-check 게이트 hard-fail 조건**:
 - 완료 조건 미체크 (Phase `진행: [ ]` 잔존) → `developed` 전환 차단
 - Bash 에러 (검증 명령 fail) → `developed` 전환 차단
