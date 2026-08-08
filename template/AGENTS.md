@@ -133,6 +133,8 @@
 | GIT_RULE | `.project/rules/GIT_RULE.md` (있으면) → 글로벌 `~/.claude/rules/GIT_RULE.md` (fallback) | git 정책 (브랜치 / 커밋 / 머지) |
 | CHANGELOG_RULE | `.project/rules/CHANGELOG_RULE.md` | CHANGELOG 작성 정책 (위치 / 형식 / 필수 필드) |
 | MOCKUP_RULE | `.project/rules/MOCKUP_RULE.md` | UX/UI task의 HTML 목업 위치 / 형식 / 네이밍 |
+| DEV_RULE (옵션) | `.project/rules/DEV_RULE.local.md` | 이 프로젝트 고유의 구현·테스트 실행 정책. 있으면 `/task-dev`가 읽고 겹치는 조항은 로컬 우선 (코어 파일 없음 — 로컬 전용) |
+| TEST_RULE (옵션) | `.project/rules/TEST_RULE.local.md` | 이 프로젝트 고유의 검증 범위·방식 정책. 있으면 `/task-dev`·`/task-test`·`/task-plan`이 읽고 겹치는 조항은 로컬 우선 (격리 세션에도 전달. 코어 파일 없음 — 로컬 전용) |
 | `*.local.md` | `.project/rules/` | (옵션) 사용자 오버라이드 — `*.local.md` suffix는 npx 미터치 |
 
 ---
