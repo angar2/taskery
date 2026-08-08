@@ -104,15 +104,17 @@ FAIL 시:
 ### Step 3 — 결정적 준비 (`task_close` 도구)
 
 `task_close` 도구 (또는 `npx @angar2/taskery close TASK-NNN`) 한 번으로 다음을 코드가 수행:
-- **Phase 기능 커밋** — uncommitted 코드 변경분(`.project/` 외)을 task.md `### Phase N`의 `- 파일:` 필드에 매핑해 Phase 순서대로 자동 커밋 (GIT_RULE 메시지 형식, 태그 자동: feature→`feat:` / bug→`fix:` / improve→`improve:` / refactor→`refactor:` / docs·chore→`docs:`).
+- **Phase 기능 커밋** — uncommitted 코드 변경분(`.project/` 외)을 task.md `### Phase N`의 `- 파일:` 필드에 매핑해 Phase 순서대로 자동 커밋 (GIT_RULE 메시지 형식, 태그 자동: feature→`feat:` / bug→`fix:` / improve→`improve:` / refactor→`refactor:` / docs·chore→`docs:`). 매핑 폴백은 GIT_RULE §"Phase↔파일 매핑 규칙" — 한 파일이 여러 Phase에 걸치면 *가장 이른 Phase*, Dev Plan에 없는 *빌드 산출물*(`*.pbxproj`·잠금파일)은 *마지막 Phase*에 자동 편입(커밋 메시지에 사유 표기).
 - **status → `closed`** — task 문서 헤더 (`.gitignore` 케이스 자동 판정 — 등록=메인WT / 미등록=워크트리).
 - **flows/문서 커밋** (미등록 케이스) — 워크트리 안 `.project/flows/` + task 문서.
 - **추적 마커 빈커밋** — 부모 브랜치보다 앞선 커밋이 0개(코드 0·`.project` gitignore인 docs/분석 task)면 채번 보존용 1개.
 
-반환 JSON `{ prepped, branch, parent, wtPath, registered, commits, aheadOfParent }`. **`parent`(= task 헤더에 기록된 부모 브랜치, 예 `dev` / `dev_feat_x`)가 이후 Step 4·5의 rebase·머지 대상이다** — 아래 명령의 `$PARENT`로 사용. (task-init이 fork 시점 현재 브랜치를 헤더에 기록해뒀다.)
+반환 JSON `{ prepped, branch, parent, wtPath, registered, commits, aheadOfParent, multiPhase?, autoAssigned? }`. **`parent`(= task 헤더에 기록된 부모 브랜치, 예 `dev` / `dev_feat_x`)가 이후 Step 4·5의 rebase·머지 대상이다** — 아래 명령의 `$PARENT`로 사용. (task-init이 fork 시점 현재 브랜치를 헤더에 기록해뒀다.)
+
+- **`multiPhase` / `autoAssigned`가 있으면 Step 8 보고에 그대로 옮긴다** — 코드가 자동 편입한 파일과 그 근거(어느 Phase로 갔는지)를 사용자가 볼 수 있어야 한다. 재배치 목적의 수동 커밋 재작업은 하지 않는다(GIT_RULE: 중간 커밋 독립 빌드 비보장).
 
 **콜백 (반환 `blocked` 필드 / npx는 특수 exit — 메인이 LLM 판단 후 처리):**
-- **`blocked:'mapping'`** (npx exit 2 — `{files, phases, reason}`): Dev Plan `- 파일:` 필드가 변경 파일을 못 덮음(미매핑) 또는 한 파일이 여러 Phase에 걸침. → 메인이 Dev Plan + `git -C "$WT_PATH" diff --name-only` 정독 후 **코드 변경분을 Phase별로 수동 커밋**(GIT_RULE 형식, 위 태그) → `task_close` 도구(또는 `npx ... close`) **재호출**. 코드가 이미 커밋돼 있으므로 close가 status=closed + 문서 커밋 + 마커를 자동 완료한다.
+- **`blocked:'mapping'`** (npx exit 2 — `{files, phases, reason}`): Dev Plan `- 파일:` 필드가 변경 파일을 못 덮음(**미매핑 — 빌드 산출물이 아닌 일반 파일 한정**. 다중 Phase 파일·산출물은 위 폴백으로 자동 처리돼 여기 오지 않는다). → 메인이 Dev Plan + `git -C "$WT_PATH" diff --name-only` 정독 후 **코드 변경분을 Phase별로 수동 커밋**(GIT_RULE 형식, 위 태그) → `task_close` 도구(또는 `npx ... close`) **재호출**. 코드가 이미 커밋돼 있으므로 close가 status=closed + 문서 커밋 + 마커를 자동 완료한다.
 - **`blocked:'status'`** (npx exit 3 — `{current}`): status가 `tested`가 아님. Step 1~2 통과했다면 발생 X. 발생 시 사용자 보고 + 중단.
 
 > **close 후 task 문서 수정 금지** — close가 status=`closed`로 잠갔다(`closed-immutable.sh` hook 차단). 이후 Step 4 충돌 해결 내역은 *task 문서가 아니라 rebase/머지 커밋 메시지*에 기록한다.
@@ -247,6 +249,7 @@ git -C "$MAIN_WT" worktree remove "$WT_PATH"
 - 작업 브랜치: <BRANCH> (삭제 / 보존)
 - 워크트리: <WT_PATH> (제거 / 보존)
 - 커밋: Phase <N>개 + 태스크 문서 + (CHANGELOG)
+- 자동 편입: <multiPhase / autoAssigned 있을 때만 — 예: `src/ipc.ts` Phase 2·5 → Phase 2 / `project.pbxproj` → Phase 3(빌드 산출물)>
 - 부모 브랜치 병합: <PARENT> ← --no-ff 완료 ($MERGE_COMMIT)
 - 충돌 해결: <건수, 자료 한계 보고 있으면 포함>
 - 상태: tested → closed

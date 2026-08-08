@@ -189,7 +189,7 @@ server.registerTool(
     inputSchema: {
       type: z.enum(VALID_TYPES),
       dev: z.string().describe('개발자 식별자 (claude / angar2 등)'),
-      src: z.string().regex(/^(BL-\d+|RM-\d+|DR)$/, 'BL-NNN | RM-NNN | DR'),
+      src: z.string().regex(/^(BL-\d+|RM-\d+|ST-\d+|DR)$/, 'BL-NNN | ST-N(로드맵 Stage) | DR (구형 RM-NNN 호환)'),
       slug: z.string().regex(/^[a-z0-9]+(-[a-z0-9]+)*$/, '영어 kebab-case'),
       size: z.enum(VALID_SIZES).optional(),
       title: z.string().optional().describe('한국어 제목 (size와 함께 주면 골격 생성)'),

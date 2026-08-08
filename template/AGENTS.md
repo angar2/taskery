@@ -40,7 +40,7 @@
 - **메인 워크트리 = 부모 브랜치 고정**: 메인 워크트리는 `/task-init` 시점에 체크아웃돼 있는 브랜치(= 그 task의 *부모 브랜치*)를 유지한다. 개인 기본은 `dev`, 회사/로드맵은 `dev_feat_x` / `master` 등 — taskery는 *현재 서 있는 브랜치*를 부모로 삼는다(특정 이름 고정 X). 모든 태스크 작업은 *예외 없이* 별도 워크트리에서 수행. 진행 중 태스크가 있는 동안 메인 워크트리 HEAD를 옮기는 어떤 작업(`git checkout <task-branch>` / `git switch` / `git reset` HEAD 이동 / `git rebase` HEAD 이동 등)도 영구 금지 — close가 부모로 되병합해야 하므로 부모에 서 있어야 한다. *"잠깐만 메인에서"* / *"테스트 한 번만 메인에서"* 같은 예외 발화도 거부 — 별도 워크트리에서 처리. (부모 브랜치 자체를 바꾸려면 진행 중 태스크가 없을 때 원하는 브랜치로 체크아웃 후 새 task 시작.)
 - **워크트리 위치**: `~/.taskery/worktrees/<projectId>/TASK-NNN_<출처>_<슬러그>/`
   - `<projectId>`: `.taskery-manifest.json` `projectId` (8자 hex)
-  - `<출처>`: `BL-NNN` / `RM-NNN` / `DR`
+  - `<출처>`: `BL-NNN`(백로그) / `ST-N`(로드맵 Stage) / `DR`(직접 요구사항)
 - **`/task-init`이 부모 브랜치에서 워크트리 생성** + **`/task-close`가 부모 브랜치 머지 + 워크트리 자동 제거** (자동 흐름. 보존 키워드 `keep` / `브랜치 남겨` 등 발화 시 둘 다 보존).
 - **메인 메타 접근**: 워크트리에서 `.project/`, `AGENTS.md` 등 접근 시 *메인 워크트리 절대 경로* 사용:
   ```sh

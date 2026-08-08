@@ -247,7 +247,7 @@ function getWorktreesRoot(projectId) {
 }
 
 function getWorktreePath(projectId, { taskNum, src, slug }) {
-  // src = 'BL-NNN' | 'RM-NNN' | 'DR'
+  // src = 'BL-NNN' | 'ST-N'(로드맵 Stage) | 'DR' (구형 'RM-NNN' 호환)
   const nnn = String(taskNum).padStart(3, '0');
   return path.join(getWorktreesRoot(projectId), `TASK-${nnn}_${src}_${slug}`);
 }
@@ -388,8 +388,9 @@ async function forkTask(mainWtPath, { type, dev, src, slug }) {
     if (parent === 'HEAD') {
       throw new Error('메인 워크트리가 detached HEAD — 부모로 삼을 브랜치에 체크아웃 필요.');
     }
-    // SSoT 안전망 — 같은 출처(BL-NNN/RM-NNN)가 이미 진행중이면 거부. DR은 별도 ID 없어 검사 제외.
-    if (src !== 'DR') {
+    // SSoT 안전망 — 같은 항목 출처(BL-NNN/구형 RM-NNN)가 이미 진행중이면 거부.
+    // DR(별도 ID 없음)·ST-N(Stage 하나에서 복수 task가 정상)은 검사 제외.
+    if (/^(BL|RM)-/.test(src)) {
       const dup = getActiveTasks(mainWtPath).find((t) => t.src === src);
       if (dup) {
         throw new Error(`${src} 이미 진행중 (${dup.branch}) — 다른 세션이 같은 항목 진행`);
@@ -438,12 +439,15 @@ const BACKLOG_PLACEHOLDER =
 function getActiveVersion(mainWtPath) {
   // .project/AGENT-GUIDE.md '## 활성 plan 버전' 섹션 다음 비어 있지 않은 첫 줄에서 활성 plan 식별자 추출.
   // plan = 기능 그룹 단위 → 식별자는 vX.X 버전명 또는 기능 그룹 slug(compare-products 등) 모두 가능.
+  // 헤딩 줄 끝 부가 텍스트(HTML 주석 등) 허용 — project-init 골격이 헤딩에 주석을 달므로
+  // 접두 일치로 판정(_setActivePlan의 findIndex 기준과 동일). 완전 일치 요구 시
+  // 자기 골격을 자기가 못 읽는 자기모순 (recordion FRICTION 2026-08-06, scaffoldError 6회).
   const guidePath = path.join(mainWtPath, '.project', 'AGENT-GUIDE.md');
   if (!fs.existsSync(guidePath)) {
     throw new Error(`.project/AGENT-GUIDE.md 부재. /project-init 먼저 호출.`);
   }
   const content = fs.readFileSync(guidePath, 'utf8');
-  const sec = content.match(/##\s*활성 plan 버전\s*\n+([^\n]+)/);
+  const sec = content.match(/^##\s*활성 plan 버전[^\n]*\n+([^\n]+)/m);
   if (!sec) {
     throw new Error(`.project/AGENT-GUIDE.md '## 활성 plan 버전' 섹션 부재.`);
   }
@@ -1006,10 +1010,26 @@ function _porcelainFiles(wtPath) {
     .filter(Boolean);
 }
 
+// 빌드 산출물 판정 — 소스 변경에 도구가 따라 바꾸는 파생 파일 (Phase 소속을 묻는 것 자체가 무의미).
+// Dev Plan에 명시 안 돼도 미매핑 blocked 대신 마지막 Phase에 자동 편입 (stash·recordion FRICTION: pbxproj 미매핑만 6회).
+const BUILD_ARTIFACT_RE = [
+  /\.pbxproj$/,
+  /(^|\/)package-lock\.json$/,
+  /(^|\/)yarn\.lock$/,
+  /(^|\/)pnpm-lock\.yaml$/,
+  /(^|\/)Cargo\.lock$/,
+  /(^|\/)Gemfile\.lock$/,
+  /(^|\/)Podfile\.lock$/,
+];
+
 function splitUncommittedByPhase(wtPath, taskMdPath, meta) {
   // 코드 변경분(.project/ 외)을 Dev Plan Phase에 매핑해 Phase별 자동 커밋. meta: { taskNum, type }.
-  //   - 모든 코드 파일이 정확히 1 Phase에 매핑 → Phase 순서대로 자동 커밋.
-  //   - 미매핑/다중매핑/Phase 파싱 불가 → { ambiguous } 반환(커밋 X) → 스킬이 수동 처리.
+  // 매핑 폴백 3규칙 (stash 6회 + recordion 5회 blocked 마찰 반영 — 11회 전부 기계적 편입이었음):
+  //   1. 다중 Phase 매핑 → 가장 이른 Phase에 편입 + 커밋 메시지에 '(Phase a·b 변경 포함)' 표기.
+  //      뒤 Phase가 앞 Phase 타입·함수를 참조하므로 이른 쪽이 의존 방향과 일치. 중간 커밋 독립 빌드는 비보장(GIT_RULE 명문).
+  //   2. 미매핑 + 빌드 산출물(BUILD_ARTIFACT_RE) → 매핑된 그룹 중 마지막 Phase(없으면 Dev Plan 마지막)에
+  //      자동 편입 + '(빌드 산출물 자동 편입)' 표기.
+  //   3. 미매핑 + 일반 파일 → { ambiguous } 반환(커밋 X) — 계획 누락 가능성이라 사람 판단으로 유지.
   // .project/ 메타(flows/문서/changelog)는 제외 — closeTask가 별도 커밋.
   const codeFiles = _porcelainFiles(wtPath).filter((f) => !f.startsWith('.project/'));
   if (codeFiles.length === 0) return { committed: [], empty: true };
@@ -1028,21 +1048,44 @@ function splitUncommittedByPhase(wtPath, taskMdPath, meta) {
       )
       .map(({ i }) => i);
   const fileToPhase = {};
+  const multiPhase = []; // 규칙 1 적용분 — { file, phases:[num...], assignedTo }
+  const artifactFiles = []; // 규칙 2 후보 — 매핑 확정 후 편입 Phase 결정
   for (const f of codeFiles) {
     const m = matchOf(f);
-    if (m.length !== 1) {
+    if (m.length === 1) {
+      fileToPhase[f] = m[0];
+    } else if (m.length > 1) {
+      const earliest = Math.min(...m);
+      fileToPhase[f] = earliest;
+      multiPhase.push({ file: f, phases: m.map((i) => phases[i].num), assignedTo: phases[earliest].num });
+    } else if (BUILD_ARTIFACT_RE.some((re) => re.test(f))) {
+      artifactFiles.push(f);
+    } else {
       return {
         ambiguous: true,
-        reason: m.length === 0 ? `Phase 미매핑: ${f}` : `다중 Phase 매핑: ${f}`,
+        reason: `Phase 미매핑: ${f}`,
         files: codeFiles,
         phases: phases.map((p) => ({ num: p.num, name: p.name, files: p.files })),
       };
     }
-    fileToPhase[f] = m[0];
   }
+  // 규칙 2 — 산출물 편입: 매핑된 그룹 중 마지막 Phase, 하나도 없으면 Dev Plan 마지막 Phase
+  const autoAssigned = [];
+  if (artifactFiles.length > 0) {
+    const mappedIdx = Object.values(fileToPhase);
+    const lastIdx = mappedIdx.length > 0 ? Math.max(...mappedIdx) : phases.length - 1;
+    for (const f of artifactFiles) {
+      fileToPhase[f] = lastIdx;
+      autoAssigned.push({ file: f, assignedTo: phases[lastIdx].num });
+    }
+  }
+  // 파일별 커밋 메시지 표기 (자동 편입의 근거를 커밋에 남김 — 코드가 몰래 정한 걸 드러낸다)
+  const noteOf = {};
+  for (const x of multiPhase) noteOf[x.file] = ` (Phase ${x.phases.join('·')} 변경 포함)`;
+  for (const x of autoAssigned) noteOf[x.file] = ' (빌드 산출물 자동 편입)';
   // Phase별 그룹 → 순서대로 커밋
   const groups = new Map();
-  for (const f of codeFiles) {
+  for (const f of Object.keys(fileToPhase)) {
     const i = fileToPhase[f];
     if (!groups.has(i)) groups.set(i, []);
     groups.get(i).push(f);
@@ -1056,18 +1099,22 @@ function splitUncommittedByPhase(wtPath, taskMdPath, meta) {
     execFileSync('git', ['-C', wtPath, 'add', '--', ...grp], { stdio: 'pipe' });
     const msg =
       `${tag}: [TASK-${nnn}] Phase ${p.num} - ${p.name}\n\n` +
-      grp.map((f) => `- ${f}`).join('\n') +
+      grp.map((f) => `- ${f}${noteOf[f] || ''}`).join('\n') +
       `\n- 사유: ${p.name}`;
     execFileSync('git', ['-C', wtPath, 'commit', '-m', msg], { stdio: 'pipe' });
     committed.push({ phase: p.num, name: p.name, files: grp });
   }
-  return { committed };
+  const result = { committed };
+  if (multiPhase.length > 0) result.multiPhase = multiPhase;
+  if (autoAssigned.length > 0) result.autoAssigned = autoAssigned;
+  return result;
 }
 
 async function closeTask(mainWtPath, { taskNum }, opts = {}) {
   // 결정적 준비만 — 비가역(머지·정리)·충돌 해결은 스킬이 후속 수행.
   // 반환: { blocked } (게이트 미충족/매핑 모호) 또는
-  //   { prepped, branch, parent, wtPath, registered, commits, aheadOfParent }. parent = 스킬 머지 대상.
+  //   { prepped, branch, parent, wtPath, registered, commits, aheadOfParent,
+  //     multiPhase?, autoAssigned? (매핑 폴백 적용 시 내역) }. parent = 스킬 머지 대상.
   const active = getActiveTasks(mainWtPath).find((t) => t.taskNum === taskNum);
   if (!active) {
     throw new Error(`TASK-${String(taskNum).padStart(3, '0')} 진행중 브랜치 없음 (SSoT 조회).`);
@@ -1158,7 +1205,7 @@ async function closeTask(mainWtPath, { taskNum }, opts = {}) {
     gitCapture(wtPath, ['rev-list', '--count', `${parent}..HEAD`], { allowFail: true }) || '0',
     10,
   );
-  return {
+  const prepResult = {
     prepped: true,
     taskNum,
     branch: active.branch,
@@ -1169,6 +1216,10 @@ async function closeTask(mainWtPath, { taskNum }, opts = {}) {
     commits,
     aheadOfParent: aheadFinal,
   };
+  // 매핑 폴백 적용 내역 노출 — 코드가 자동 편입한 걸 스킬·사용자가 볼 수 있게
+  if (split.multiPhase) prepResult.multiPhase = split.multiPhase;
+  if (split.autoAssigned) prepResult.autoAssigned = split.autoAssigned;
+  return prepResult;
 }
 
 module.exports = {
