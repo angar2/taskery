@@ -108,7 +108,8 @@ taskery prune
 
 ```
 my-app/
-├─ CLAUDE.md                              # AI 에이전트 진입 문서
+├─ AGENTS.md                              # AI 에이전트 진입 문서 (본문 단일 소스)
+├─ CLAUDE.md                              # Claude Code용 — `@AGENTS.md` 임포트 한 줄
 ├─ .taskery-manifest.json                 # 패키지 업데이트 추적
 ├─ .gitignore
 ├─ .claude/
@@ -117,19 +118,19 @@ my-app/
 │   └─ hooks/<hook-name>.sh               # 2 hook
 └─ .project/
     ├─ PROJECT.md                         # 프로젝트 개요
-    ├─ AGENT-GUIDE.md                     # AI 에이전트 가이드
     ├─ LINKED-REPOS.md                    # 관계 리포지토리 정보
     ├─ GLOSSARY.md                        # 도메인 용어집 (영문/한글 표기 일관성)
     ├─ .env                               # 사용자 설정 환경변수 (관계 리포지토리 환경변수 등)
     ├─ SERVICE-POLICY.md / TECH-STACK.md / ARCHITECTURE.md   # 제품 관통 문서 — 정적 (project-init 작성)
     ├─ DATA-MODEL.md / API-SPEC.md / FEATURES.md / UX-UI.md  # 제품 관통 문서 — 성장 (골격 → plan·task가 채움)
     ├─ rules/
+    │   ├─ TASKERY_RULE.md                # taskery 사용 설명서 (세션 필독)
     │   ├─ TASK_DOC_RULE.md               # task 문서 작성 규칙
     │   ├─ GIT_RULE.md                    # 로컬 깃 운영 규칙
     │   ├─ CHANGELOG_RULE.md              # CHANGELOG 작성 규칙
     │   ├─ MOCKUP_RULE.md                 # UX/UI HTML 목업 규칙
-    │   ├─ DEV_RULE.local.md              # (선택) 이 프로젝트의 구현·테스트 실행 방식
-    │   ├─ TEST_RULE.local.md             # (선택) 이 프로젝트의 검증 범위·방식
+    │   ├─ DEV_RULE.local.md              # 이 프로젝트의 구현 정책 (모든 리포 필수)
+    │   ├─ TEST_RULE.local.md             # 이 프로젝트의 검증 실행 경로·범위 (모든 리포 필수)
     │   └─ *.local.md                     # 사용자 오버라이드 규칙 (패키지 업데이트 대상 제외)
     ├─ plans/                             # plan(기능 그룹)별 PLAN.md / ROADMAP.md (<NNN_slug>/)
     ├─ tasks/                             # task 문서 (<NNN_slug>/BACKLOG.md / spec-diffs / screenshots / mockup 포함)
@@ -138,16 +139,17 @@ my-app/
     ├─ shared/                            # 관계 리포지토리 소통 메세지함
     │   ├─ sent/completed/
     │   └─ received/completed/
-    ├─ FRICTION_LOG.md                    # taskery 불편사항 누적 로그
-    └─ TEST-GUIDE.md                      # 검증 방법 (방식별 이 프로젝트 실행 경로 — /task-plan이 채움)
+    └─ FRICTION_LOG.md                    # taskery 불편사항 누적 로그 (/log-friction 첫 기록 시 생성)
 ```
 
 `.project/`는 플랫폼 무관 공통 자산이다. 진입 문서와 에이전트 자산 위치는 선택한 플랫폼에 따라 갈린다.
 
 | 플랫폼 | 진입 문서 | 스킬 위치 | hook 위치 | hook 등록 |
 |--------|----------|----------|----------|----------|
-| Claude Code | `CLAUDE.md` | `.claude/skills/` | `.claude/hooks/` | `.claude/settings.json` |
+| Claude Code | `CLAUDE.md` (→ `AGENTS.md` 임포트) | `.claude/skills/` | `.claude/hooks/` | `.claude/settings.json` |
 | Codex | `AGENTS.md` | `.agents/skills/` | `.codex/hooks/` | `.codex/config.toml` |
+
+진입 문서 본문은 `AGENTS.md` 한 벌이다. Claude Code는 `AGENTS.md`를 자동으로 읽지 않으므로 `CLAUDE.md`가 이를 임포트한다.
 
 > 스킬 9종과 `git-guard.sh`는 양 플랫폼 동일 자산이다. 진입 문서, hook 등록 방식, 완료 보호 hook(`closed-immutable.sh`)의 구현만 플랫폼별로 다르다. `init`에서 둘 다 선택하면 폴더가 갈려 충돌 없이 공존한다.
 
@@ -207,7 +209,7 @@ my-app/
 
 | 스킬 | 생성 위치 | 생성 문서 |
 |------|---------|---------|
-| `/project-init` | `.project/` | PROJECT.md / AGENT-GUIDE.md / LINKED-REPOS.md / GLOSSARY.md / .env + 제품 관통 문서(SERVICE-POLICY / TECH-STACK / ARCHITECTURE 작성, DATA-MODEL / API-SPEC / FEATURES / UX-UI 골격 — 타입 해당분) |
+| `/project-init` | `.project/` | PROJECT.md / LINKED-REPOS.md / GLOSSARY.md / .env + 제품 관통 문서(SERVICE-POLICY / TECH-STACK / ARCHITECTURE 작성, DATA-MODEL / API-SPEC / FEATURES / UX-UI 골격 — 타입 해당분) + 리포 로컬 룰 초안(TEST_RULE.local.md / DEV_RULE.local.md) |
 | `/plan-init` | `.project/plans/<NNN_slug>/` | PLAN.md / ROADMAP.md + 제품 관통 문서 FEATURES/UX-UI에 기능 그룹 의도 추가 (제품 관통 문서 전체를 한꺼번에 만들지는 않음) |
 | `/task-init` | `.project/tasks/<NNN_slug>/` | `<NNN>_<slug>.md` (단일 파일) 또는 `TASK-<NNN>_<slug>/task.md` (사용자 명시 시 폴더 승격) |
 
@@ -236,7 +238,7 @@ cd <project-name>
 npx @angar2/taskery init
 ```
 
-이후 메인 세션에 진입(진입 문서 `CLAUDE.md` 또는 `AGENTS.md` 자동 정독)하여 다음 시퀀스로 호출한다. task 5 스킬은 호출과 동시에 상태를 전이시킨다.
+이후 메인 세션에 진입(진입 문서 자동 정독 — 사용법 전체는 `.project/rules/TASKERY_RULE.md`)하여 다음 시퀀스로 호출한다. task 5 스킬은 호출과 동시에 상태를 전이시킨다.
 
 ```
 /project-init                  # 진입 메타 문서와 디렉토리 골격 생성

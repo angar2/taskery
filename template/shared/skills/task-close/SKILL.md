@@ -80,11 +80,11 @@ LOCK_FILE="$HOME/.taskery/${PROJECT_ID}.merge.lock"
      - `$MAIN_WT/.project/rules/GIT_RULE.md` (프로젝트별 — 우선)
      - `~/.claude/rules/GIT_RULE.md` (글로벌)
      둘 다 없으면 종료 + *"GIT_RULE 누락"* 보고.
-   - **로컬 오버라이드** — `$MAIN_WT/.project/rules/GIT_RULE.local.md`가 있으면 함께 Read하고, 겹치는 항목은 **로컬 우선** 적용한다 (`npx update` 미터치 영역). 단 로컬 룰이 뒤집을 수 없는 것: 부모 브랜치 직접 커밋 금지 · `--no-ff` 강제 · 머지 락 직렬화 · destructive 명령 사용자 승인.
+   - **로컬 오버라이드** — `$MAIN_WT/.project/rules/GIT_RULE.local.md`가 있으면 함께 Read하고, 겹치는 항목은 **로컬 우선**, **겹치지 않는 로컬 조항도 그대로 준수**한다 (`TASKERY_RULE` §7 — 구속력은 코어와 동등). 단 로컬 룰이 뒤집을 수 없는 것: 부모 브랜치 직접 커밋 금지 · `--no-ff` 강제 · 머지 락 직렬화 · destructive 명령 사용자 승인.
 
 ### Step 2 — 최종 검증 명령 재실행 (게이트)
 
-`$MAIN_WT/CLAUDE.md`의 `## 검증 명령` (빌드/린트/타입체크) 만 재실행. **하나라도 FAIL이면 close 차단**.
+`$MAIN_WT/AGENTS.md`의 `## 검증 명령` (빌드/린트/타입체크) 만 재실행. **하나라도 FAIL이면 close 차단**.
 
 | 명령 | 결과 |
 |------|------|
@@ -231,9 +231,16 @@ git -C "$MAIN_WT" merge --no-ff "$BRANCH"
 - 사용자 부정 반응 발화 누적
 - **충돌 해결에서 *판단 불가 (4-c)* 1회 이상** — 멀티세션 자료 한계 신호
 
-분기:
-- 감지 신호 있음 → *"이번 task에서 X 부분이 마찰이었어 보여 — `/log-friction`으로 등록할까?"* OK 시 자동 발동.
-- 없음 → prompt X.
+분기 — **감지했으면 성격부터 가른다** (`TASKERY_RULE` §9):
+
+| 성격 | 판단 기준 | 제안 |
+|------|----------|------|
+| **taskery 자체의 결함** | 모든 리포에서 똑같이 발생할 문제 (스킬 지시 모순 / CLI 반환값이 문서와 다름 / 절차 자체의 빈틈) | *"이번 task에서 X 부분이 마찰이었어 보여 — `/log-friction`으로 등록할까?"* OK 시 자동 발동 |
+| **이 리포의 특성** | 이 프로젝트에서만 해당하는 방식·관행 (테스트 범위·실행 방법·빌드 전제·명명 관행) | *"이걸 이 리포 규칙(`<문서>.local.md`)으로 등록할까?"* **OK 받은 후에만** 해당 `.local.md`를 생성·추가한다. 문안은 사용자와 확정한 내용으로 적는다 |
+
+- 둘 다 해당하면 **둘 다 제안**한다.
+- 신호 없음 → prompt X.
+- 로컬 룰 등록은 **반드시 질문 후 승인**을 거친다 — 임의 생성 금지.
 
 ### Step 7 — 워크트리 / 브랜치 정리 (비가역 — git-guard 면제 조항)
 
@@ -282,7 +289,7 @@ git -C "$MAIN_WT" worktree remove "$WT_PATH"
 
 ## 도구 가이드
 
-- **Read**: GIT_RULE / task 파일 / CLAUDE.md 검증 명령 정독 / `task_close` 반환 JSON
+- **Read**: GIT_RULE / task 파일 / AGENTS.md 검증 명령 정독 / `task_close` 반환 JSON
 - **Bash / 도구**: `task_close` 도구(또는 `npx @angar2/taskery close TASK-NNN`) 결정적 준비 + git 명령 (`rebase`, `merge`, `worktree`, `branch`) + 검증 명령 재실행. **유일하게 git 사용 허가된 스킬**
 - **Edit / Write**: (매핑 콜백 시) 수동 Phase 커밋용 staging / CHANGELOG 내용 (close가 커밋). **close 후 task 문서는 closed라 수정 X**
 - **bin/lib.js**: `withMergeLock` (머지 락 — Step 5)

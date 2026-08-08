@@ -63,23 +63,21 @@
 
 `bin/init.js`는 *`template/` 디렉토리 안 모든 파일*을 사용자 cwd로 카피.
 
-**카피 대상 (코어 영역 — npx 갱신)** — 26 파일:
+**카피 대상 (코어 영역 — npx 갱신)** — 30 파일 (claude 설치 27 / codex 설치 26; 0.7.0 기준):
 | 카테고리 | 파일 |
 |---------|------|
-| 메인 instruction | `CLAUDE.md` |
+| 진입 문서 본문 (agnostic) | `AGENTS.md` |
+| 진입 문서 임포트 (claude) | `CLAUDE.md` — `@AGENTS.md` 한 줄 |
 | 스킬 본문 (9) | `.claude/skills/{project-init,plan-init,task-init,task-plan,task-dev,task-test,task-close,add-backlog,log-friction}/SKILL.md` |
 | Hook (2) | `.claude/hooks/{git-guard,closed-immutable}.sh` |
 | Hook 등록 (1) | `.claude/settings.json` |
-| 룰 (4) | `.project/rules/{TASK_DOC_RULE,GIT_RULE,CHANGELOG_RULE,MOCKUP_RULE}.md` |
-| 불편 누적 빈 템플릿 | `.project/FRICTION_LOG.md` |
-| 검증 방법 빈 템플릿 | `.project/TEST-GUIDE.md` |
+| 룰 (5) | `.project/rules/{TASKERY_RULE,TASK_DOC_RULE,GIT_RULE,CHANGELOG_RULE,MOCKUP_RULE}.md` |
 | 사용자 영역 빈 골격 (4) | `.project/{changelog,flows,plans,tasks}/.gitkeep` |
 | 멀티리포 골격 (2) | `.project/shared/{sent,received}/completed/.gitkeep` |
 | 루트 .gitignore | `.gitignore` |
 
 **카피 미대상 (사용자 영역)** — `template/`에 없으므로 자동으로 미카피:
 - `.project/PROJECT.md` — `/project-init` 생성 (사람용 도메인 설명)
-- `.project/AGENT-GUIDE.md` — `/project-init` 생성 (메인 진입 가이드)
 - `.project/LINKED-REPOS.md` — `/project-init` 생성 (멀티리포 명세)
 - `.project/.env` — 사용자 직접 작성 (멀티리포 환경 변수, gitignore)
 - `.project/<doc>.md` (루트 평평) — 제품 관통 문서: `/project-init` 작성(SERVICE-POLICY/TECH-STACK/ARCHITECTURE) / 골격(DATA-MODEL/API-SPEC/FEATURES/UX-UI) → plan-init·task가 채움
@@ -123,7 +121,7 @@
     },
     ".claude/hooks/git-guard.sh": { ... },
     ".project/rules/TASK_DOC_RULE.md": { ... }
-    // ... 26 파일 (0.1.2+ — 스킬 9종 + 룰 4종 + hook 2종 + settings.json + CLAUDE.md + FRICTION_LOG.md + TEST-GUIDE.md + 빈 골격 .gitkeep 6 + .gitignore). Claude 설치 시 + Claude 전용 run-team 1 = 27 (Codex 26)
+    // ... 0.7.0 기준 claude 설치 27 파일 (스킬 9종 + run-team + 룰 5종 + hook 2종 + settings.json + AGENTS.md + CLAUDE.md + 빈 골격 .gitkeep 6 + .gitignore)
   }
 }
 ```
@@ -169,7 +167,7 @@
 ```
 
 **검증 완료** (스모크 테스트):
-- ✅ no-change 시나리오: 26 unchanged (0.1.2+ 9 스킬 + 4 룰 + 2 hook + settings.json + CLAUDE.md + FRICTION_LOG.md + TEST-GUIDE.md + .gitkeep 6 + .gitignore)
+- ✅ no-change 시나리오: 설치 파일 전건 unchanged (0.7.0 기준 claude 27 / codex 26)
 - ✅ 충돌 시나리오 'n' 응답: 사용자 보존
 - ✅ 충돌 시나리오 'y' 응답: .bak 생성 + 새 코어 덮어쓰기
 - ✅ 0.1.1 → 0.1.2 마이그레이션: manifest에 `projectId` / `stale_days` / `lock_timeout_ms` 자동 추가
@@ -238,13 +236,13 @@ npm publish --tag beta       # beta tag로 publish
 
 **`files` 배열 — npm publish 포함 대상**:
 - `bin/` — 7 스크립트 모두 (멀티세션 0.1.2+ status.js / prune.js 포함)
-- `template/` — 사용자 카피 대상 26 파일 (백로그 0.1.2+ add-backlog/SKILL.md 포함, 0.3.1+ TEST-GUIDE.md 포함)
+- `template/` — 사용자 카피 대상 30 파일 (0.7.0: AGENTS.md 본문화 + TASKERY_RULE 신설, AGENT-GUIDE/TEST-GUIDE/FRICTION_LOG 배포 폐지)
 - `README.md` — npm 첫 화면
 - `LICENSE` — MIT 라이선스
 
 **`files` 미포함**:
 - `.git/`, `.gitignore`, `.temp/` — 개발 환경 자산
-- `plan/` 7 문서 — *taskery 시스템 자체 spec*. 사용자 프로젝트는 *template/CLAUDE.md*만 정독하면 됨. README의 `plan/` 링크는 GitHub 절대 URL로 처리되어 npm 페이지에서도 클릭 시 GitHub로 이동.
+- `plan/` 7 문서 — *taskery 시스템 자체 spec*. 사용자 프로젝트는 *AGENTS.md + .project/rules/TASKERY_RULE.md*만 정독하면 됨. README의 `plan/` 링크는 GitHub 절대 URL로 처리되어 npm 페이지에서도 클릭 시 GitHub로 이동.
 
 ---
 

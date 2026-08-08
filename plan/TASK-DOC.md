@@ -154,9 +154,9 @@ draft → planned → developing → developed → testing → tested → closed
 - 시각 영역 시나리오 있으면 *fix 사이클 1~2회 예상* 사전 예고 명시
 
 가이드라인:
-- **자기완결적**: `/task-test` 격리 세션이 *task.md + TEST-GUIDE.md만 보고도* 수행 가능
+- **자기완결적**: `/task-test` 격리 세션이 *task.md + TEST_RULE.local.md만 보고도* 수행 가능
 - **명령/기대값 포함**: 무엇을 실행하고 무엇이 기대되는지 명확 (없으면 시험문제 결함으로 반려됨)
-- **실행 경로**: 방식을 *이 프로젝트에서 실제로 어떻게 돌리나*는 `.project/TEST-GUIDE.md`에 기록 (모르면 task-plan이 사용자에게 묻고 채움)
+- **실행 경로**: 방식을 *이 프로젝트에서 실제로 어떻게 돌리나*는 `.project/rules/TEST_RULE.local.md`에 기록 (모르면 task-plan이 사용자에게 묻고 채움)
 - **메인 가정 X**: *"잘 될 거야"* / *"문제 없을 듯"* 같은 가정 금지
 
 상세 양식 + 카탈로그 + 매트릭스 → [task-plan SKILL.md](../template/.claude/skills/task-plan/SKILL.md) Step 5 + [TASK_DOC_RULE.md](../template/.project/rules/TASK_DOC_RULE.md) §2.5 참조.

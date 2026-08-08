@@ -23,6 +23,7 @@ const {
   gitCapture,
   getMainWorktreePath,
   getActiveTasks,
+  getActiveVersion,
   getWorktreesRoot,
   getMergeLockPath,
   DEFAULT_STALE_DAYS,
@@ -65,6 +66,17 @@ function main() {
     `현재 브랜치(= 새 태스크 부모): ${currentBranch}${detached ? ' ⚠ (detached HEAD — 브랜치 체크아웃 필요)' : ''}`,
   );
   console.log(`projectId: ${projectId}`);
+  // 활성 plan(0.7.0+ manifest SSoT) — 스킬·진입 문서가 "활성 plan은 status로 확인"이라
+  // 지시하므로 여기서 반드시 출력한다. 미설정이면 다음 행동까지 안내한다.
+  let activePlan = null;
+  try {
+    activePlan = getActiveVersion(mainWt);
+  } catch (e) {
+    activePlan = null;
+  }
+  console.log(
+    `활성 plan: ${activePlan ?? '미설정 — /plan-init으로 생성하거나 plan-switch <NNN_slug>로 지정'}`,
+  );
   console.log(`stale_days: ${staleDays} / lock_timeout_ms: ${lockTimeoutMs}\n`);
 
   // 2. 머지 락 상태

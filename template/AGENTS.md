@@ -1,13 +1,18 @@
 # AGENTS.md
 
-> 이 파일은 Codex 세션이 *매 세션 시작 시 자동 로드*하는 단일 진입점이다.
-> 프로젝트 메타 + 검증/테스트/검수 명령 + 룰 참조 + 스킬 9종 + 동기화 룰만 포함한다.
-> 사람용 도메인 설명은 `.project/PROJECT.md`, 진입 가이드는 `.project/AGENT-GUIDE.md` 참조.
->
-> Codex 환경 차이 (Claude와 다른 점만):
-> - 스킬 본문: `.agents/skills/<스킬>/SKILL.md` (Claude의 `.claude/skills/`가 아님)
-> - Hook: `.codex/config.toml`의 `[[hooks.PreToolUse]]`로 등록 — 최초 1회 `/hooks` trust 승인 필요
-> - 격리 검증(/task-test): `.codex/agents/task-tester.toml` 서브에이전트로 spawn
+> 본 문서는 에이전트 최상위 지침이다. 세션 시작 시 자동 로드된다.
+> **본 문서에는 규칙·사용법을 추가하지 않는다** — 규칙은 `.project/rules/`, 이 리포의 커스텀은 `*.local.md`가 담당한다. 본 문서에서 갱신이 허용되는 것은 아래 리포 값 칸(프로젝트 메타 · 각 명령)뿐이다.
+
+---
+
+## 최상위 지침 — taskery 강제
+
+1. 본 리포지토리는 **taskery로 운영된다.** taskery는 task 단위 라이프사이클(문서 · 상태 · git · 검증)을 스킬과 CLI로 관리하는 시스템이다.
+2. **taskery 사용은 선택이 아니라 강제다.** 모든 작업은 예외 없이 taskery의 흐름을 통해서만 수행한다. taskery를 우회한 임의 진행 — 수동 git 운영 · 스킬 미호출 작업 · 규칙 밖 문서 생성 — 은 전면 금지된다.
+3. **`.project/rules/TASKERY_RULE.md`를 필독하라.** taskery의 전체 사용법은 전부 그 설명서에 있다. 읽지 않은 채로 작업을 시작하지 않는다.
+4. **`.project/rules/`의 모든 규칙을 무조건 따른다.** 코어 룰과 이 리포의 `*.local.md` 커스텀 룰 전부가 대상이다. 겹치는 조항은 로컬이 최우선이고, 겹치지 않는 로컬 조항도 그대로 준수한다. **어떤 사유로도 규칙 위반은 정당화되지 않는다.**
+5. **사용자가 명시한 범위만 수행한다.** 명시하지 않은 단계로 스스로 진입하는 것은 영구 금지다.
+6. **세션 시작 시 현재 위치를 자가 진단한다** — 메인 워크트리인지 task 워크트리인지 판정한 후 그에 맞는 흐름으로 진입한다. *"메인에서 그냥"* 류의 발화는 규칙 충돌 신호다. 정지하고 확인한다. (방법과 상세는 `TASKERY_RULE` §5.)
 
 ---
 
@@ -18,191 +23,33 @@
 - **소개 (한 줄)**: <도메인 / 비전>
 - **상세**: `.project/PROJECT.md` 참조
 
-> `/project-init` 호출 시 위 4 항목 채워짐. 변경 필요하면 직접 편집.
-
----
-
-## 메인 세션 최상위 룰
-
-> 본 룰은 *모든 스킬 호출 / 사용자 발화 처리 / 작업 진행*에 적용. 위반 시 사용자 마찰 직결.
-
-1. **범위 준수** — 사용자가 명시한 범위/행동만 수행. 명시 외 자체 진입 영구 금지. 예: 사용자가 *"X부터 Y까지"* 지시 → Y 끝에서 정지 + 상태 보고 + 다음 단계 명시 호출 대기.
-2. **Skill 정식 발동** — task 단계는 반드시 해당 스킬(`.agents/skills/<스킬>/SKILL.md`)을 정식 호출. 가이드 본문을 머릿속 절차로 대체 금지 (컴팩트 세션 / 시스템 리마인더 인지 상태에서도 동일).
-3. **워크트리 자가 진단** — 세션 시작 시 현재 cwd가 *메인 워크트리*인지 *태스크 워크트리*인지 자가 판단 (`git rev-parse --show-toplevel` + `~/.taskery/worktrees/` 경로 비교). 태스크 워크트리면 *해당 진행중 태스크 컨텍스트*로 진입, 메인 워크트리면 *새 태스크 / 진행중 목록 인터뷰* 흐름.
-4. **모호 발화 자의 해석 금지** — *"워크트리 없이"* / *"메인에서"* / *"이 자리에서 그냥"* 류로 읽히는 발화 = 코어 규칙(메인 워크트리 = 부모 브랜치 고정, task는 워크트리에서) 충돌 신호. 즉시 정지 + 규칙 한 줄 명시 + 1줄 confirm 요청. 자의 해석 후 진행 영구 금지. 사용자 의도가 *오타/모호*일 가능성을 *워크트리 사용*으로 읽는 게 자연스러움.
-
----
-
-## 멀티세션 워크트리 (0.1.2+)
-
-> 멀티세션 = 같은 프로젝트에서 *여러 메인 세션이 독립 태스크를 병렬*로 진행. git worktree로 작업 폴더 격리, 부모 브랜치 머지 시 직렬화.
-
-- **메인 워크트리 = 부모 브랜치 고정**: 메인 워크트리는 `/task-init` 시점에 체크아웃돼 있는 브랜치(= 그 task의 *부모 브랜치*)를 유지한다. 개인 기본은 `dev`, 회사/로드맵은 `dev_feat_x` / `master` 등 — taskery는 *현재 서 있는 브랜치*를 부모로 삼는다(특정 이름 고정 X). 모든 태스크 작업은 *예외 없이* 별도 워크트리에서 수행. 진행 중 태스크가 있는 동안 메인 워크트리 HEAD를 옮기는 어떤 작업(`git checkout <task-branch>` / `git switch` / `git reset` HEAD 이동 / `git rebase` HEAD 이동 등)도 영구 금지 — close가 부모로 되병합해야 하므로 부모에 서 있어야 한다. *"잠깐만 메인에서"* / *"테스트 한 번만 메인에서"* 같은 예외 발화도 거부 — 별도 워크트리에서 처리. (부모 브랜치 자체를 바꾸려면 진행 중 태스크가 없을 때 원하는 브랜치로 체크아웃 후 새 task 시작.)
-- **워크트리 위치**: `~/.taskery/worktrees/<projectId>/TASK-NNN_<출처>_<슬러그>/`
-  - `<projectId>`: `.taskery-manifest.json` `projectId` (8자 hex)
-  - `<출처>`: `BL-NNN`(백로그) / `ST-N`(로드맵 Stage) / `DR`(직접 요구사항)
-- **`/task-init`이 부모 브랜치에서 워크트리 생성** + **`/task-close`가 부모 브랜치 머지 + 워크트리 자동 제거** (자동 흐름. 보존 키워드 `keep` / `브랜치 남겨` 등 발화 시 둘 다 보존).
-- **메인 메타 접근**: 워크트리에서 `.project/`, `AGENTS.md` 등 접근 시 *메인 워크트리 절대 경로* 사용:
-  ```sh
-  MAIN_WT=$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")
-  ```
-- **수동 git 작업 시 정합성 보장 X** — taskery 명령(스킬 / `npx @angar2/taskery <서브>`)으로만 운영.
-- **CLI 보조 명령**:
-  - `npx @angar2/taskery status` — 진행중 태스크 + 워크트리 + 부모 머지 상태 요약
-  - `npx @angar2/taskery prune` — stale 워크트리 대화형 정리
-
-상세: `.project/rules/GIT_RULE.md` "멀티세션 워크트리 정책" 섹션.
-
-요건: git ≥ 2.31 (`--path-format=absolute` 옵션 필요).
-
----
-
-## agent teams 자동 병렬 — Codex 미지원
-
-> 다건 태스크를 리더가 팀원(독립 세션)에 분배해 자동 병렬 처리하는 고기능(`/run-team`)은 **Claude 전용**이다 — 기반인 agent teams 기능이 Codex에 없다.
-
-- *"백로그 한 번에 진행해"* / *"팀에게 전부 독립으로 맡겨"* 류 자동 병렬 발화가 들어와도 Codex에서는 지원하지 않는다. **단일 태스크 흐름**(`/task-init` ~ `/task-close`)으로 안내하고 진행한다.
-- 멀티세션 병렬 자체(사용자가 워크트리별 세션을 직접 띄워 진행)는 Codex에서도 가능 — 자동화(리더가 팀을 띄우고 관리)만 미지원이다.
-
----
-
-## 백로그 (0.1.2+)
-
-> `.project/tasks/<NNN_slug>/BACKLOG.md` = *plan(기능 그룹)별 task 후보 누적*. 사용자 발화로 1건씩 얕은 분석(개요 / 대상 영역) 곁들여 추가.
-
-- **`/add-backlog`**: 사용자 *"~ 백로그에 추가"* 발화 → 얕은 분석(코드 탐색 X, 추정 수준) → BL-NNN 채번 → BACKLOG.md append (`[ ]` 대기).
-- **`/task-init` 연동**: 사용자 *"백로그의 BL-NNN 진행"* 발화 → 해당 항목 *확인 마킹*. `[ ]` → `[x]` + `- TASK: TASK-NNN` 추가 (다회 진행 시 콤마).
-- **체크박스 의미**: `[ ]` = 미확인 (task로 옮기지 않은 메모) / `[x]` = 확인 완료 (task로 옮김). `[x]`는 *task로 옮겼다*는 메모일 뿐, 부모 머지·완료 여부와는 무관하다.
-- **`[x]` 항목이 실제로 완료된 작업인지 굳이 확인하려 들지 않는다.** 진행·완료 상태는 백로그가 아니라 `taskery status`(살아있는 브랜치) + 부모 머지커밋이 판단한다.
-- **머지 여부를 직접 알아야 할 경우에만** 아래 순서로 작업 완료 여부를 확인한다:
-  1. `taskery status` 진행중 목록에 그 TASK가 **있으면** → 아직 진행 중(부모 미머지)이므로 `git log --all --grep`이 비는 것이 정상이다. 재조회하지 않는다.
-  2. 목록에 **없으면** → `git log --all --grep 'BL-NNN'` + 브랜치명으로 작업 완료 여부를 확인한다.
-- **글로벌 `.project/BACKLOG.md`** (다음 기능 그룹 후보 카탈로그) 는 본 흐름 무관 — `/plan-init` 영역.
-
-상세: `.agents/skills/add-backlog/SKILL.md`.
-
----
-
 ## 검증 명령
 
-> *코드 상태 검증* (빌드 / 린트 / 타입체크). 테스트 실행은 본 섹션 X — `## 테스트 명령` 참조.
-> `/task-dev` self-check / `/task-close` 최종 게이트가 *이 섹션을 단일 진실 소스로 참조*.
-> 백틱(`...`) 안 명령 그대로 실행됨. 언어/프레임워크 따라 변경.
+> 각 명령은 그대로 실행 가능한 형태로 적는다. 해당 없는 항목은 행을 삭제한다.
 
 - 린트: `<예: npm run lint>`
-- 타입체크: `<예: npm run typecheck>` (TypeScript / Flow / mypy 등 — 해당 시)
+- 타입체크: `<예: npm run typecheck>`
 - 빌드: `<예: npm run build>`
-
-> 위 항목 중 *프로젝트에 해당 없는 것*은 행 자체 삭제. 빈 백틱(``)은 사용 금지.
-
----
 
 ## 테스트 명령
 
-> *테스트 실행* (단위 / 통합 / E2E 등). 코드 상태 검증은 `## 검증 명령` 참조.
-> `/task-dev` 구현 후 테스트 + `/task-test` 격리 세션이 *이 섹션을 단일 진실 소스로 참조*.
-> 백틱(`...`) 안 명령 그대로 실행됨. 언어/프레임워크 따라 변경.
-
 - 단위 테스트: `<예: npm test>`
-- 통합 테스트: `<예: npm run test:integration>` (있을 시)
-- E2E 테스트: `<예: npx playwright test>` (있을 시)
+- 통합 테스트: `<있을 때만>`
+- E2E 테스트: `<있을 때만>`
 
-> 위 항목 중 *프로젝트에 해당 없는 것*은 행 자체 삭제. 빈 백틱(``)은 사용 금지.
+## 검수 실행 명령
 
-> **검증 방법 → `.project/TEST-GUIDE.md`** — 각 테스트 방식(데이터 조회 / API 호출 / E2E / 시각 실행)을 *이 프로젝트에서 실제로 어떻게 돌리나*는 거기 단일 소스. `/task-plan`이 채우고 `/task-test` 격리 세션이 읽는다.
-
----
-
-## 검수 실행 명령 (해당 시 — 앱 실행·검수가 필요한 프로젝트)
-
-> `/task-dev`·`/task-test`가 검수 시점(세션 중단점)에 이 명령으로 서버를 *백그라운드* 기동하고 접속 URL을 보고한다.
-> 멀티세션 포트 격리: 메인 세션(부모 브랜치) = 기준 포트, task 워크트리 = 기준 포트 + TASK번호. 상세는 GIT_RULE "멀티세션 검수 환경" 섹션.
-> CLI/라이브러리 등 검수 서버가 없는 프로젝트는 본 섹션 전체 삭제.
+> 앱을 띄워 사용자가 직접 확인해야 하는 프로젝트에만 해당한다. 아니면 이 절 전체를 삭제한다.
 
 - 기준 포트: `<예: 5100>`
-- 실행 명령: `<예: npm run dev -- --port <PORT>>` (`<PORT>` = 기준 포트 + TASK번호, 메인은 기준 포트)
-- 터널 (모바일 검수 등 필요 시 — 선택): `<예: cloudflared tunnel --url http://localhost:<PORT>>`
+- 실행 명령: `<예: npm run dev -- --port <PORT>>`
+- 터널: `<선택 — 외부 확인이 필요할 때만>`
 
 ---
 
-## 룰 문서 참조
+## 세션 진입 절차
 
-| 룰 | 위치 | 역할 |
-|----|------|------|
-| TASK_DOC_RULE | `.project/rules/TASK_DOC_RULE.md` | task 문서 양식 (헤더 6컬럼 / 6 섹션 / 7 상태) |
-| GIT_RULE | `.project/rules/GIT_RULE.md` (있으면) → 글로벌 `~/.claude/rules/GIT_RULE.md` (fallback) | git 정책 (브랜치 / 커밋 / 머지) |
-| CHANGELOG_RULE | `.project/rules/CHANGELOG_RULE.md` | CHANGELOG 작성 정책 (위치 / 형식 / 필수 필드) |
-| MOCKUP_RULE | `.project/rules/MOCKUP_RULE.md` | UX/UI task의 HTML 목업 위치 / 형식 / 네이밍 |
-| DEV_RULE (옵션) | `.project/rules/DEV_RULE.local.md` | 이 프로젝트 고유의 구현·테스트 실행 정책. 있으면 `/task-dev`가 읽고 겹치는 조항은 로컬 우선 (코어 파일 없음 — 로컬 전용) |
-| TEST_RULE (옵션) | `.project/rules/TEST_RULE.local.md` | 이 프로젝트 고유의 검증 범위·방식 정책. 있으면 `/task-dev`·`/task-test`·`/task-plan`이 읽고 겹치는 조항은 로컬 우선 (격리 세션에도 전달. 코어 파일 없음 — 로컬 전용) |
-| `*.local.md` | `.project/rules/` | (옵션) 사용자 오버라이드 — `*.local.md` suffix는 npx 미터치 |
-
----
-
-## 스킬 9종 — project > plan > task 위계 + 회고
-
-| 스킬 | 레벨 | 역할 |
-|------|------|------|
-| `/project-init` | project | 진입 문서(PROJECT/AGENT-GUIDE/LINKED-REPOS/GLOSSARY/.env) + 제품 관통 문서(그룹 A 작성 / 그룹 B 골격, `.project/` 루트) 생성 (1회성) |
-| `/plan-init` | plan | `.project/plans/<NNN_slug>/` PLAN/ROADMAP + 제품 관통 문서 FEATURES/UX-UI에 의도 추가 (plan = 기능 그룹 단위) |
-| `/task-init` | task | task.md 빈 골격 + status=draft |
-| `/task-plan` | task | Requirements/Scope/Dev Plan/Test Plan 작성 (draft → planned) |
-| `/task-dev` | task | Phase 순서 구현 + self-check (planned → developed) |
-| `/task-test` | task | task-tester 서브에이전트 격리 검증 (developed → tested) |
-| `/task-close` | task | 검증 명령 게이트 + 커밋 + 부모 브랜치 병합 (tested → closed) |
-| `/add-backlog` | meta | 사용자 발화로 활성 plan BACKLOG.md에 항목 1건 추가 (얕은 분석 + BL-NNN 채번 — 0.1.2+) |
-| `/log-friction` | meta | FRICTION_LOG.md에 사용자 불편 한 행 기록 |
-
-본문은 `.agents/skills/<스킬>/SKILL.md` 참조.
-
----
-
-## Hook 안전망 — Catastrophic 2종
-
-> `.codex/config.toml`의 `[[hooks.PreToolUse]]`로 등록. 최초 1회 `/hooks` trust 승인 후 자동 작동.
-
-| Hook | 영역 | 잡는 것 |
-|------|------|--------|
-| `git-guard.sh` | PreToolUse(Bash) | main/dev 직접 커밋 / `--force` / `--no-verify` / `branch -D` / `reset --hard` / `clean -fd` |
-| `closed-immutable.sh` | PreToolUse(apply_patch) | `closed` 상태 task.md 본 파일 재수정 차단 (정상 흐름은 새 task로). spec-diffs / screenshots / mockup은 자유 수정 (역사적 자료) |
-
-**잘 지키면 hook 작동 0회 (무해). catastrophic만 차단.**
-
-> closed-immutable.sh는 코덱스 파일편집 도구(apply_patch)의 patch envelope에서 `*** Update File:` 경로를 파싱해 검사한다(Claude판은 `file_path` 키를 읽음 — 메커니즘만 다르고 효과 동일).
-
----
-
-## 불편 데이터
-
-- **누적**: `.project/FRICTION_LOG.md` — 메인이 한 줄씩 추가 (사용자 불만 발화 캐치 또는 사용자 명시)
-- **등록**: `/log-friction` 스킬 — 사용자 명시 호출 / 불만 발화 캐치 / task-close 직후 마찰 신호 자체 감지 시 한 행 기록
-
----
-
-## 동기화 룰 (사용자 의무)
-
-> taskery는 *plan/ ↔ template/ 자동 빌드 X*. 사용자가 직접 정합 유지.
-
-- **`.project/` 루트 제품 관통 문서 변경 시** → 관련 task의 `spec-diffs/` 갱신 (`/task-plan` Phase 0 흐름 — 진행 중 task 있으면)
-- **`AGENTS.md` 검증 명령 변경 시** → 모든 스킬 + hook이 그대로 따름. 별도 동기화 불필요
-- **룰(`*.md` in `.project/rules/`) 변경 시** → 스킬 instruction이 다음 호출부터 변경 반영
-- **`*.local.md` 사용자 오버라이드** → `npx @angar2/taskery update`가 미터치. 코어 룰 갱신 시 `*.bak` 백업 후 사용자 confirm
-
----
-
-## 멀티리포 통신 (해당 시)
-
-- 송신: `.project/shared/sent/<filename>.md` 작성
-- 수신: 연결 리포에서 `received/`로 카피 후 정독
-- 처리 완료: `sent/completed/` 또는 `received/completed/`로 이동
-- 연결 리포 경로: `.project/.env` (gitignore)
-- 리포 목록: `.project/LINKED-REPOS.md`
-
----
-
-## 메인 세션 진입 시
-
-1. 본 파일(`AGENTS.md`) 정독 — 검증 명령 + 룰 위치 + 스킬 목록 파악
-2. `.project/AGENT-GUIDE.md` 정독 — 활성 plan 버전 + 폴더 구조 + 작업 흐름
-3. `.project/` 루트 제품 관통 문서(FEATURES / ARCHITECTURE 등) + `.project/plans/<활성 plan>/PLAN.md` 정독 — 활성 plan 인덱스 + 진행 상태
-4. 사용자 발화 받기 → 적절한 스킬 호출 또는 직접 작업
+1. 본 문서 정독
+2. `.project/rules/TASKERY_RULE.md` 필독 — taskery 사용법 전체
+3. `npx @angar2/taskery status` — 활성 plan · 진행중 task 확인
+4. `.project/` 제품 관통 문서 + 활성 plan의 `PLAN.md` 정독

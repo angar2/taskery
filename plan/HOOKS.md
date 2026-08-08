@@ -116,7 +116,7 @@ practice 영역에 hook을 강제하면 *합리적 변형 차단 사고*가 발�
 
 **대체 흐름**:
 
-- *코드 상태 검증* (빌드 / 린트 / 타입체크): `task-dev` self-check + `task-close` Step 2 게이트 (CLAUDE.md `## 검증 명령` 단일 진실 소스 참조)
+- *코드 상태 검증* (빌드 / 린트 / 타입체크): `task-dev` self-check + `task-close` Step 2 게이트 (`AGENTS.md` `## 검증 명령` 단일 진실 소스 참조)
 - *테스트 실행*: `task-dev` 구현 후 단위 테스트 + `task-test` 격리 세션 (CLAUDE.md `## 테스트 명령` 단일 진실 소스 참조)
 
 **제거 영역**:
@@ -173,7 +173,7 @@ sed -i '' 's/| closed |/| developing |/' .project/tasks/001_mvp/001_some-task.md
 | `git-guard.sh` 본문 + 정규식 | [template/.claude/hooks/git-guard.sh](../template/.claude/hooks/git-guard.sh) |
 | `closed-immutable.sh` 본문 + 차단 패턴 | [template/.claude/hooks/closed-immutable.sh](../template/.claude/hooks/closed-immutable.sh) |
 | git 룰 (브랜치/커밋/머지) | [template/.project/rules/GIT_RULE.md](../template/.project/rules/GIT_RULE.md) |
-| 검증 명령 (사용자 프로젝트) | 사용자 프로젝트 `CLAUDE.md` `## 검증 명령` (코드 상태) / `## 테스트 명령` (테스트 실행) |
+| 검증 명령 (사용자 프로젝트) | 사용자 프로젝트 `AGENTS.md` `## 검증 명령` (코드 상태) / `## 테스트 명령` (테스트 실행) |
 | CHANGELOG 룰 | [template/.project/rules/CHANGELOG_RULE.md](../template/.project/rules/CHANGELOG_RULE.md) |
 
 본 문서는 *상위 추상 + 영역 정신 + link*. 본문은 실 구현 파일에서 정독.

@@ -2,7 +2,7 @@
 
 > 본 파일은 taskery 시스템 권장 프로젝트별 CHANGELOG 정책이다.
 > 우선순위: **이 파일** (`.project/rules/CHANGELOG_RULE.md`) → 메인 판단.
-> 프로젝트별 변형이 필요하면 `.project/rules/CHANGELOG_RULE.local.md` 생성 (npx update 미터치).
+> 프로젝트별 변형이 필요하면 `.project/rules/CHANGELOG_RULE.local.md` 생성 (npx update 미터치, 구속력은 코어와 동등 — `TASKERY_RULE` §7).
 
 ---
 
