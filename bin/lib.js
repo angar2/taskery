@@ -1169,10 +1169,116 @@ function splitUncommittedByPhase(wtPath, taskMdPath, meta) {
   return result;
 }
 
+// ─── close 문서 자동화 (recordion FRICTION 2026-08-09 — 문서 갱신 기계화) ─────────
+// CHANGELOG는 close가 직접 append(세션 준수 불요), PLAN 체크·수정이력은 grep 게이트로 차단.
+
+function _parseTaskTitle(taskMdPath) {
+  // task 문서 H1 → 제목 (`# TASK-NNN — 제목`의 제목부. 접두 없으면 전체).
+  const m = fs.readFileSync(taskMdPath, 'utf8').match(/^#\s+(.+)$/m);
+  if (!m) return null;
+  return m[1].replace(/^TASK-\d+\s*[—-]\s*/, '').trim() || null;
+}
+
+function appendChangelogEntry(base, { taskNum, title, type, phases }) {
+  // CHANGELOG 항목을 close가 직접 append — CHANGELOG_RULE §1 두 형식(단일 CHANGELOG.md / 월별) 지원,
+  // 없으면 월별 파일 생성. 최신 맨 위 삽입(§3). 재호출 가드: [TASK-NNN] 실재 시 skip
+  // (mapping·docs 콜백 후 재호출 중복 차단). base = task 문서와 동일 분기(등록=메인WT / 미등록=워크트리).
+  const nnn = String(taskNum).padStart(3, '0');
+  const dir = path.join(base, '.project', 'changelog');
+  const single = path.join(dir, 'CHANGELOG.md');
+  const file = fs.existsSync(single) ? single : path.join(dir, `${_todayLocal().slice(0, 7)}.md`);
+  const exists = fs.existsSync(file);
+  const cur = exists ? fs.readFileSync(file, 'utf8') : '';
+  if (cur.includes(`[TASK-${nnn}]`)) return { file, skipped: true };
+  const named = (phases || []).filter((p) => p.num > 0 && p.name);
+  const summary = named.length
+    ? named.map((p) => `  - Phase ${p.num} — ${p.name}`).join('\n')
+    : `  - ${title || `TASK-${nnn}`}`;
+  const entry = [
+    `## [TASK-${nnn}] ${title || ''}`.trimEnd(),
+    '',
+    `- **날짜**: ${_todayLocal()}`,
+    `- **타입**: ${type}`,
+    `- **변경 요약**:`,
+    summary,
+  ].join('\n');
+  let next;
+  if (!exists) {
+    fs.mkdirSync(dir, { recursive: true });
+    next = entry + '\n';
+  } else {
+    // 첫 `## ` 항목 바로 위 삽입 (코드펜스 내부 제외). 항목이 없으면 헤더 뒤(끝) append.
+    const lines = cur.split('\n');
+    let fence = false;
+    let idx = -1;
+    for (let i = 0; i < lines.length; i++) {
+      if (/^\s*(```|~~~)/.test(lines[i])) fence = !fence;
+      else if (!fence && /^##\s+/.test(lines[i])) {
+        idx = i;
+        break;
+      }
+    }
+    if (idx === -1) {
+      next = cur + (cur.endsWith('\n') ? '' : '\n') + '\n' + entry + '\n';
+    } else {
+      lines.splice(idx, 0, entry, '');
+      next = lines.join('\n');
+    }
+  }
+  fs.writeFileSync(file, next);
+  return { file, added: true };
+}
+
+function checkDocsGate(base, { taskNum, src, plan }) {
+  // 문서 게이트 — close의 모든 변이(mutation) 앞에서 실행. blocked여도 아무것도 안 바뀌어
+  // 세션이 문서를 채운 후 그대로 재호출하면 된다. 반환 { ok:true } | { ok:false, missing:[...] }.
+  //   PLAN.md: 로드맵 출처(ST-/RM-)만 — 체크리스트에 TASK-NNN 표기 검사. BL·DR 출처는 항목
+  //   자체가 없으므로 통과. 파일 부재(구형 plan)도 통과.
+  //   수정이력: spec-diffs(항상 plan 폴더 공통 — 폴더 승격 무관, TASK_DOC_RULE §1.5)의 본 태스크
+  //   파일이 가리키는 대상 문서(DEL 제외)에 TASK-NNN 표기 검사. 대상 부재 = 통과
+  //   (게이트 실패 방향은 '막는 쪽'이 아니라 '놓치는 쪽' — 정당한 close를 오차단하지 않는다).
+  const nnn = String(taskNum).padStart(3, '0');
+  const tag = `TASK-${nnn}`;
+  const missing = [];
+  if (/^(ST|RM)-/i.test(src || '')) {
+    const planPath = path.join(base, '.project', 'plans', plan, 'PLAN.md');
+    if (fs.existsSync(planPath) && !fs.readFileSync(planPath, 'utf8').includes(tag)) {
+      missing.push({ kind: 'plan', file: planPath });
+    }
+  }
+  const specDir = path.join(base, '.project', 'tasks', plan, 'spec-diffs');
+  if (fs.existsSync(specDir)) {
+    const seen = new Set();
+    const mine = fs
+      .readdirSync(specDir)
+      .filter((f) => f.startsWith(`${nnn}_`) && f.endsWith('.md'));
+    for (const f of mine) {
+      const content = fs.readFileSync(path.join(specDir, f), 'utf8');
+      // 헤딩 `## <.project/문서.md> [NEW|MOD|DEL]` — 꺾쇠 유무 관용 파싱
+      for (const m of content.matchAll(/^##\s+<?([^\n>[\]]+?)>?\s*\[(NEW|MOD|DEL)\]/gm)) {
+        if (m[2] === 'DEL') continue;
+        const rel = m[1].trim();
+        const target = fs.existsSync(path.join(base, rel))
+          ? path.join(base, rel)
+          : path.join(base, '.project', rel);
+        if (seen.has(target)) continue;
+        seen.add(target);
+        if (!fs.existsSync(target)) continue; // 대상 부재 → 통과
+        if (!fs.readFileSync(target, 'utf8').includes(tag)) {
+          missing.push({ kind: 'history', file: target });
+        }
+      }
+    }
+  }
+  return missing.length ? { ok: false, missing } : { ok: true };
+}
+
 async function closeTask(mainWtPath, { taskNum }, opts = {}) {
   // 결정적 준비만 — 비가역(머지·정리)·충돌 해결은 스킬이 후속 수행.
-  // 반환: { blocked } (게이트 미충족/매핑 모호) 또는
-  //   { prepped, branch, parent, wtPath, registered, commits, aheadOfParent,
+  // 순서: status 게이트 → docs 게이트 → Phase 커밋 → setStatus(closed) → CHANGELOG append
+  //       → (미등록) .project/ 커밋 → 추적 마커. 게이트 2종은 모든 변이 앞.
+  // 반환: { blocked } (status/docs 게이트 미충족·매핑 모호) 또는
+  //   { prepped, branch, parent, wtPath, registered, commits, aheadOfParent, changelog,
   //     multiPhase?, autoAssigned? (매핑 폴백 적용 시 내역) }. parent = 스킬 머지 대상.
   const active = getActiveTasks(mainWtPath).find((t) => t.taskNum === taskNum);
   if (!active) {
@@ -1192,6 +1298,13 @@ async function closeTask(mainWtPath, { taskNum }, opts = {}) {
     return { blocked: 'status', current: header.status, docPath: resolved.file };
   }
 
+  // 문서 게이트 — 모든 변이 앞. blocked 시 아무 것도 안 바뀌어 채우고 그대로 재호출.
+  const docBase = resolved.registered ? mainWtPath : wtPath;
+  const gate = checkDocsGate(docBase, { taskNum, src: active.src, plan: resolved.plan });
+  if (!gate.ok) {
+    return { blocked: 'docs', missing: gate.missing, docPath: resolved.file };
+  }
+
   // Phase 커밋 (D2) — 코드 변경분만
   const split = splitUncommittedByPhase(wtPath, resolved.file, { taskNum, type: active.type });
   if (split.ambiguous) {
@@ -1207,6 +1320,15 @@ async function closeTask(mainWtPath, { taskNum }, opts = {}) {
 
   // status=closed (문서 위치 무관 — setStatus가 .gitignore 케이스 따라 처리)
   await setStatus(resolved.file, 'closed');
+
+  // CHANGELOG 자동 append — 등록=메인WT 직접 쓰기(.project는 gitignore라 커밋 불요) /
+  // 미등록=워크트리 쓰기(아래 .project/ 문서 커밋이 함께 수거).
+  const changelog = appendChangelogEntry(docBase, {
+    taskNum,
+    title: _parseTaskTitle(resolved.file),
+    type: header.type,
+    phases: _parseDevPlanPhases(fs.readFileSync(resolved.file, 'utf8')),
+  });
 
   const commits = [...split.committed];
   // 미등록 케이스: .project/ 변경분(flows / 문서 / changelog)을 커밋
@@ -1274,6 +1396,7 @@ async function closeTask(mainWtPath, { taskNum }, opts = {}) {
     docPath: resolved.file,
     commits,
     aheadOfParent: aheadFinal,
+    changelog,
   };
   // 매핑 폴백 적용 내역 노출 — 코드가 자동 편입한 걸 스킬·사용자가 볼 수 있게
   if (split.multiPhase) prepResult.multiPhase = split.multiPhase;
@@ -1349,5 +1472,7 @@ module.exports = {
   // task close 결정적 준비 (D1·D2)
   TAG_OF,
   splitUncommittedByPhase,
+  appendChangelogEntry,
+  checkDocsGate,
   closeTask,
 };
