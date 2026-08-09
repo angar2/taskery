@@ -42,7 +42,8 @@ const {
   ENTRY_DOCS_MARKER,
   mergeGitignore,
   ingestActivePlan,
-  migrateEntryDocs,
+  retireLegacyAgentGuide,
+  recomposeEntryDocs,
   planGitignore,
   planTestGuide,
 } = require('./migrate');
@@ -91,11 +92,11 @@ async function main() {
   const newFiles = {};
   const summary = { unchanged: 0, new: 0, autoUpdated: 0, customizedReplaced: 0, skipped: 0, removed: 0 };
 
-  // 2.5. 0.7.0 진입 문서 재편 — **본 루프보다 먼저.**
-  //   CLAUDE.md/AGENTS.md를 본 루프에 맡기면 '사용자 customize 검출' 프롬프트가 뜨는데,
-  //   덮으면 리포 값이 .bak에만 남고 안 덮으면 구판 전문이 새 판과 함께 남아 규칙이 충돌한다.
-  //   이행이 최종 상태까지 기록하고, 처리한 경로는 아래 루프에서 제외한다.
-  const entryMig = migrateEntryDocs(cwd, templateDir, platforms, oldManifest);
+  // 2.5. 진입 문서 재조립 — **본 루프보다 먼저, 그리고 매 update 항상.**
+  //   AGENTS.md는 리포 값을 품어 템플릿과 바이트 일치가 원리적으로 불가능하다. 본 루프에 맡기면
+  //   '사용자 customize 검출'이 떠서, 덮으면 리포 값이 .bak에만 남고 거절하면 구판 문안에 고착된다.
+  //   재조립이 최종 상태까지 기록하고, 처리한 경로는 아래 루프에서 제외한다.
+  const entryMig = recomposeEntryDocs(cwd, templateDir, platforms, oldManifest);
   const entryHandled = new Set(entryMig.handled);
   for (const line of entryMig.notes) console.log(`  ${line}`);
   Object.assign(newFiles, entryMig.entries);
@@ -212,6 +213,8 @@ async function main() {
   // 소리 없이 사라지고 구형 AGENT-GUIDE 폴백의 낡은 값으로 되돌아간다.
   const { activePlan, ingested: activePlanIngested } = ingestActivePlan(cwd, oldManifest);
   if (activePlanIngested) migration.activePlan = true;
+  const retiredGuide = retireLegacyAgentGuide(cwd, activePlan);
+  if (retiredGuide) console.log(`\n  ${retiredGuide}`);
 
   const newManifest = {
     version: getPackageVersion(),
