@@ -231,11 +231,38 @@ function planGitignore(cwd, platforms) {
   };
 }
 
+// TEST_RULE.local.md 필수 절 골격(TASKERY_RULE §8) — 이관 본문에 없으면 append한다.
+// 문안은 project-init 골격과 동일 유지. '방식별 실행 경로'는 이관 본문 자체가 그 내용이라 제외.
+const TEST_RULE_REQUIRED_SECTIONS = [
+  {
+    key: '테스트 실행 환경',
+    block: [
+      '## 테스트 실행 환경 (격리 실행 경로)',
+      '',
+      '> 실제 앱을 띄워 UI를 자동 조작하는 스위트를 **사용자의 화면·마우스·키보드를 뺏지 않고** 돌리는 경로.',
+      '> 여기가 비어 있으면 자동 게이트·격리 세션은 그 스위트를 실행하지 않고 사용자 승인을 받는다.',
+      '> 적을 수 있는 것: 창 숨김·헤드리스 플래그 / 가상 디스플레이·컨테이너 / VM / CI 러너 위임 / 점유 스위트를 제외하는 한정 실행 옵션.',
+      '',
+      '<아직 미정 — 여기에 이 리포의 격리 실행 경로를 채운다>',
+    ].join('\n'),
+  },
+  {
+    key: '범위·방식 정책',
+    block: [
+      '## 범위·방식 정책',
+      '',
+      '> 무엇을 얼마나 검증하나 — 수정 루프에서의 실행 범위, 테스트 신설 상한 등.',
+      '',
+      '<아직 미정 — 여기에 이 리포의 범위 정책을 채운다>',
+    ].join('\n'),
+  },
+];
+
 /**
  * 4. TEST-GUIDE.md → TEST_RULE.local.md 이관.
  *    폐지되는 문서라 그대로 두면 새 참조처들이 읽지 않아 축적 내용이 고아가 된다.
  *    원본은 지우지 않는다(사용자 파일 불가침).
- * @returns {{ available: boolean, apply: function }}
+ * @returns {{ available: boolean, apply: function }} — apply()는 append한 필수 절 key 목록을 반환
  */
 function planTestGuide(cwd) {
   const guidePath = path.join(cwd, '.project', 'TEST-GUIDE.md');
@@ -260,8 +287,18 @@ function planTestGuide(cwd) {
         '> `*.local.md`는 taskery update가 건드리지 않는다 — 이 리포가 소유한다.',
         '',
       ].join('\n');
+      // 필수 절 골격 보강 — TEST-GUIDE에는 없던 절(TASKERY_RULE §8)이라 이관만으로는 빠진다.
+      // 헤딩은 접두 일치로 검사한다(완전 일치 요구 금지 — 뒤에 부가 텍스트가 붙는다).
+      const titles = splitSections(stripped).map((s) => s.title);
+      const appended = TEST_RULE_REQUIRED_SECTIONS.filter(
+        (sec) => !titles.some((t) => t.startsWith(sec.key)),
+      );
+      const tail = appended.length
+        ? `${stripped.endsWith('\n') ? '' : '\n'}\n${appended.map((s) => s.block).join('\n\n')}\n`
+        : '';
       fs.mkdirSync(path.dirname(localPath), { recursive: true });
-      fs.writeFileSync(localPath, header + stripped);
+      fs.writeFileSync(localPath, header + stripped + tail);
+      return appended.map((s) => s.key);
     },
   };
 }
