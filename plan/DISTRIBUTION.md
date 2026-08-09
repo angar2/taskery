@@ -156,11 +156,35 @@
 
 **+ `*.local.md` 보호**: manifest에 없음 → 항상 미터치. 사용자 오버라이드 영역.
 
+### 6-1. 예외 — `AGENTS.md`는 4 분기를 타지 않는다 (0.8.1+)
+
+`AGENTS.md`는 **taskery 지침 + 리포 값이 한 파일에 공존**하는 유일한 자산이다. 리포 값이 들어간 순간
+템플릿과 바이트 일치가 원리적으로 불가능하므로, 위 4 분기(해시 동일성 판정)를 적용할 수 없다.
+적용하면 두 결과뿐이다 — **자동 갱신 분기로 빠져 리포 값이 소리 없이 소멸하거나, customize 분기에서
+사용자가 거절해 구판 문안에 영구 고착된다.** (0.7.0에서 실제로 발생. `stash`·`recordion` 피해.)
+
+그래서 `AGENTS.md`는 본 루프에서 **항상 제외**하고, [bin/migrate.js](../bin/migrate.js)의
+`recomposeEntryDocs`가 **매 update 재조립**한다.
+
+| 항목 | 규칙 |
+|------|------|
+| 실행 시점 | 1회성 이행이 아니라 **매 update 항상** |
+| 조립식 | 새 템플릿 헤딩·인용문 + 현 문서의 리포 내용(값 줄·표·산문·리포 인용문) |
+| 인용문 판정 | `bin/legacy-quotes.js`(과거 전 버전 문안) ∪ *현재 템플릿* 인용문에 있으면 taskery 소유 → 교체. 없으면 리포 소유 → 보존 |
+| 판정 실패 방향 | **보존 쪽으로 실패한다** — 목록에 없으면 남긴다(중복은 눈에 띄지만 유실은 복구 불가) |
+| manifest 해시 | 템플릿 원본이 아니라 **조립 결과물**의 해시(`sha256Text`). 이걸 틀리면 매 update 오검출 |
+| 값 칸 밖 내용 | 결과물에 싣지 않되 **전량 출력**(`unmapped`). 최초 이행 때는 억제 — 그때의 미반영분은 전량이 구 taskery 본문이라 노이즈(0.6.1 기준 88줄) |
+| 리포가 지운 절 | 되살리지 않는다(삭제 의사 존중) |
+| 죽은 경로 | 우리가 수행한 이름 변경만 1:1 치환(`TEST-GUIDE.md` → `rules/TEST_RULE.local.md`) 후 치환 줄 출력 |
+
+`CLAUDE.md`는 최초 이행 때 `@AGENTS.md` 한 줄로 축약된 뒤로는 순수 템플릿 파일이라 4 분기가 정상 관리한다.
+
 **구현 흐름** ([bin/update.js](../bin/update.js)):
 ```js
 // 1. .taskery-manifest.json 읽기 (없으면 'init' 안내 + exit)
 // 2. template/ 새 해시 맵 (walkTemplate)
-// 3. 각 새 template 파일 분기 (a/b/c/d)
+// 2.5. 진입 문서 재조립 (recomposeEntryDocs) — 본 루프보다 먼저, 매 update 항상
+// 3. 각 새 template 파일 분기 (a/b/c/d) — 2.5가 처리한 경로는 제외
 // 4. 사라짐 검사
 // 5. 새 manifest 갱신 (updated_at 갱신)
 // 6. 결과 요약 출력
@@ -329,3 +353,4 @@ npm publish --tag beta       # beta tag로 publish
 | 2026-05-31 | 정합 순회 5차 후속 정정 — §3 표 `bin/taskery.js` 분량 *1,694 B* → *1,870 B* (2차 commit에서 헤더 주석에 `status` / `prune` 서브커맨드 2행 추가했으나 분량 표 갱신 누락분 정합) + §8 `package.json` 메타 예시: `"version": "0.1.0"` → *0.1.2* / `"engines"`에 `"git": ">=2.31.0"` 추가 / `"dependencies": { "proper-lockfile": "^4.1.2" }` 신규 추가 (실제 package.json 0.1.2 본문과 일치). 단순 수치/필드 정합, 행위 변경 X |
 | 2026-06-02 | 0.1.3 발행 후속 — §5 manifest 예시 `"version": "0.1.2"` → *0.1.3* 단순 수치 정합. 행위 변경 X |
 | 2026-06-28 | `/run-team` (Claude 전용) 추가 반영 — §5 manifest files 예시 주석에 *Claude 설치 시 + run-team = 27 (Codex 26)* 명시. run-team은 `.claude/skills/`에 직접 배치돼 `platformOf`가 claude로 분류 → Claude 선택 시에만 설치. §6 스모크 *26 unchanged*는 과거 실측 시점 기록이라 보존. PLAYBOOK §15 본구현. |
+| 2026-08-09 | §6-1 신설 — `AGENTS.md`는 update 4 분기의 예외(매 update 재조립)임을 명문화. 0.7.0 `bin/migrate.js` 결함 3건(절 통째 이식으로 폐지 문서 링크 부활 / manifest에 조립 전 템플릿 해시 기록 / 구형 `AGENT-GUIDE.md` 미정리)의 뿌리가 "리포 값을 품는 파일을 바이트 관리 자산으로 다룬 것"이었고, 그 구조 자체를 문서에 남기지 않아 재발 위험이 있었다. 조립식·인용문 판정 기준·해시 대상·값 칸 밖 처리·지운 절 존중·죽은 경로 치환을 표로 확정. §6 구현 흐름에 2.5 단계 추가 |
