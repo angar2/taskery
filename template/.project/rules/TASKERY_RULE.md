@@ -79,10 +79,10 @@ draft → planned → developing → developed → testing → tested → closed
 | `/project-init` | project | `AGENTS.md` 리포 값 기입 + `.project/` 진입·제품 관통 문서 + 리포 로컬 룰 초안 생성 (1회성) |
 | `/plan-init` | plan | plan 폴더·PLAN·ROADMAP 생성 + FEATURES/UX-UI에 의도 추가 |
 | `/task-init` | task | 채번 + 워크트리·브랜치 분기 + task 문서 골격 (→ `draft`) |
-| `/task-plan` | task | Requirements / Scope / Dev Plan / Test Plan 작성 (→ `planned`) |
+| `/task-plan` | task | Requirements / Scope / Dev Plan / Test Plan 작성 (→ `planned`). 해석 여지 태스크는 Test Plan을 격리 서브에이전트 B가 출제(출제 분리 — 구현자 겸 출제의 오독 동조 차단, 원문 origin 보존) |
 | `/task-dev` | task | Phase 순서 구현 + 자체 점검 (→ `developed`) |
-| `/task-test` | task | 서브에이전트 격리 검증 (→ `tested`) |
-| `/task-close` | task | 검증 게이트 + 커밋 + 부모 브랜치 병합 (→ `closed`) |
+| `/task-test` | task | 서브에이전트 격리 검증 (→ `tested`). 출제 분리 태스크는 origin 대조로 시험지 오염 검사(무플래그 수정 즉시 반려) + 핵심 시나리오 음성 대조 |
+| `/task-close` | task | 문서 게이트(PLAN·수정이력 grep) + 커밋 + CHANGELOG 자동 append + 부모 브랜치 병합 (→ `closed`) |
 | `/add-backlog` | meta | 백로그 항목 1건 추가 (얕은 분석 + 채번) |
 | `/log-friction` | meta | 작업 흐름의 불편을 `FRICTION_LOG.md`에 한 행 기록 |
 | `/run-team` | meta · **Claude 전용** | 다건 task를 팀원 세션에 분배해 병렬 처리 |
@@ -170,7 +170,7 @@ git 정책의 상세(브랜치 명명·커밋 형식·병합 방식·금지 명�
 | 섹션 | 내용 |
 |------|------|
 | 방식별 실행 경로 | 데이터 조회 / API 호출 / UI·E2E / 시각 실행 — 각 방식을 *이 프로젝트에서 실제로 돌리는 명령·경로·셋업* |
-| 테스트 실행 환경 | 화면·입력을 점유하는 스위트의 **격리 실행 경로**(창 숨김·헤드리스 플래그 / 컨테이너·가상 디스플레이 / VM / CI 러너) |
+| 테스트 실행 환경 | 화면·입력을 점유하는 스위트의 **격리 실행 경로**(창 숨김·헤드리스 플래그 / 컨테이너·가상 디스플레이 / VM / CI 러너). 결정 자체도 기록 대상이다 — 격리 경로를 두지 않기로 했다면 *"없음 — 매번 승인(사용자 결정 YYYY-MM-DD)"*로 적어 미결정 상태와 구분한다 |
 | 범위·방식 정책 | 무엇을 얼마나 검증하나 — 수정 루프에서의 실행 범위, 테스트 신설 상한 등 |
 
 **"방식별 실행 경로"는 그대로 실행 가능한 형태로 적는다.** 추상적 설명이 아니라 명령과 경로다. 모르면 비워 두지 말고 사용자에게 확인한 즉시 기록한다 — 재사용의 근거는 기억이 아니라 파일이어야 세션이 바뀌어도 남는다.
