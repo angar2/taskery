@@ -139,6 +139,12 @@ function sha256(filePath) {
   return 'sha256:' + crypto.createHash('sha256').update(buf).digest('hex');
 }
 
+// 파일이 아니라 *써 넣을 내용*의 해시. 조립해서 설치하는 자산(AGENTS.md)은 템플릿 원본과
+// 내용이 다르므로, manifest에는 반드시 조립 결과물의 해시를 기록해야 한다.
+function sha256Text(text) {
+  return 'sha256:' + crypto.createHash('sha256').update(Buffer.from(text, 'utf8')).digest('hex');
+}
+
 function walkTemplate(templateDir) {
   // template/ 안 모든 파일 상대경로 + 해시 맵 리턴
   // 결과: { 'CLAUDE.md': 'sha256:...', '.claude/skills/task-init/SKILL.md': 'sha256:...', ... }
@@ -1418,6 +1424,7 @@ module.exports = {
   gitignorePatternsFor,
   findTemplateDir,
   sha256,
+  sha256Text,
   walkTemplate,
   mkdirp,
   copyFile,
