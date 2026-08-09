@@ -140,8 +140,14 @@ MAIN_WT=$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")
 - 완료 기준: ...
 - 진행: [ ]
 
-### Phase 2 — ...
+### Phase 2 — <다중 파일 Phase의 표기 예>
+- 파일:
+  - src/auth/login.ts
+  - src/auth/session.ts (신규)
+- 왜: ...
 ```
+
+**`- 파일:` 다중 파일 표기 규격** — close가 이 필드를 파싱해 Phase 커밋을 자동 생성하므로 표기가 계약이다. 권장 = 들여쓴 목록(위 Phase 2 예), 허용 = 쉼표·가운뎃점(`·`) 구분 한 줄(`- 파일: a.ts, b.ts` / `- 파일: a.ts · b.ts`). `(신규)`·`(수정)` 류 꼬리 주석은 붙여도 된다(파서가 제거). 규격 밖 표기는 파서가 못 읽어 close가 `blocked:'mapping'`으로 멈춘다.
 
 ### Step 4.5 — HTML 목업 프로세스 (UX/UI 구현 task 한정 — stash FRICTION_LOG #14+19 반영)
 

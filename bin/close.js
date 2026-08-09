@@ -64,6 +64,9 @@ async function main() {
     console.error(
       `Phase↔파일 매핑 모호 (${result.reason}) — Dev Plan '파일' 필드 확인 후 수동 Phase 커밋 필요.`,
     );
+    console.error(
+      `미매핑 파일이 Dev Plan에 적혀 있다면 '- 파일:' 표기 형식(쉼표/가운뎃점/들여쓴 목록)을 확인 — 줄 전체가 경로 하나로 읽혔을 수 있습니다.`,
+    );
     process.stdout.write(JSON.stringify(result) + '\n');
     process.exit(2);
   }

@@ -1007,10 +1007,22 @@ const TAG_OF = {
 
 function _parseDevPlanPhases(content) {
   // ## Dev Plan 섹션의 `### Phase N — 이름` + `- 파일:` 필드 추출.
+  // 다중 파일 표기 지원 — 한 줄(쉼표·가운뎃점 `·` 구분) + `- 파일:` 다음의 들여쓴 하위 목록.
+  // `/`는 경로 문자라 분할자로 쓰지 않는다. `(신규)`류 꼬리 괄호 주석은 제거한다.
   const lines = content.split('\n');
   let inDevPlan = false;
   const phases = [];
   let cur = null;
+  let fileIndent = null; // `- 파일:` 줄의 들여쓰기 — 이보다 깊은 목록 항목을 파일로 수집
+  const pushFiles = (raw) => {
+    for (const piece of raw.split(/[,·]/)) {
+      const f = piece
+        .replace(/`/g, '')
+        .trim()
+        .replace(/\s*[(（][^)）]*[)）]\s*$/, ''); // 꼬리 괄호 주석 제거
+      if (f && !/^[(<]/.test(f)) cur.files.push(f); // placeholder(<...>, (...)) 제외
+    }
+  };
   for (const l of lines) {
     if (/^##\s+Dev Plan/.test(l)) {
       inDevPlan = true;
@@ -1022,15 +1034,23 @@ function _parseDevPlanPhases(content) {
     if (ph) {
       cur = { num: parseInt(ph[1], 10), name: ph[2].trim(), files: [] };
       phases.push(cur);
+      fileIndent = null;
       continue;
     }
     if (!cur) continue;
-    const fm = l.match(/^\s*-\s*파일\s*:\s*(.+)$/);
+    const fm = l.match(/^(\s*)-\s*파일\s*:\s*(.*)$/);
     if (fm) {
-      cur.files = fm[1]
-        .split(',')
-        .map((s) => s.replace(/`/g, '').trim())
-        .filter((s) => s && !/^[(<]/.test(s)); // placeholder(<...>, (...)) 제외
+      fileIndent = fm[1].length;
+      if (fm[2].trim()) pushFiles(fm[2]);
+      continue;
+    }
+    if (fileIndent != null) {
+      const sub = l.match(/^(\s+)-\s+(.+)$/);
+      if (sub && sub[1].length > fileIndent) {
+        pushFiles(sub[2]);
+        continue;
+      }
+      fileIndent = null; // 다른 필드·비목록 줄에서 하위 목록 수집 종료
     }
   }
   return phases;
