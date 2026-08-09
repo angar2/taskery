@@ -59,7 +59,7 @@ CLI 자동 작성분이 기본이고, 세션·사용자가 항목을 자유롭�
 **close CLI가 append한다 — 세션 수기 작성 불요, 보강만.**
 
 1. `npx @angar2/taskery close`(또는 `task_close` 도구)가 §2 형식으로 항목을 자동 append — 파일 없으면 생성(§1 두 형식 중 단일 `CHANGELOG.md` 실재 시 그쪽, 아니면 이번 달 `<YYYY-MM>.md`), 최신 위치(맨 위) 삽입, `[TASK-NNN]` 중복 가드(재호출 시 skip)
-2. 세션은 필요 시 append된 항목을 보강(§2 선택 필드)
+2. 세션은 필요 시 append된 항목을 보강(§2 보강)
 3. 커밋: 미등록 케이스는 close의 문서 커밋이 자동 수거 / 등록 케이스는 `.project/`가 git 밖이라 커밋 불요
 
 ---
@@ -67,11 +67,13 @@ CLI 자동 작성분이 기본이고, 세션·사용자가 항목을 자유롭�
 ## 5. 예시
 
 ```markdown
-## [TASK-042] 사용자 인증 OAuth 2.0 지원 추가
+## [TASK-042] 사용자 인증 OAuth 2.0 지원
 
 - **날짜**: 2026-06-15
 - **타입**: feature
-- **변경 요약**: Google / GitHub OAuth provider 추가. 기존 이메일·비밀번호 흐름 유지.
+- **변경 요약**:
+  - Phase 1 — OAuth provider 연동 (Google / GitHub)
+  - Phase 2 — 인증 라우트 배선
 - **영향 파일**: `src/auth/oauth.ts`, `src/routes/auth.ts`, `migrations/0042_oauth.sql`
 - **사유**: 외부 서비스 연동 요구 누적 — 인증 흐름 다변화
 
@@ -79,10 +81,11 @@ CLI 자동 작성분이 기본이고, 세션·사용자가 항목을 자유롭�
 
 - **날짜**: 2026-06-12
 - **타입**: bug
-- **변경 요약**: 이메일 형식 검증 누락으로 빈 입력 통과되던 버그 fix.
-- **영향 파일**: `src/components/LoginForm.tsx`
-- **사유**: TASK-038 신고 — 빈 이메일로 로그인 시도 시 서버 오류
+- **변경 요약**:
+  - Phase 1 — 이메일 형식 검증 보강
 ```
+
+(TASK-042 = CLI 자동 작성분에 영향 파일·사유를 보강한 예 / TASK-041 = CLI 자동 작성분 그대로.)
 
 ---
 
