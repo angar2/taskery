@@ -252,8 +252,11 @@ async function main() {
     console.log(`\n  .project/TEST-GUIDE.md는 0.7.0에서 폐지되고 역할이 TEST_RULE.local.md로 옮겨졌습니다.`);
     console.log(`  지금 옮기지 않으면 /task-plan·/task-dev가 기존 내용을 읽지 않습니다. (원본은 보존)`);
     if (await confirm(`  내용을 .project/rules/TEST_RULE.local.md로 이관할까?`)) {
-      tg.apply();
+      const appended = tg.apply();
       console.log(`    이관 완료 — .project/rules/TEST_RULE.local.md (원본 TEST-GUIDE.md 보존)`);
+      if (appended.length > 0) {
+        console.log(`    누락 절 골격 ${appended.length}개 추가(${appended.join(' / ')}) — 내용은 직접 채워주세요.`);
+      }
     }
   }
 

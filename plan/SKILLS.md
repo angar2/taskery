@@ -12,10 +12,10 @@
 | `/project-init` | **project** | 진입 문서(PROJECT/LINKED-REPOS/GLOSSARY/.env) + 리포 로컬 룰 초안(TEST_RULE/DEV_RULE.local.md) + 제품 관통 문서(그룹 A 작성 / 그룹 B 골격, `.project/` 루트) 생성 | — | **1회성** (프로젝트 첫 셋업) |
 | `/plan-init` | **plan** | `.project/plans/<NNN_slug>/` PLAN.md / ROADMAP.md + 제품 관통 문서 FEATURES/UX-UI 의도 delta | — | 기능 그룹마다 |
 | `/task-init` | **task** | **워크트리 분기** + task.md 6 섹션 placeholder + 헤더 status=draft. BL 출처 진행 시 `tasks/<NNN_slug>/BACKLOG.md` 항목 확인 마킹 (`[ ]` → `[x]` + TASK 마크) | — → `draft` | task마다 |
-| `/task-plan` | task | Requirements / Scope / Dev Plan / Test Plan 채우기 (워크트리 호출 default — 멀티세션. 호출 위치 자유, cwd 무관) | `draft` → `planned` | task마다 |
+| `/task-plan` | task | Requirements / Scope / Dev Plan / Test Plan 채우기 (워크트리 호출 default — 멀티세션. 호출 위치 자유, cwd 무관). 해석 여지 태스크는 **출제 분리** — Test Plan을 격리 서브에이전트 B가 출제(입력 = Requirements 합의문·승인 목업·TEST_RULE.local.md만, origin 원문 보존, A 수정권 = 방식 칸+플래그) | `draft` → `planned` | task마다 |
 | `/task-dev` | task | Phase 순서 구현 + self-check 게이트 (워크트리 호출 default. cwd 무관) | `planned`/`developing` → `developed` | task마다 |
-| `/task-test` | task | Task tool 격리 검증 (confirmation bias 회피. 워크트리 호출 default. cwd 무관) | `developed` → `tested` (또는 `developing`/`tested`+결함 명시) | task마다 |
-| `/task-close` | task | git 마무리 + 검증 명령 재실행 게이트 + **머지 락 직렬화** + 부모 브랜치 `--no-ff` 병합 + **워크트리/브랜치 자동 정리**. BACKLOG.md 무관 (task-init이 처리) | `tested` → `closed` | task마다 |
+| `/task-test` | task | Task tool 격리 검증 (confirmation bias 회피. 워크트리 호출 default. cwd 무관). 출제 분리 태스크는 origin 대조 **시험지 오염 검사**(무플래그 차이 즉시 반려) + 핵심 시나리오 **음성 대조**(일시 되돌림 FAIL 확인 후 원복) | `developed` → `tested` (또는 `developing`/`tested`+결함 명시) | task마다 |
+| `/task-close` | task | git 마무리 + 검증 명령 재실행 게이트 + **문서 게이트**(PLAN 체크·수정이력 grep — 누락 시 `blocked:'docs'`) + **CHANGELOG 자동 append** + **머지 락 직렬화** + 부모 브랜치 `--no-ff` 병합 + **워크트리/브랜치 자동 정리**. BACKLOG.md 무관 (task-init이 처리) | `tested` → `closed` | task마다 |
 | `/add-backlog` | **meta** | 사용자 발화로 *plan(기능 그룹)별* `tasks/<NNN_slug>/BACKLOG.md`에 항목 1건 추가 — 얕은 분석(개요 / 대상 영역) + BL-NNN 채번 + `withMetaLock` 직렬화 (0.1.2+) | — | 사용자 호출 / 백로그 발화 캐치 |
 | `/log-friction` | **meta** | FRICTION_LOG.md에 사용자 불편 한 행 기록 | — | 사용자 호출 / 불만 발화 캐치 / task-close 자체 감지 |
 | `/run-team` | **meta · Claude 전용** | agent teams로 다건 태스크를 팀원(독립 세션)에 분배해 자동 병렬 처리. 워크트리·머지는 기존 task 스킬이 담당 | — (오케스트레이터) | 트리거 발화 시에만 (실험 기능 전제) |
@@ -340,3 +340,4 @@ CLAUDE.md `## 검증 명령` 단일 섹션이 *4 시점에 분산 실행* (self-
 | 2026-06-02 | 0.1.3 F3 정합 — §1 스킬 표 task-plan/dev/test 캡션 *워크트리 안 호출* → *워크트리 호출 default (멀티세션), 호출 위치 자유, cwd 무관* / §3.5 호출 위치 분기(task-close) → *호출 위치 정책 (0.1.3+ — cwd 무관 동작 보장)* 섹션 재작성: 운영 모델 3가지(멀티세션 병렬 default / 단일 메인 지휘 / 메인 spawn 서브 세션) 모두 지원 + cwd 무관 동작 + 내부 명령 형태 강제 (`git -C` 형태, 셸 prefix / `--git-dir=` / `--work-tree=` 변형 금지) + git-guard.sh 5종 변형 인식 명시. stash FRICTION_LOG 2026-06-01 반영. |
 | 2026-06-28 | `/run-team` (agent teams 자동 병렬, Claude 전용) 추가 — 제목·캡션 + §1 표 행 + 위계 정신 meta 그룹 + §3.7 신규 섹션 + §4 본문 표 행(12,749 B). 공통 9종은 유지, Claude 전용 1종 분리 표기(패리티 의도적 갈림). PLAYBOOK §15 본구현. |
 | 2026-07-11 | 0.6.0 부모 브랜치 파라미터화 정합 — 분기·되병합 기준을 `dev` 고정에서 *task-init 시점의 현재 브랜치(= 부모 브랜치)*로 일반화. §1 task-close 병합 캡션 / §2 add-backlog 위치 검증 / §3.5 SSoT 명령·메인 워크트리 고정·.gitignore 미등록 반영 / §3.6 체크박스 의미·완료 추적 grep(`git log --all --grep`) / §8 예시 흐름 주석의 *dev* 표기를 *부모 브랜치*로 갱신. git-guard의 main/dev 보호·상태명·`/task-dev` 스킬명은 유지. |
+| 2026-08-09 | 프릭션 5건 수선 정합 — §1 표 갱신: task-plan 출제 분리(B 격리 출제·origin 보존·방식 칸+플래그 수정권) / task-test 시험지 오염 검사·음성 대조 / task-close 문서 게이트(`blocked:'docs'`)+CHANGELOG 자동 append. recordion FRICTION 2026-08-09 반영 |

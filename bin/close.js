@@ -8,10 +8,11 @@
  * 코드가 수행하고 멈춘다. 이후 비가역(사전 rebase+충돌해결 / 머지 락 / 부모 --no-ff 머지 /
  * worktree remove / branch -d)은 스킬(task-close)이 git-guard hook + 복구출력 보호 하에 수행.
  *
- * stdout: { prepped, branch, parent, wtPath, registered, commits, aheadOfParent }. parent = 머지 대상. exit 0.
+ * stdout: { prepped, branch, parent, wtPath, registered, commits, aheadOfParent, changelog }. parent = 머지 대상. exit 0.
  * 콜백(스킬이 LLM 판단 후 처리):
  *   - exit 3 + { blocked:'status', current }  — status가 tested 아님 (게이트 차단)
  *   - exit 2 + { blocked:'mapping', files, phases, reason } — Phase↔파일 매핑 모호 (수동 커밋 필요)
+ *   - exit 4 + { blocked:'docs', missing }    — PLAN 체크·수정이력 누락 (문서 채운 후 그대로 재호출)
  * 그 외 실패 시 stderr + exit 1.
  */
 
@@ -60,9 +61,20 @@ async function main() {
     process.stdout.write(JSON.stringify(result) + '\n');
     process.exit(3);
   }
+  if (result.blocked === 'docs') {
+    console.error(`문서 게이트 차단 — 아래 문서에 TASK 표기 누락. 채운 후 그대로 재호출(변이 없음).`);
+    for (const miss of result.missing) {
+      console.error(`  - [${miss.kind === 'plan' ? 'PLAN 체크리스트' : '수정 이력'}] ${miss.file}`);
+    }
+    process.stdout.write(JSON.stringify(result) + '\n');
+    process.exit(4);
+  }
   if (result.blocked === 'mapping') {
     console.error(
       `Phase↔파일 매핑 모호 (${result.reason}) — Dev Plan '파일' 필드 확인 후 수동 Phase 커밋 필요.`,
+    );
+    console.error(
+      `미매핑 파일이 Dev Plan에 적혀 있다면 '- 파일:' 표기 형식(쉼표/가운뎃점/들여쓴 목록)을 확인 — 줄 전체가 경로 하나로 읽혔을 수 있습니다.`,
     );
     process.stdout.write(JSON.stringify(result) + '\n');
     process.exit(2);

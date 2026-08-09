@@ -103,6 +103,7 @@ draft → planned → developing → developed → testing → tested → closed
 | spec-diffs (변경된 제품 문서(루트) 추적) | `.project/tasks/<NNN_slug>/spec-diffs/<NNN>_<slug>_spec-diff.md` (**`<NNN_slug>` 공통** — 단일/폴더 모두) | `/task-plan` Step 6 (Phase 0 변경 시) |
 | screenshots (UI 작업 자료) | `.project/tasks/<NNN_slug>/screenshots/<NNN>_*.png` (**`<NNN_slug>` 공통**) | `/task-test` 격리 세션 또는 메인 |
 | mockup (UX/UI HTML 목업) | `.project/tasks/<NNN_slug>/mockup/<task-doc-name>-mockup.html` (**`<NNN_slug>` 공통** — 단일/폴더 모두) | `/task-plan` Step 4.5 (UX/UI task 한정) — 단일 진실 소스 `MOCKUP_RULE.md` |
+| test-plan-origin (출제 분리 B 원문) | `.project/tasks/<NNN_slug>/<NNN>_<slug>_test-plan-origin.md` (**`<NNN_slug>` 공통** — 단일/폴더 모두) | `/task-plan` Step 5-B (분리 적용 task 한정) — B 산출 그대로 보존, `/task-test` 오염 대조의 기준 사본 |
 | 폴더 승격 task의 추가 자료 (서브 문서 등) | `TASK-<NNN>_<slug>/` 안 자유 | 메인 / `/task-dev` |
 
 **원칙**:
@@ -111,7 +112,7 @@ draft → planned → developing → developed → testing → tested → closed
 - **spec-diff = per-task 기록** — 그 task가 어느 *제품 문서(`.project/` 루트)*를 NEW/MOD/DEL 했는지의 task 산출물. 제품 문서의 *정식 변경 이력은 git*이 단일 진실이며, 별도 전역 변경 인덱스는 두지 않는다.
 - 폴더 승격은 *task의 추가 자료*용 (서브 문서 / 디자인 자료 등) — *spec-diffs / screenshots / mockup 위치 X*.
 
-**closed-immutable hook 보호 범위** — task.md 본 파일만 (단일 파일 또는 폴더 승격 task.md). spec-diffs / screenshots / mockup / 폴더 승격 추가 자료는 *역사적 자료*로 자유 수정.
+**closed-immutable hook 보호 범위** — task.md 본 파일만 (단일 파일 또는 폴더 승격 task.md). spec-diffs / screenshots / mockup / 폴더 승격 추가 자료는 *역사적 자료*로 자유 수정. **단 test-plan-origin은 hook 보호 밖이어도 규약상 불변** — 오염 대조의 기준 사본이므로 어떤 주체도 수정하지 않는다.
 
 ---
 
@@ -216,6 +217,14 @@ draft → planned → developing → developed → testing → tested → closed
 | 동작 (클릭 / 호버 / 드래그 / 입력 → 결과) | 도구 있으면 `[AUTO]` E2E, 없으면 `[USER]` | 액션 후 관측 변화 |
 | 시각 *객관* (레이아웃 / 요소 유무 / 색 / 배치 깨짐) | `[AUTO]` 캡처-목업 대조 | 승인 목업 (`mockup/<task-doc-name>-mockup.html`) — 화면 캡처 → 대조 → 어긋남 목록 |
 | 시각 *미세 취향* (2px / 색조 / 호버 강도 / 느낌) | `[USER]` 체크리스트 + 목업 참조 | 사용자 최종 사인 (증거 캡처) |
+
+**기대값 출처 표기** (UX/UI task 한정) — 모든 `[AUTO]` PASS 기준 끝에 출처를 단다: `(출처: 목업 §N / Req N)`. 출처를 못 다는 기대값은 `(출처 없음 — 사용자 확인 필요)`로 표기해 합의 때 사용자 확인 항목으로 분리한다. task-test 문 앞 검사의 자격 요건이다.
+
+**출제 분리 계약** (해석 여지 태스크 — task-plan Step 2.5 / 5-B):
+- 출제 주체 = 격리 서브에이전트 **B** (입력 = Requirements 합의문 + 승인 목업 + `TEST_RULE.local.md`만 — B 기동 시점에 Dev Plan 부재). B 원문은 `<NNN>_<slug>_test-plan-origin.md`로 그대로 보존한다 (§1.5).
+- **A(메인)의 수정권 = 방식 칸만**, 그것도 `TEST_RULE.local.md` 등재 경로로 교체할 때만. **시나리오 칸·PASS 기준 칸 불가침.**
+- **플래그 문법** — origin과 달라지는 모든 칸에 필수: `【<A수정|사용자결정|보수> · 원안: "<원문>"(· 근거: TEST_RULE.local.md §<절> — A수정만)】`. 정당 경로 3종 = A수정(방식 교체) / 사용자결정(Step 7 합의 변경) / 보수(Test Plan 보수 모드). **무플래그 차이 = task-test가 시험지 오염으로 즉시 반려.**
+- task-test는 origin 대조(룰 18)로 오염을 검사하고, 오염 판정 시 메인이 origin 기준으로 복원한다.
 
 **시각 영역 fix 사이클 사전 예고** — 시각 시나리오 있으면 Test Plan 끝에 *"시각 영역 항목 N개 — fix 사이클 1~2회 예상"* 명시 (사용자 기대치 사전 정렬).
 
@@ -656,3 +665,4 @@ Test Plan 작성 완료 후 *반드시* 점검. *"누적/리셋 안 함"* 같은
 | 2026-05-30 | stash FRICTION_LOG 기반 정합 — §1.5 mockup 행 추가 (vX.X 공통, 단일 진실 소스 MOCKUP_RULE) + §2.5 Test Plan 본질 재정의 (실질 동작 시나리오 + `[AUTO]` / `[USER]` 분류 강제 + 카탈로그 7방식 + UX/UI 영역 분리 매트릭스 + 시각 fix 사이클 사전 예고 + 검증 / 테스트 명령 두 섹션 참조) + §4.5 / §5 완성 예시 3개 Test Plan 형식 갱신 (분류 표 + PASS 기준 명시. 기존 번호 매김 시나리오 + 검증 명령 나열은 옛 형식). (stash FRICTION_LOG #14+19 / #25 정합) |
 | 2026-06-02 | 0.1.3 F5 정합 — §2.5 가이드라인 안티패턴 3종 추가 (grep/Read-only 보조용 / 요구사항당 end-to-end 1개 이상 / 무거운 검증 회피 금지) + 요구사항 ↔ 시나리오 커버리지 점검 단계 신설 (stash FRICTION_LOG 2026-06-01 Test Plan 동어반복 + 누락 마찰 반영) |
 | 2026-06-27 | PLAYBOOK §13 정합 — plan = 기능 그룹. 헤더 *플랜* 컬럼 = `NNN_slug` 폴더명(예: 001_mvp). §1.5 경로 `tasks/<NNN_slug>/`, *`<NNN_slug>` 공통*으로 통일. spec-diff 정의 = *변경된 제품 문서(루트) 추적*(per-task 기록, 정식 변경 이력은 git 단일 진실) |
+| 2026-08-09 | 출제 분리 정합 — §1.5 test-plan-origin 행 추가(B 원문 보존, 규약상 불변) + §2.5 기대값 출처 표기·출제 분리 계약 명문(방식 칸 불가침 / 플래그 문법 【A수정|사용자결정|보수 · 원안】 / 무플래그 차이=오염 반려). recordion FRICTION 2026-08-09 반영 |
