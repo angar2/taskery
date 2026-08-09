@@ -79,10 +79,10 @@ draft → planned → developing → developed → testing → tested → closed
 | `/project-init` | project | `AGENTS.md` 리포 값 기입 + `.project/` 진입·제품 관통 문서 + 리포 로컬 룰 초안 생성 (1회성) |
 | `/plan-init` | plan | plan 폴더·PLAN·ROADMAP 생성 + FEATURES/UX-UI에 의도 추가 |
 | `/task-init` | task | 채번 + 워크트리·브랜치 분기 + task 문서 골격 (→ `draft`) |
-| `/task-plan` | task | Requirements / Scope / Dev Plan / Test Plan 작성 (→ `planned`) |
+| `/task-plan` | task | Requirements / Scope / Dev Plan / Test Plan 작성 (→ `planned`). 해석 여지 태스크는 Test Plan을 격리 서브에이전트 B가 출제(출제 분리 — 구현자 겸 출제의 오독 동조 차단, 원문 origin 보존) |
 | `/task-dev` | task | Phase 순서 구현 + 자체 점검 (→ `developed`) |
-| `/task-test` | task | 서브에이전트 격리 검증 (→ `tested`) |
-| `/task-close` | task | 검증 게이트 + 커밋 + 부모 브랜치 병합 (→ `closed`) |
+| `/task-test` | task | 서브에이전트 격리 검증 (→ `tested`). 출제 분리 태스크는 origin 대조로 시험지 오염 검사(무플래그 수정 즉시 반려) + 핵심 시나리오 음성 대조 |
+| `/task-close` | task | 문서 게이트(PLAN·수정이력 grep) + 커밋 + CHANGELOG 자동 append + 부모 브랜치 병합 (→ `closed`) |
 | `/add-backlog` | meta | 백로그 항목 1건 추가 (얕은 분석 + 채번) |
 | `/log-friction` | meta | 작업 흐름의 불편을 `FRICTION_LOG.md`에 한 행 기록 |
 | `/run-team` | meta · **Claude 전용** | 다건 task를 팀원 세션에 분배해 병렬 처리 |
