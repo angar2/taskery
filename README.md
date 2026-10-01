@@ -1,288 +1,205 @@
 # taskery
 
-AI 코딩 에이전트의 자율 개발을 위한 Task 기반의 가드레일 시스템.
+AI 코딩 에이전트와 일하는 방식을 **태스크** 단위로 정리하는 가벼운 작업 체계다.
+
+- 지원 에이전트: Claude Code, Codex
+- 판단(요구 정리·코드 작성·완료 기준 작성·충돌 해결)은 에이전트가 하고, 누가 해도 결과가 같은 일(번호 발급·브랜치와 작업 폴더 만들기·기록·커밋·병합·정리)은 taskery 명령이 한다.
+
+> **태스크** = 하나의 목적을 가진 작업 단위다. 버그 하나, 화면 하나, 기능 하나가 각각 태스크가 된다.
 
 ---
 
 ## 해결하는 문제
 
-- Task 단위 라이프사이클의 가이드를 제시한다.
-- 메인 세션을 단독으로 운영할 때 자주 발생하는 사고를 사전 차단한다.
-
-| 문제 | taskery 대응 |
-|------|------------|
-| AI 협업 작업이 매번 즉흥적이라 일관된 체계가 없음 | task 단위 라이프사이클로 작업 흐름 구조화 — 단계별 자동화 가능 |
-| 작업 컨텍스트가 휘발되어 이전 결정·사유를 추적하기 어려움 | task 문서로 컨텍스트와 히스토리 기록 — 작업 중 참조 가능 |
-| 에이전트가 catastrophic 사고를 일으킬 수 있음 | 필수 hook으로 차단 — 정상 흐름에는 무간섭 |
-| 에이전트가 작성한 코드의 자가검증으로 인해 문제를 놓침 (confirmation bias) | 테스트 시 별도 격리 세션 호출(`/task-test`) — 메인 세션의 가정 없이 독립 검증 |
-| 단일 메인 세션 운영으로 인해 task를 직렬로 진행해야 하는 병목 | 같은 프로젝트에서 여러 메인 세션이 독립 작업 폴더(worktree)로 병렬 진행 — 머지 시점에 직렬화로 정합성 유지 |
-| 검수 중 한 줄만 고쳐도 전체 테스트를 다시 돌려 대기 시간이 길어짐 | 수정 구간에는 변경이 닿는 테스트만 실행 — 전체 실행은 task당 1회로 제한 |
-| 테스트가 앱 화면을 띄우고 조작해 그동안 컴퓨터를 쓸 수 없음 | 화면·입력을 점유하는 테스트는 창을 띄우지 않는 실행 경로가 준비된 경우에만 자동 실행 — 없으면 사용자 승인 후 실행 |
-| 프로젝트마다 개발·테스트 방식이 다른데 공통 규칙만 적용됨 | 프로젝트 전용 규칙 파일(`*.local.md`)을 각 스킬이 읽어 우선 적용 — 패키지를 갱신해도 덮어쓰지 않음 |
-
-> catastrophic 사고 예시 — git 운영 정책 위반, 검증 우회, 완료된 task 문서 재수정 등
+| 에이전트를 그대로 쓸 때 겪는 문제 | taskery의 대응 |
+|---|---|
+| 무엇을 왜 바꿨는지가 대화 속에 흩어져, 나중에 다시 찾기 어렵다 | 태스크마다 짧은 문서(목표·완료 기준·만질 파일·결정·결과)를 남긴다 |
+| 에이전트가 "완료했다"고 하지만 기능이 처음부터 끝까지 실제로 되는지는 확인되지 않는다 | 사용자가 화면에서 보는 결과로 적은 완료 기준(최대 5개)을 실제로 실행하고, 증거가 없는 통과는 인정하지 않는다 |
+| 에이전트가 확인한다며 앱 화면을 띄우는 느린 테스트까지 매번 돌려 오래 기다린다 | 개발 단계의 코드 테스트에는 앱 화면을 켜지 않는 명령만 등록하고, 3분을 넘으면 알린다 |
+| 에이전트가 어디까지 진행하고 멈출지 예측하기 어렵다 | 사용자가 말한 범위까지만 진행한다. 범위를 말하지 않으면 한 단계만 하고 멈춘다 |
+| 여러 작업을 동시에 맡기면 한 폴더에서 변경이 섞이고 병합이 엉킨다 | 태스크마다 브랜치와 작업 폴더를 따로 만들고, 병합은 잠금 안에서 하나씩 한다 |
+| 커밋 형식·병합 방식·브랜치 정리를 매번 지시해야 한다 | 리포의 git 규칙 표를 읽어 명령이 커밋·병합·정리를 한다 |
+| 프로젝트마다 앱 실행 방법과 구현 관행이 다른데 매번 다시 설명한다 | 프로젝트 전용 규칙 파일(`*.local.md`)을 에이전트가 단계마다 읽는다 |
 
 ---
 
-## 워크플로우
+## 작동 방식
 
-task 단위 라이프사이클은 7 상태로 구성된다.
+### 태스크의 다섯 단계
 
-**task 상태**
+| 단계 | 에이전트가 하는 일 | 끝에 부르는 명령 |
+|---|---|---|
+| 시작 | 요청이나 백로그 항목을 태스크 하나로 정리하고 유형·크기·이름을 정한다 | `prepare-task` — 번호·브랜치·작업 폴더·태스크 문서를 만든다 |
+| 기획 | 목표·완료 기준·만질 파일을 적고 사용자 확인을 받는다 | `approve-plan` — 문서를 검사하고 계획 끝을 기록한다 |
+| 개발 | 코드를 고치고 단위 테스트를 쓴다 | `test-code` — 등록된 코드 테스트를 실행한다 |
+| 테스트 | 앱을 한 번 켜서 완료 기준을 실제로 해 보고 증거를 남긴다 | `test-scenario` — 시나리오마다 결과와 증거를 기록한다 |
+| 마무리 | 결정 중 앞으로도 지킬 것을 프로젝트 문서에 반영한다 | `verify-close` → `commit-task` → `merge-task` → `close-task` — 검사·커밋·병합·정리 |
+
+- **태스크 문서**: 태스크마다 15~30줄의 마크다운 문서 하나다. 맨 위의 메타 줄과 단계 표(각 단계의 완료 여부와 걸린 시간)는 명령이 쓰고, 나머지는 에이전트가 쓴다.
+- **완료 기준**: `[AUTO|USER] 시작 → 행동 → 기대하는 끝 상태` 한 줄씩 최대 5개다. `[AUTO]`는 에이전트가 실행해 확인하고, `[USER]`는 사용자가 눈으로 확인한다.
+- **크기**(`small`·`medium`·`large`): 문서에 얼마나 적는지를 정한다. small은 커밋 하나, medium·large는 계획에 적은 Phase(작업 묶음)마다 커밋 하나다.
+- **스위치**(기획·개발·테스트): 그 단계를 정식으로 거치는지를 정한다. 기본은 모두 켜짐이다. 예를 들어 시나리오대로 점검만 하는 태스크는 개발을 끄고, 코드를 바꾸지 않은 채 결과만 기록한다.
+- **상태**는 열림·닫힘 둘뿐이다. 단계 표는 명령이 성공했을 때만 채워지므로 에이전트의 말이 아니라 실제 진행을 보여 준다.
+
+### 진행 범위
+
+| 사용자의 말 | 에이전트의 동작 |
+|---|---|
+| 범위를 말하지 않음 | 한 단계만 하고 멈춰 보고한다 |
+| "개발까지" 처럼 단계를 지정 | 그 단계까지 멈추지 않고 이어 간다 |
+| "끝까지" | 병합과 정리까지 한다. 계획 확인과 병합 확인도 맡긴 것으로 본다 |
+
+범위와 관계없이 사용자가 눈으로 확인할 시나리오, 테스트 실패, 풀지 못한 병합 충돌에서는 멈춘다. 되돌릴 수 없는 git 명령(강제 푸시 등)은 언제나 사용자 승인을 받는다.
+
+### 작업 흐름 예시
 
 ```
-draft → planned → developing → developed → testing → tested → closed
+사용자: "설정 화면의 저장 버튼 색을 바꿔 줘"
+  → task-init: 태스크를 열고 그 태스크의 작업 폴더를 만든 뒤 멈춘다(범위를 말하지 않았으므로 한 단계)
+사용자: "개발까지 해 줘"
+  → task-plan: 목표·완료 기준·만질 파일을 적는다
+  → task-dev: 코드를 고치고 코드 테스트를 통과시킨다
+사용자: "끝까지 해 줘"
+  → task-test: 완료 기준을 실제로 해 보고 결과를 기록한다
+  → task-close: 커밋하고 부모 브랜치에 병합한 뒤 작업 폴더를 정리한다
 ```
-
-| 상태 | 의미 |
-|------|------|
-| `draft` | 새 task 생성 직후 |
-| `planned` | 작업 기획 완료 |
-| `developing` | 구현 진행 중 |
-| `developed` | 구현 완료 (자가 검증 통과) |
-| `testing` | 독립 검증 진행 중 |
-| `tested` | 독립 검증 완료 |
-| `closed` | git 커밋 + 부모 브랜치 병합 완료 |
-
-> 상태별 전이 조건과 task 문서 양식은 [TASK-DOC.md](https://github.com/angar2/taskery/blob/main/plan/TASK-DOC.md)에서 확인 가능
 
 ---
 
 ## 빠른 시작
 
-> **요구 사항**: Node.js ≥ 18, git ≥ 2.31 (멀티세션 워크트리 기능 사용 시).
-
-### npx
-
-특정 프로젝트에 일회성 다운로드 방식.
+> **요구 사항**: Node.js 18 이상, git 2.31 이상.
 
 ```bash
-# 새 프로젝트
+# 새 프로젝트 — 폴더를 만들고 그 안에 설치한다
 npx -p @angar2/taskery create-taskery <project-name>
 
-# 기존 프로젝트에 도입 (init 시 에이전트 플랫폼 선택)
+# 기존 프로젝트 — 리포 루트에서 설치한다(에이전트를 고르는 질문이 나온다)
 cd <project-name>
 npx @angar2/taskery init
 
-# 다른 플랫폼 자산 추가 (예: 기존 설치에 Codex 추가)
+# 다른 에이전트를 추가로 설치한다
 npx @angar2/taskery add codex
 
-# 최신 버전 머지 갱신
+# 설치된 파일을 새 버전으로 갱신한다
 npx @angar2/taskery update
-
-# 멀티세션 보조 명령
-npx @angar2/taskery status   # 진행중 태스크 / 워크트리 / 머지 락 현황
-npx @angar2/taskery prune    # stale 워크트리 / 브랜치 대화형 정리
 ```
 
-### 글로벌 npm install
+전역으로 설치하면 `npx @angar2/taskery` 대신 `taskery`로 부른다(`npm install -g @angar2/taskery`).
 
+- **빈 폴더**에서 `init`을 부르면 git을 시작하고, 빈 첫 커밋을 만들고, 통합 브랜치(기본 `dev`)를 만들어 그 브랜치로 옮긴다.
+- **파일은 있는데 git이나 커밋이 없는 폴더**에서는 멈춘다. 첫 커밋에 무엇을 넣을지(`.env` 같은 비밀값 포함 여부)는 사용자가 정할 일이므로, 첫 커밋을 직접 만든 뒤 다시 부른다.
 
-```bash
-# 글로벌 설치
-npm install -g @angar2/taskery
-
-# 새 프로젝트
-create-taskery <project-name>
-
-# 기존 프로젝트에 도입 (init 시 에이전트 플랫폼 선택)
-cd <project-name>
-taskery init
-
-# 다른 플랫폼 자산 추가 (예: 기존 설치에 Codex 추가)
-taskery add codex
-
-# 최신 버전 머지 갱신
-taskery update
-
-# 멀티세션 보조 명령
-taskery status
-taskery prune
-```
+설치를 마치면 에이전트 세션에서 `project-init` 스킬로 프로젝트 정보·용어집·코드 테스트 명령·첫 플랜을 만든다.
 
 ---
 
-## 패키지 디렉토리 구조
-
-`taskery init` 직후 골격 (아래는 Claude Code 선택 시 예시):
+## 설치되는 것
 
 ```
-my-app/
-├─ AGENTS.md                              # AI 에이전트 진입 문서 (본문 단일 소스)
-├─ CLAUDE.md                              # Claude Code용 — `@AGENTS.md` 임포트 한 줄
-├─ .taskery-manifest.json                 # 패키지 업데이트 추적
-├─ .gitignore
-├─ .claude/
-│   ├─ settings.json                      # hook 등록 (PreToolUse 매칭)
-│   ├─ skills/<skill-name>/SKILL.md       # 9 skill (+ Claude 전용 run-team)
-│   └─ hooks/<hook-name>.sh               # 2 hook
+<프로젝트>/
+├─ AGENTS.md                 에이전트가 세션마다 읽는 짧은 지침
+├─ CLAUDE.md                 AGENTS.md를 불러오는 한 줄
+├─ .taskery-manifest.json    설치 정보, 코드 테스트 명령, 빌드 결과 폴더 등록
+├─ .mcp.json                 taskery MCP 도구 등록
+├─ .claude/                  스킬 10개, 작업 폴더에서 .project에 쓰도록 허용하는 설정
+├─ .codex/                   스킬 10개, taskery MCP 도구 등록 (Codex를 고른 경우)
 └─ .project/
-    ├─ PROJECT.md                         # 프로젝트 개요
-    ├─ LINKED-REPOS.md                    # 관계 리포지토리 정보
-    ├─ GLOSSARY.md                        # 도메인 용어집 (영문/한글 표기 일관성)
-    ├─ .env                               # 사용자 설정 환경변수 (관계 리포지토리 환경변수 등)
-    ├─ SERVICE-POLICY.md / TECH-STACK.md / ARCHITECTURE.md   # 제품 관통 문서 — 정적 (project-init 작성)
-    ├─ DATA-MODEL.md / API-SPEC.md / FEATURES.md / UX-UI.md  # 제품 관통 문서 — 성장 (골격 → plan·task가 채움)
-    ├─ rules/
-    │   ├─ TASKERY_RULE.md                # taskery 사용 설명서 (세션 필독)
-    │   ├─ TASK_DOC_RULE.md               # task 문서 작성 규칙
-    │   ├─ GIT_RULE.md                    # 로컬 깃 운영 규칙
-    │   ├─ CHANGELOG_RULE.md              # CHANGELOG 작성 규칙
-    │   ├─ MOCKUP_RULE.md                 # UX/UI HTML 목업 규칙
-    │   ├─ DEV_RULE.local.md              # 이 프로젝트의 구현 정책 (모든 리포 필수)
-    │   ├─ TEST_RULE.local.md             # 이 프로젝트의 검증 실행 경로·범위 (모든 리포 필수)
-    │   └─ *.local.md                     # 사용자 오버라이드 규칙 (패키지 업데이트 대상 제외)
-    ├─ plans/                             # plan(기능 그룹)별 PLAN.md / ROADMAP.md (<NNN_slug>/)
-    ├─ tasks/                             # task 문서 (<NNN_slug>/BACKLOG.md / spec-diffs / screenshots / mockup 포함)
-    ├─ flows/                             # 서비스 로직 플로우 정보
-    ├─ changelog/                         # 수정사항 정보
-    ├─ shared/                            # 관계 리포지토리 소통 메세지함
-    │   ├─ sent/completed/
-    │   └─ received/completed/
-    └─ FRICTION_LOG.md                    # taskery 불편사항 누적 로그 (/log-friction 첫 기록 시 생성)
+   ├─ rules/                 규칙 문서 7개 (아래 표)
+   ├─ BACKLOG.md             백로그 — 프로젝트에 하나
+   └─ (쓰면서 생기는 것)     PROJECT.md · GLOSSARY.md · spec/ · plans/ · changelog/ · FRICTION_LOG.md
 ```
 
-`.project/`는 플랫폼 무관 공통 자산이다. 진입 문서와 에이전트 자산 위치는 선택한 플랫폼에 따라 갈린다.
+- **MCP** = 에이전트가 외부 도구를 직접 부를 수 있게 하는 연결 방식이다. 에이전트는 taskery 명령을 MCP 도구로 부르고, 도구가 없으면 `npx @angar2/taskery <명령>`으로 부른다.
+- **taskery 파일은 모두 git 밖에 둔다.** `init`이 위 이름들을 `.git/info/exclude`(그 리포에만 적용되는 git 무시 목록)에 넣으므로, 설치가 리포의 추적 파일을 바꾸지 않고 커밋 대상은 코드뿐이다. 그 대신 태스크 문서와 백로그는 git 이력에 남지 않는다. git으로 공유할 제품 문서는 `.project/` 밖(예: `docs/`)에 둔다.
+- git이 이미 이 이름들 중 하나를 추적하고 있으면 `init`은 설치를 멈추고 추적 중인 이름을 알린다. 추적 해제는 리포 이력을 바꾸는 일이라 사용자가 직접 한다.
 
-| 플랫폼 | 진입 문서 | 스킬 위치 | hook 위치 | hook 등록 |
-|--------|----------|----------|----------|----------|
-| Claude Code | `CLAUDE.md` (→ `AGENTS.md` 임포트) | `.claude/skills/` | `.claude/hooks/` | `.claude/settings.json` |
-| Codex | `AGENTS.md` | `.agents/skills/` | `.codex/hooks/` | `.codex/config.toml` |
-
-진입 문서 본문은 `AGENTS.md` 한 벌이다. Claude Code는 `AGENTS.md`를 자동으로 읽지 않으므로 `CLAUDE.md`가 이를 임포트한다.
-
-> 스킬 9종과 `git-guard.sh`는 양 플랫폼 동일 자산이다. 진입 문서, hook 등록 방식, 완료 보호 hook(`closed-immutable.sh`)의 구현만 플랫폼별로 다르다. `init`에서 둘 다 선택하면 폴더가 갈려 충돌 없이 공존한다.
-
----
-
-## 멀티세션 (병렬 작업)
-
-같은 프로젝트에서 여러 메인 세션을 동시에 운영해 독립 task를 병렬로 진행한다.
-
-- 새 task를 시작하면(`/task-init`) 작업 폴더(`~/.taskery/worktrees/<projectId>/TASK-NNN_<출처>_<슬러그>/`)와 작업 브랜치를 함께 분기한다.
-- 작업 폴더에서 새 메인 세션을 열어 진행하거나, 메인 세션 1개로 모든 작업을 지휘하거나, 메인이 서브 세션을 호출해 병렬로 진행한다 — 운영 방식은 자유. 메인 워크트리(원본 폴더)는 task를 시작한 브랜치(*부모 브랜치*, 기본은 `dev`)를 그대로 유지한다.
-- task 완료(`/task-close`) 시 머지 락으로 직렬화한 후 **그 부모 브랜치**에 `--no-ff` 병합한다(개인은 `dev`, 회사/로드맵은 서 있던 브랜치). 다른 세션이 먼저 머지해 충돌이 발생하면 본 세션이 단순/의미적/판단 불가 3단계로 해결을 시도한다.
-- 머지 직후 작업 폴더와 작업 브랜치는 자동 정리된다(보존 키워드 사용 시 양쪽 유지). 안전망으로 복구 명령이 함께 출력된다.
-
-요건: git ≥ 2.31. 보조 명령 `npx @angar2/taskery status` / `prune`로 진행 현황과 stale 정리를 확인한다.
+| 규칙 문서 | 내용 | 갱신 |
+|---|---|---|
+| `TASKERY_RULE.md` | taskery 참고서 — 사용법이 막혔을 때 읽는다 | `update`가 갱신 |
+| `GIT_RULE.md` | 이 리포의 git 규칙. 맨 위 표(통합 브랜치·브랜치 이름·커밋 메시지·병합 방식)를 명령이 읽어 따른다 | `update`가 갱신(고쳤으면 묻는다) |
+| `TASK_DOC_RULE.md` | 태스크 문서 쓰는 법 | `update`가 갱신 |
+| `CHANGELOG_RULE.md` | 변경 기록 형식 — 명령이 읽어 기록한다 | `update`가 갱신 |
+| `MOCKUP_RULE.md` | 화면 목업의 위치와 형식 — 목업을 요청했을 때만 쓴다 | `update`가 갱신 |
+| `TEST_RULE.local.md` | 이 프로젝트의 앱 실행 방법과 실사용 테스트 방식 | 리포 소유 — `update`가 건드리지 않는다 |
+| `DEV_RULE.local.md` | 이 프로젝트의 구현 규칙 | 리포 소유 — `update`가 건드리지 않는다 |
 
 ---
 
-## 백로그 메모
+## 스킬
 
-작업 흐름 중 발견되는 추가 기능과 버그를 *그 자리에서 짧게 적어 둔다*. 메인 세션이 사용자 발화를 받아 `/add-backlog`로 1건씩 활성 plan(기능 그룹)의 `tasks/<NNN_slug>/BACKLOG.md`에 누적한다.
+**스킬** = 에이전트가 어느 단계에서 무엇을 판단하고 어떤 명령을 부를지 알려 주는 짧은 안내서다. 스킬 이름으로 직접 부르거나(예: `/task-init`), 요청 내용이 맞으면 에이전트가 스스로 고른다.
 
-- 항목 형식: 체크박스 + 식별자(BL-NNN) + 유형 + 제목 + 슬러그. 그 아래 *개요*(추정 원인 / 구상)와 *대상 영역*(관여할 파일·모듈) 2줄.
-- 시작 시점: 사용자가 *"BL-NNN 진행"*이라고 말하면 `/task-init`이 그 항목 메타로 task를 분기하고 BACKLOG.md 항목을 *확인* 마킹(`[x]`)하며 `- TASK: TASK-NNN`을 함께 남긴다. *완료*가 아니라 *task로 옮겼다*는 의미만 담는다.
-- 완료 추적: git 머지 히스토리와 `taskery status`. BACKLOG.md는 메모지 역할만 한다.
-- 다음 기능 그룹 후보 카탈로그(글로벌 `.project/BACKLOG.md`)는 다음 plan 기획용으로 분리 관리한다.
-
----
-
-## Skills
-
-스킬은 호출 시점에 따라 4 카테고리(`project` / `plan` / `task` / `meta`)로 분류된다.
-
-- `project` — 프로젝트 첫 도입 시 1회만 호출
-- `plan` — 새 기능 그룹(작업 묶음) 시작 시 호출
-- `task` — 새 task 작업 진행 단계에서 호출
-- `meta` — 그 외 taskery 관리
-
-| 스킬 | 레벨 | 역할 |
-|------|------|------|
-| `/project-init` | project | 프로젝트 첫 도입 시 메타 문서 + 제품 관통 기획 문서(정책/스택/구조 작성, 데이터/API/기능/UI 골격) 생성 (1회성) |
-| `/plan-init` | plan | 새 기능 그룹의 PLAN.md / ROADMAP.md + 제품 관통 문서(FEATURES/UX-UI)에 기능 의도 추가 |
-| `/task-init` | task | 새 task의 빈 문서 생성 |
-| `/task-plan` | task | task의 요구사항·범위·개발 계획·테스트 계획 작성 |
-| `/task-dev` | task | 계획에 따른 단계별 구현 + 자가 검증 |
-| `/task-test` | task | 별도 격리 세션에서 독립 검증 (메인 가정 차단) |
-| `/task-close` | task | 최종 검증 후 git 커밋 + 부모 브랜치 `--no-ff` 병합 |
-| `/add-backlog` | meta | 사용자 발화로 plan(기능 그룹)별 `tasks/<NNN_slug>/BACKLOG.md`에 task 후보 1건씩 추가 (0.1.2+) |
-| `/log-friction` | meta | 사용자 불편을 `.project/FRICTION_LOG.md`에 한 행 기록 |
-| `/run-team` | meta | 여러 작업을 묶을 수 있는 단위로 task로 나눠 자동 병렬 처리 — 리더 세션이 팀원(독립 세션)에게 task를 1건씩 분배하고 흐름을 관리 (Claude 전용 · 실험 기능 전제 · 0.3.x+) |
-
-각 스킬은 슬래시로 직접 호출하거나, 사용자 발화의 의미가 스킬의 frontmatter description과 매칭되면 메인 세션이 자동으로 발동시킨다.
-
-> `/run-team`은 Claude의 실험적 멀티 세션 기능(agent teams)을 사용하는 Claude 전용 스킬이다. 기본 흐름이 아니라 *"이 작업들 한 번에 팀으로 진행해"* 같은 발화가 있을 때만 발동하며, 활성화에는 환경 변수(`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`) 설정이 필요하다. Codex 설치에는 포함되지 않는다.
-
-`/project-init`, `/plan-init`, `/task-init` 세 스킬은 호출 시 다음 문서를 생성한다.
-
-| 스킬 | 생성 위치 | 생성 문서 |
-|------|---------|---------|
-| `/project-init` | `.project/` | PROJECT.md / LINKED-REPOS.md / GLOSSARY.md / .env + 제품 관통 문서(SERVICE-POLICY / TECH-STACK / ARCHITECTURE 작성, DATA-MODEL / API-SPEC / FEATURES / UX-UI 골격 — 타입 해당분) + 리포 로컬 룰 초안(TEST_RULE.local.md / DEV_RULE.local.md) |
-| `/plan-init` | `.project/plans/<NNN_slug>/` | PLAN.md / ROADMAP.md + 제품 관통 문서 FEATURES/UX-UI에 기능 그룹 의도 추가 (제품 관통 문서 전체를 한꺼번에 만들지는 않음) |
-| `/task-init` | `.project/tasks/<NNN_slug>/` | `<NNN>_<slug>.md` (단일 파일) 또는 `TASK-<NNN>_<slug>/task.md` (사용자 명시 시 폴더 승격) |
-
-> 각 스킬의 호출 시점, 입력 처리 방식, 단계별 절차, 주의사항은 [SKILLS.md](https://github.com/angar2/taskery/blob/main/plan/SKILLS.md)에서 확인 가능
+| 스킬 | 쓰는 때 | 하는 일 |
+|---|---|---|
+| `project-init` | 처음 한 번 | 받은 기획이나 짧은 인터뷰로 프로젝트 정보·`PROJECT.md`·`GLOSSARY.md`(용어집)·필요한 제품 문서·코드 테스트 명령·로컬 규칙·첫 플랜을 만든다 |
+| `plan-init` | 새 기능 묶음을 시작할 때 | **플랜**(기능 묶음 하나의 목표와 태스크 목록)을 만든다. 먼저 끝나야 하는 태스크(선행)를 함께 적는다 |
+| `task-init` | 태스크를 열 때 | 요청이나 백로그 항목을 태스크 하나로 정리해 연다 |
+| `task-plan` | 기획 단계 | 목표·완료 기준·만질 파일을 적는다 |
+| `task-dev` | 개발 단계 | 구현하고 코드 테스트를 통과시킨다 |
+| `task-test` | 테스트 단계 | 완료 기준을 실제로 해 보고 결과와 증거를 기록한다 |
+| `task-close` | 마무리 단계 | 검사·커밋·병합하고, 태스크를 연 쪽이 작업 폴더를 정리한다 |
+| `task-orche` | 여러 태스크를 나눠 맡길 때 | 백로그를 태스크로 나누고, 태스크마다 새 에이전트 탭에 맡기고, 보고를 받아 정리한다(아래 오케스트레이션) |
+| `add-backlog` | 할 일을 적어 둘 때 | 백로그에 항목 하나를 등록한다 |
+| `log-friction` | taskery가 불편할 때 | 사용자가 겪은 불편을 `.project/FRICTION_LOG.md`에 한 줄로 남긴다 |
 
 ---
 
-## Hooks
+## 명령
 
-| Hook | 작동 시점 | 차단 대상 |
-|------|---------|---------|
-| `git-guard.sh` | git 명령 실행 직전 | 주력 브랜치 직접 커밋 / `--force` / `--no-verify` / 강제 브랜치 삭제 / `reset --hard` / `clean -fd` |
-| `closed-immutable.sh` | 파일 수정 직전 | 완료(`closed`)된 task.md 본 파일 재수정 (관련 spec-diff·스크린샷은 자유) |
+명령은 에이전트가 스킬을 따라 부른다. 사용자가 직접 부를 일은 주로 설치 명령과 `status`다.
 
-hook은 catastrophic 사고만 차단한다. 정상 흐름에는 간섭하지 않는다. 등록 방식은 플랫폼별로 다르다 — Claude Code는 `.claude/settings.json`, Codex는 `.codex/config.toml`(최초 1회 `/hooks` 신뢰 승인 필요).
+| 명령 | 하는 일 |
+|---|---|
+| `status` | 열린 태스크, 단계 표, 단계별 시간, 문서와 작업 폴더 경로, 플랜별로 지금 시작할 수 있는 태스크를 보여 준다 |
+| `plan-init <slug>` | 다음 번호로 플랜 폴더와 `PLAN.md` 틀을 만든다 |
+| `prepare-task "<제목>" --slug --type --size …` | 태스크를 연다 — 번호, 브랜치, 작업 폴더, 태스크 문서, 백로그 연결 |
+| `approve-plan <TASK>` | 태스크 문서를 검사하고 계획 끝을 기록한다 |
+| `test-code [TASK]` | 등록된 코드 테스트를 실행한다. `--register "<명령>"`으로 명령 목록을 등록한다 |
+| `test-scenario <TASK> <번호> pass\|fail "증거"` | 완료 기준 시나리오의 결과를 기록한다. 사용자가 실패를 알고 넘어가기로 하면 `accept "<사용자가 한 말>"`로 남긴다 |
+| `verify-close <TASK>` | 마무리 전 검사 — 계획 확인, 코드 테스트 뒤 코드가 바뀌지 않았는지, 모든 시나리오의 결과와 증거 |
+| `commit-task <TASK>` | Phase별로 코드를 커밋하고, 병합 전에 확인할 요약(커밋·바뀐 파일·단계별 시간)을 낸다 |
+| `merge-task <TASK>` | 병합 잠금 안에서 부모 브랜치의 최신 상태로 rebase한 뒤 병합한다. 충돌이면 멈추고, 고친 뒤 다시 부르면 이어 간다 |
+| `close-task <TASK>` | 작업 폴더와 병합된 브랜치를 지우고, 태스크를 닫고, 백로그와 변경 기록을 갱신하고, 단계별 시간을 보고한다 |
+| `prune` | 닫힌 태스크에 남은 작업 폴더·브랜치를 정리한다. 기본은 항목마다 묻는다 |
+| `backlog-add` · `backlog-get` · `backlog-mark` | 백로그 항목을 만들고, 읽고, 태스크에 연결한다 |
+| `orca-dispatch-task` · `report-task` · `wait-reports` | 오케스트레이션용 — 태스크 탭 띄우기, 보고 남기기, 보고 기다리기 |
+| `init` · `update` · `add <claude\|codex>` | 설치 · 갱신 · 에이전트 추가 |
 
-> 각 hook의 영역 분리 정신, 등록 매칭, 차단 정책, 예외 처리 절차는 [HOOKS.md](https://github.com/angar2/taskery/blob/main/plan/HOOKS.md)에서 확인 가능
-
----
-
-## 워크플로우 예시
-
-```bash
-# 사용자 프로젝트 첫 셋업
-cd <project-name>
-npx @angar2/taskery init
-```
-
-이후 메인 세션에 진입(진입 문서 자동 정독 — 사용법 전체는 `.project/rules/TASKERY_RULE.md`)하여 다음 시퀀스로 호출한다. task 5 스킬은 호출과 동시에 상태를 전이시킨다.
-
-```
-/project-init                  # 진입 메타 문서와 디렉토리 골격 생성
-/plan-init mvp                 # 첫 plan(기능 그룹) — PLAN/ROADMAP + 제품 문서에 기능 의도 추가
-/task-init                     # draft : 첫 task의 빈 문서 생성
-/task-plan TASK-001            # draft → planned : 요구사항·범위·개발 계획·테스트 계획 작성
-/task-dev TASK-001             # planned → developed : 단계별 구현과 자체 검증
-/task-test TASK-001            # developed → tested : 별도 격리 세션으로 독립 검증
-/task-close TASK-001           # tested → closed : 최종 검증 후 git 커밋과 부모 브랜치 병합
-
-# 불편 발생 시 등록
-/log-friction                  # 사용자 불편 한 행 기록
-```
-
-**자동 발동 예시** — 사용자 발화 의미가 스킬 description과 매칭되면 메인이 슬래시 직접 호출 없이 다음 스킬을 자동 발동한다.
-
-- *"로그인 기능 추가해줘"* / *"이 버그 고쳐줘"* → `/task-init` 자동 발동 (새 task 시작 의도)
-- *"기획 다 됐으니 이제 구현 시작해"* → `/task-dev` 자동 발동 (planned task의 다음 단계)
-- *"이 부분도 백로그에 추가해줘"* / *"나중에 할 일로 적어둬"* → `/add-backlog` 자동 발동 (백로그 추가 의도)
-- *"이거 진짜 불편하다"* / *"이 부분 답답하네"* → `/log-friction` 자동 발동 (불만 발화 캐치)
-
-**실패·불확정 분기** — `/task-test`가 FAIL 또는 UNCERTAIN을 반환하면 메인 세션이 사용자에게 판단을 묻고, 사용자의 자연어 답변에서 의도를 해석해 다음 흐름을 *자동 발동*한다(별도 슬래시 호출 없이 진행됨).
-
-- 사용자가 재구현을 요청하면 → `testing` → `developing`으로 회귀해 `/task-dev`가 자동 발동된다.
-- 사용자가 결함을 인지한 채 종결을 지시하면 → `testing` → `tested`로 진행하고 결함을 명시한 후 `/task-close`로 이행된다.
-- UNCERTAIN(자동 검증이 불가능한 시나리오)은 사용자가 직접 검수한 결과를 답하면 메인 세션이 PASS/FAIL로 해석해 위 두 흐름 중 하나로 합류시킨다.
-- 검증에 필요한 테스트가 화면·입력을 점유해 실행을 보류한 경우에는, 지금 실행할지 / 자리를 비울 때로 미룰지 / 창을 띄우지 않는 실행 경로를 마련할지를 사용자가 고른다. 승인 없이 임의로 실행하지 않는다.
+전체 옵션은 `npx @angar2/taskery help`로 본다.
 
 ---
 
-## 상세 문서
+## 작업 폴더와 병렬 작업
 
-spec 문서는 GitHub에서 참고할 수 있다.
+- 모든 태스크는 자기 브랜치와 **워크트리**(같은 리포를 다른 폴더에 하나 더 펼친 git 작업 폴더)를 갖는다. 에이전트는 태스크 동안 그 폴더에서 일하므로 다른 태스크의 변경과 섞이지 않는다. 한 줄 수정도 같다 — 생략은 사용자가 명시할 때만 한다.
+- 리포의 원래 폴더는 태스크가 병합되는 자리라 부모 브랜치에 그대로 둔다. **부모 브랜치** = 원래 폴더가 서 있는 브랜치다.
+- 여러 세션이 동시에 태스크를 진행해도 번호가 겹치지 않고, 병합은 잠금 안에서 하나씩 이루어진다. 먼저 병합된 변경과 충돌하면 그 태스크의 에이전트가 충돌 파일을 직접 고친다.
+- 새 작업 폴더를 준비할 때 `package-lock.json`이 있으면 `npm ci`를 한다. Rust의 `target`, Xcode의 `DerivedData` 같은 빌드 결과 폴더는 `init`이 등록해 두면 macOS(APFS)에서 원래 폴더의 것을 복제해 처음부터 빌드하는 시간을 줄인다.
 
-- [OVERVIEW.md](https://github.com/angar2/taskery/blob/main/plan/OVERVIEW.md) — 시스템 진입 가이드와 전체 구조 개요.
-- [SKILLS.md](https://github.com/angar2/taskery/blob/main/plan/SKILLS.md) — 스킬 9종의 상세 명세와 호출 흐름.
-- [TASK-DOC.md](https://github.com/angar2/taskery/blob/main/plan/TASK-DOC.md) — task 문서의 작성 양식과 7 상태 머신의 동작 정의.
-- [HOOKS.md](https://github.com/angar2/taskery/blob/main/plan/HOOKS.md) — catastrophic hook 2종의 정책과 예외 처리 절차.
-- [DISTRIBUTION.md](https://github.com/angar2/taskery/blob/main/plan/DISTRIBUTION.md) — npx 배포 메커니즘과 자산 갱신 로직.
-- [DECISIONS.md](https://github.com/angar2/taskery/blob/main/plan/DECISIONS.md) — 시스템 설계의 핵심 의사결정과 변경 이력.
-- [PLAYBOOK.md](https://github.com/angar2/taskery/blob/main/plan/PLAYBOOK.md) — 향후 도입 가능한 기능 후보 목록.
+### 오케스트레이션
+
+여러 태스크를 한 세션이 나눠 맡기는 방식이다. Orca(작업 폴더마다 에이전트 탭을 여는 터미널 앱) 안에서 쓴다.
+
+1. 오케스트레이션 세션이 백로그를 읽고 태스크 구성(묶음·순서·에이전트와 모델)을 사용자에게 보여 확인받는다.
+2. 태스크마다 작업 폴더를 만들고, 그 폴더에 새 에이전트 탭을 띄워 첫 지시를 보낸다.
+3. 각 태스크 세션은 마무리·확인 대기·질문·막힘이 생기면 한 줄로 보고한다. 오케스트레이션 세션은 보고를 기다리는 동안 토큰을 쓰지 않는다.
+4. 사용자 확인이 필요하면 사용자는 그 태스크의 탭에서 직접 답한다. 끝난 태스크는 오케스트레이션 세션이 정리하고 다음 태스크로 빈자리를 채운다.
 
 ---
 
-## 라이센스
+## 백로그
+
+발견한 문제와 할 일을 `.project/BACKLOG.md` 하나에 모은다. `add-backlog` 스킬이 번호가 매겨진 빈 양식을 받아 필수 칸(종류·제목·현상)을 채우고, 근거가 있을 때만 선택 칸을 적는다. 항목을 태스크로 옮기면 상태가 `진행`이 되고, 연결된 태스크가 모두 닫히고 그중 하나라도 끝났으면 `## 끝난 항목`으로 옮겨진다.
+
+---
+
+## 0.8.x에서 옮겨 오는 경우
+
+1.0은 0.8.x와 호환되지 않으며 이관 기능도 없다. 0.8.x로 운영하던 리포는 옛 taskery 파일(`AGENTS.md`·`CLAUDE.md`·`.claude/`·`.codex/`·`.agents/`·`.project/`·`.mcp.json`·`.taskery-manifest.json`)을 리포 밖으로 옮기고, git이 추적하고 있었다면 추적을 해제해 커밋한 뒤 새로 `init`한다. 필요한 옛 문서(백로그·제품 문서)는 옮겨 둔 곳에서 새 `.project/`로 직접 가져온다.
+
+---
+
+## 라이선스
 
 [MIT](LICENSE)

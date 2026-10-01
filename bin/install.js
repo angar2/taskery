@@ -10,6 +10,8 @@ const PLATFORMS = ['claude', 'codex'];
 // 1.0 스킬 10개(§5-1)
 const SKILLS = ['task-init', 'task-plan', 'task-dev', 'task-test', 'task-close', 'task-orche', 'project-init', 'plan-init', 'add-backlog', 'log-friction'];
 const RULES = ['TASKERY_RULE.md', 'GIT_RULE.md', 'TASK_DOC_RULE.md', 'CHANGELOG_RULE.md', 'MOCKUP_RULE.md'];
+// 리포가 소유하는 로컬 규칙 틀 — 없을 때만 만들고 update가 덮지 않는다(§6-2)
+const LOCAL_RULES = ['TEST_RULE.local.md', 'DEV_RULE.local.md'];
 const SKILL_ROOT = { claude: '.claude/skills', codex: '.codex/skills' };
 
 // kind: managed = 갱신 대상(사용자가 고쳤으면 묻는다) · agents = 프로젝트 절을 살려 재조립 · once = 없을 때만 만든다
@@ -18,6 +20,7 @@ function installPlan(platforms, { agnostic = true } = {}) {
   if (agnostic) {
     plan.push({ src: 'AGENTS.md', dst: 'AGENTS.md', kind: 'agents' });
     for (const r of RULES) plan.push({ src: `.project/rules/${r}`, dst: `.project/rules/${r}`, kind: 'managed' });
+    for (const r of LOCAL_RULES) plan.push({ src: `.project/rules/${r}`, dst: `.project/rules/${r}`, kind: 'once' });
     plan.push({ src: '.project/BACKLOG.md', dst: '.project/BACKLOG.md', kind: 'once' });
   }
   for (const p of platforms) {
