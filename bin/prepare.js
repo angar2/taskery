@@ -82,10 +82,6 @@ function nextNumber(main) {
   return max + 1;
 }
 
-function inOrca() {
-  return !!process.env.ORCA_TERMINAL_HANDLE;
-}
-
 function worktreePaths(main) {
   const out = L.git(main, ['worktree', 'list', '--porcelain']);
   return out
@@ -260,7 +256,7 @@ async function prepareTask(ctx, a) {
       // 본진의 현재 브랜치(부모)에서 그대로 일한다
     } else if (noWorktree) {
       L.git(main, ['checkout', '-b', branch]);
-    } else if (inOrca()) {
+    } else if (L.inOrca()) {
       worktree = createOrcaWorktree(main, { name: `TASK-${nnn}-${a.slug}`, parent, branch });
       by = 'orca';
     } else {

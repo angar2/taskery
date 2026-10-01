@@ -116,6 +116,11 @@ function ensureExclude(main, extra = []) {
   return missing;
 }
 
+// Orca 탭 안인가 — Orca가 탭에 넣는 환경 변수로 판단한다
+function inOrca() {
+  return !!process.env.ORCA_TERMINAL_HANDLE;
+}
+
 // ─── 셸 명령 실행 (코드 테스트) ───────────────────────
 
 // 명령 하나를 셸로 실행하고 출력(표준 출력+오류)을 모은다. 비동기라 잠금 갱신이 멈추지 않는다
@@ -589,6 +594,7 @@ module.exports = {
   branchExists,
   fingerprint,
   ensureExclude,
+  inOrca,
   runShell,
   tail,
   readManifest,

@@ -29,7 +29,8 @@ function schemaOf(cmd) {
 
 const server = new McpServer({ name: 'taskery', version: L.getPackageVersion() });
 
-for (const cmd of COMMANDS) {
+// wait-reports는 CLI만 — MCP 도구 호출은 결과가 올 때까지 세션을 붙잡는다(§5-3)
+for (const cmd of COMMANDS.filter((c) => !c.cliOnly)) {
   server.registerTool(cmd.name, { description: cmd.summary, inputSchema: schemaOf(cmd) }, async (args) => {
     try {
       const out = await execute(cmd, args || {}, { cwd: startCwd, main: main || L.findMain(startCwd) });
