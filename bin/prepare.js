@@ -63,7 +63,7 @@ function checkMain(main, { self = null, parent = null } = {}) {
     if (owner) problems.push(`본진이 ${L.taskLabel(owner.num)}의 브랜치 ${cur}에 서 있다`);
   }
   const selfSkips = self && (self.noBranch || self.noWorktree);
-  const dirty = L.changedFiles(main);
+  const dirty = L.trackedChanges(main);
   if (dirty.length && !selfSkips) problems.push(`본진에 커밋 안 된 코드 변경이 있다 (${dirty.slice(0, 5).join(', ')}${dirty.length > 5 ? ' …' : ''})`);
   if (!problems.length) return cur;
   const cause = others.length

@@ -200,6 +200,18 @@ test('입력 거부 — 빠진 입력 목록, 개발·테스트 둘 다 꺼짐, 
   assert.deepStrictEqual(JSON.parse(sb.read('.taskery-manifest.json')).codeTest, ['echo 첫째', 'exit 3']);
 });
 
+test('본진 검사 — 본진의 추적 안 되는 파일은 막지 않고, 추적 중인 파일의 커밋 안 된 변경만 막는다', (t) => {
+  const sb = installedRepo();
+  t.after(() => sb.cleanup());
+  sb.write('notes.txt', '무관한 메모\n');
+  sb.ok(['prepare-task', '첫째', '--slug', 'first', '--type', 'feature', '--size', 'small', '--dev', 'claude']);
+  sb.write('src/app.txt', '본진에서 고침\n');
+  const r = sb.tk(['prepare-task', '둘째', '--slug', 'second', '--type', 'feature', '--size', 'small', '--dev', 'claude']);
+  assert.notStrictEqual(r.code, 0);
+  assert.match(r.all, /커밋 안 된 코드 변경이 있다 \(src\/app\.txt\)/);
+  assert.ok(!/notes\.txt/.test(r.all));
+});
+
 test('--range — 태스크 명령에 붙이면 범위 메모만 바뀐다', (t) => {
   const sb = installedRepo();
   t.after(() => sb.cleanup());

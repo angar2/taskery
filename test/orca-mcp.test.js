@@ -62,6 +62,24 @@ test('Orca 안 — orca worktree create --base-branch <부모> 후 브랜치 이
   assert.ok(!fs.existsSync(st.worktree));
 });
 
+test('Orca 안 포기 — 병합 안 된 브랜치여도 orca worktree rm으로 워크트리를 지우고, Orca가 남긴 브랜치는 남겼다고 알림', (t) => {
+  const sb = installedRepo();
+  t.after(() => sb.cleanup());
+  const orca = fakeOrca(sb);
+  Object.assign(sb.env, orca.env);
+  sb.ok(['prepare-task', '포기할 태스크', '--slug', 'give-up', '--type', 'feature', '--size', 'small', '--dev', 'claude']);
+  const st = sb.state(1);
+  fs.writeFileSync(path.join(st.worktree, 'src/app.txt'), 'wip\n');
+  sb.git(['commit', '-qam', 'wip'], st.worktree);
+  const out = sb.ok(['close-task', '1']);
+  assert.match(fs.readFileSync(orca.log, 'utf8'), /worktree rm --worktree path:/);
+  assert.match(out, /Orca 워크트리를 지웠다/);
+  assert.match(out, /병합되지 않아 남겼다/);
+  assert.ok(!fs.existsSync(st.worktree));
+  assert.ok(sb.git(['branch', '--list', st.branch]), '병합 안 된 브랜치는 남는다');
+  assert.match(out, /포기/);
+});
+
 // MCP 서버와 줄 단위 JSON-RPC로 대화한다
 function mcpSession(cwd, env) {
   const child = spawn(process.execPath, [path.resolve(__dirname, '..', 'bin', 'mcp.js')], { cwd, env });

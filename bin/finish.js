@@ -283,10 +283,7 @@ function cleanup(main, st) {
       return notes;
     }
     if (st.by === 'orca') {
-      if (!merged) {
-        notes.push(`병합하지 않은 브랜치라 Orca 워크트리와 브랜치 ${st.branch}를 남겼다(Orca 삭제는 브랜치도 지운다): ${st.worktree}`);
-        return notes;
-      }
+      // Orca는 병합을 증명할 수 없는 브랜치를 남긴다(`orca worktree rm --help`) — 병합 여부와 무관하게 부른다
       try {
         execFileSync('orca', ['worktree', 'rm', '--worktree', `path:${st.worktree}`, '--json'], { stdio: ['ignore', 'pipe', 'pipe'] });
         notes.push(`Orca 워크트리를 지웠다: ${st.worktree}`);

@@ -73,6 +73,12 @@ function changedFiles(dir) {
   return files;
 }
 
+// 추적 중인 파일의 커밋 안 된 변경 경로 목록(추적 안 되는 파일 제외)
+function trackedChanges(dir) {
+  const out = git(dir, ['status', '--porcelain', '-uno']);
+  return out ? out.split('\n').map((l) => l.slice(3)) : [];
+}
+
 function isAncestor(dir, a, b) {
   return gitOk(dir, ['merge-base', '--is-ancestor', a, b]);
 }
@@ -569,6 +575,7 @@ module.exports = {
   findMain,
   currentBranch,
   changedFiles,
+  trackedChanges,
   isAncestor,
   branchExists,
   fingerprint,
