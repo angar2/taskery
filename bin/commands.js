@@ -7,6 +7,7 @@ const { status } = require('./status');
 const { planInit } = require('./plan');
 const { backlogAdd, backlogGet, backlogMark } = require('./backlog');
 const { prune } = require('./prune');
+const { orcaDispatchTask, reportTask, waitReports } = require('./orche');
 
 // 인자 종류: positional(순서대로) · string(--이름 값) · bool(--이름) · list(--이름 값 값 …)
 const TASK = { name: 'task', positional: true, desc: '태스크 번호 (TASK-012 또는 12)' };
@@ -109,6 +110,30 @@ const COMMANDS = [
       { name: 'task', positional: true, desc: '태스크 번호 (TASK-012 또는 12)' },
     ],
     run: backlogMark,
+  },
+  {
+    name: 'orca-dispatch-task',
+    summary: 'Orca 새 탭에 태스크 세션을 띄우고 첫 지시문을 보낸다(Orca 전용). 탭 handle은 태스크 문서 메타에 기록한다',
+    args: [
+      TASK,
+      { name: 'agent', desc: 'claude · codex (필수)' },
+      { name: 'model', desc: '에이전트 모델 — 사용자가 정한 것 (필수)' },
+      { name: 'note', desc: '첫 지시문 끝에 붙일 오케스트레이션의 말 한 줄' },
+    ],
+    run: orcaDispatchTask,
+  },
+  {
+    name: 'report-task',
+    summary: '태스크 세션이 오케스트레이션에 보고 한 줄을 남긴다(.project/reports.log)',
+    args: [TASK, { name: 'text', positional: true, desc: '보고 한 줄 (필수)' }],
+    run: reportTask,
+  },
+  {
+    name: 'wait-reports',
+    summary: '안 읽은 보고가 생기면 그 줄들을 출력하고 끝난다. 보고 없이 10분이면 오래 조용한 태스크 탭 목록과 함께 끝난다(백그라운드 셸로 건다)',
+    args: [],
+    cliOnly: true,
+    run: waitReports,
   },
 ];
 
