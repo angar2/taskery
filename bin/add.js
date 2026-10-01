@@ -1,113 +1,41 @@
 #!/usr/bin/env node
-// bin/add.js
-// `npx @angar2/taskery add <platform>` — 기존 설치 리포에 다른 플랫폼 자산 추가.
-//
-// 동작:
-//   1. <platform> 인자 검증 (claude | codex)
-//   2. .taskery-manifest.json 필수 — 없으면 'init' 안내
-//   3. 이미 manifest.platforms에 있으면 변경 없이 종료
-//   4. 해당 플랫폼 전용 자산만 카피 (공통 .project/는 init이 이미 설치)
-//   5. manifest.platforms push + files 갱신
-
+// add — 설치된 리포에 플랫폼(claude·codex)의 스킬·설정을 더한다
 const fs = require('fs');
 const path = require('path');
-const readline = require('readline');
+const L = require('./lib');
+const I = require('./install');
 
-const {
-  MANIFEST_NAME,
-  findTemplateDir,
-  walkTemplate,
-  copyFile,
-  writeManifest,
-  readManifest,
-  getPackageVersion,
-  resolveInstallPlan,
-  PLATFORMS,
-} = require('./lib');
-
-async function confirm(msg) {
-  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-  return new Promise((resolve) => {
-    rl.question(`${msg} (y/N) `, (ans) => {
-      rl.close();
-      resolve(ans.trim().toLowerCase() === 'y');
-    });
-  });
-}
-
-async function main() {
-  const cwd = process.cwd();
+function main() {
   const platform = (process.argv[2] || '').trim();
-
-  // 1. 플랫폼 인자 검증
-  if (!PLATFORMS.includes(platform)) {
-    console.error(
-      `taskery add: 플랫폼 인자 필요 (${PLATFORMS.join(' | ')}). 예: npx @angar2/taskery add codex`,
-    );
-    process.exit(1);
-  }
-
-  // 2. manifest 필수
-  const manifestPath = path.join(cwd, MANIFEST_NAME);
-  const manifest = readManifest(manifestPath);
-  if (!manifest) {
-    console.error(
-      `taskery add: ${MANIFEST_NAME} 없음 — 'npx @angar2/taskery init' 먼저 실행 필요.`,
-    );
-    process.exit(1);
-  }
-
-  // 3. 이미 설치된 플랫폼?
+  if (!I.PLATFORMS.includes(platform)) L.fail(`add: 플랫폼을 넣는다 (${I.PLATFORMS.join(' | ')}). 예: npx @angar2/taskery add codex`);
+  const main = L.findMain(process.cwd());
+  const manifest = L.readManifest(main);
+  if (!manifest) L.fail("add: taskery가 설치돼 있지 않다. 'npx @angar2/taskery init'을 먼저 부른다.");
   const platforms = Array.isArray(manifest.platforms) ? manifest.platforms : ['claude'];
   if (platforms.includes(platform)) {
-    console.log(`taskery add: '${platform}' 이미 설치됨 — 변경 없음.`);
-    process.exit(0);
+    console.log(`'${platform}'은 이미 설치돼 있다 — 바꾼 것 없음.`);
+    return;
   }
-
-  // 4. 해당 플랫폼 전용 + 공통(shared/) 자산만 카피 (agnostic은 init이 이미 설치)
-  const templateDir = findTemplateDir();
-  const templateFiles = walkTemplate(templateDir);
-  const plan = resolveInstallPlan(templateFiles, [platform], { includeAgnostic: false });
-
-  console.log(`\ntaskery v${getPackageVersion()} add ${platform}`);
-  console.log(`카피 대상: ${plan.length}개 파일\n`);
-
   const files = { ...(manifest.files || {}) };
-  let copied = 0;
-  let skipped = 0;
-
-  for (const { templateRel, installRel, hash } of plan) {
-    const src = path.join(templateDir, templateRel);
-    const dst = path.join(cwd, installRel);
-    if (fs.existsSync(dst)) {
-      const ok = await confirm(`  '${installRel}' 이미 존재 — 덮어쓸까?`);
-      if (!ok) {
-        console.log(`    skip: ${installRel}`);
-        skipped++;
-        continue;
-      }
+  const notes = [];
+  for (const it of I.installPlan([platform], { agnostic: false })) {
+    if (fs.existsSync(path.join(main, it.dst))) {
+      notes.push(`건너뜀: ${it.dst} (기존 파일 유지)`);
+      continue;
     }
-    copyFile(src, dst);
-    files[installRel] = { hash, core: true, managed: true };
-    copied++;
-    console.log(`  copy: ${installRel}`);
+    const text = I.readTemplate(it.src);
+    I.writeFile(main, it.dst, text);
+    files[it.dst] = I.hashText(text);
   }
-
-  // 5. manifest 갱신
-  manifest.platforms = [...platforms, platform];
-  manifest.files = files;
-  manifest.updated_at = new Date().toISOString();
-  writeManifest(manifest, manifestPath);
-
-  console.log(`\n✅ taskery add ${platform} 완료 (카피 ${copied} / 스킵 ${skipped})`);
-  console.log(`   platforms: ${manifest.platforms.join(', ')}`);
-  if (platform === 'codex') {
-    console.log(`   다음: Codex 최초 1회 '/hooks'로 hook trust 승인 (.codex/config.toml)`);
-    console.log(`         AGENTS.md 정독 (코덱스 진입점)`);
-  }
+  notes.push(...I.writeConfigs(main, [platform]));
+  L.writeManifest(main, { ...manifest, platforms: [...platforms, platform], files, updated_at: new Date().toISOString() });
+  console.log(`taskery add ${platform} 완료`);
+  for (const n of notes) console.log(`- ${n}`);
 }
 
-main().catch((e) => {
-  console.error(`taskery add 실패: ${e.message}`);
+try {
+  main();
+} catch (e) {
+  console.error(e instanceof L.TaskeryError ? e.message : `taskery add 실패: ${e.stack || e.message}`);
   process.exit(1);
-});
+}
