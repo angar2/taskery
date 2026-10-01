@@ -17,7 +17,7 @@ async function approvePlan(ctx, a) {
       problems.push(`\`## 완료 기준\` 시나리오가 ${n}개다 — 테스트 켜짐이면 1~5개를 \`1. [AUTO] 시작 → 행동 → 기대하는 끝 상태\` 형식으로 적는다`);
     }
   }
-  if (problems.length) L.fail(`approve-plan: ${L.taskLabel(num)} 태스크 문서를 고친 뒤 다시 부른다.\n${problems.map((p) => `- ${p}`).join('\n')}\n문서: ${L.docAbs(main, st)}`);
+  if (problems.length) L.fail(`approve-plan: ${L.taskLabel(num)} 태스크 문서를 고친 뒤 다시 부른다.\n${problems.map((p) => `- ${p}`).join('\n')}\n문서: ${L.docShown(main, st)}`);
   st.approve = { at: L.nowIso(), files };
   L.writeState(main, st);
   L.syncDoc(main, st);

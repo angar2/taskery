@@ -15,7 +15,7 @@ function openTasks(main, open) {
     out.push(`${L.taskLabel(st.num)} ${st.title}`);
     out.push(`- 플랜 ${st.plan}${st.item ? ` 항목 ${st.item}` : ''} · ${st.type} · ${st.size} · 스위치 ${st.switch.join(',')} · 범위 ${st.range}`);
     out.push(`- 단계: ${HEAD.map((h, i) => `${h} ${cells[i]}`).join(' | ')}`);
-    out.push(`- 문서: ${path.join(main, st.doc)}`);
+    out.push(`- 문서: ${L.docShown(main, st)}`);
     if (st.noBranch) out.push(`- 워크트리: 없음 — 분기 생략(--no-branch), 본진 ${st.parent}에서 일한다`);
     else if (st.noWorktree) out.push(`- 워크트리: 없음 — 분기 생략(--no-worktree), 본진에서 브랜치 ${st.branch}로 일한다`);
     else out.push(`- 워크트리: ${st.worktree} (브랜치 ${st.branch})`);

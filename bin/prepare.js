@@ -301,7 +301,7 @@ async function prepareTask(ctx, a) {
 
     const out = [
       `${L.taskLabel(num)} 「${st.title}」을 열었다.`,
-      `- 태스크 문서: ${path.join(main, doc)}`,
+      `- 태스크 문서: ${L.docShown(main, st)}`,
       `- 플랜: ${plan}${st.item ? ` (항목 ${st.item})` : ''} · 크기: ${st.size} · 스위치: ${switches.join(',')} · 범위: ${st.range}`,
       `- 부모 브랜치: ${parent}`,
     ];

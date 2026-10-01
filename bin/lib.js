@@ -296,9 +296,16 @@ function docAbs(main, st) {
   return path.join(main, st.doc);
 }
 
+// 사람·AI에게 보여 주는 문서 경로 — 워크트리가 있으면 그 안의 링크 너머 경로(같은 파일).
+// 워크트리에 들어간 세션은 본진 경로 편집이 막히기 때문이다. 읽기·쓰기는 docAbs(본진) 그대로
+function docShown(main, st) {
+  if (st.worktree && fs.existsSync(st.worktree)) return path.join(st.worktree, st.doc);
+  return docAbs(main, st);
+}
+
 function readDoc(main, st) {
   const file = docAbs(main, st);
-  if (!fs.existsSync(file)) fail(`태스크 문서가 없다: ${file}`);
+  if (!fs.existsSync(file)) fail(`태스크 문서가 없다: ${docShown(main, st)}`);
   return fs.readFileSync(file, 'utf8');
 }
 
@@ -605,6 +612,7 @@ module.exports = {
   readGitRule,
   fillTemplate,
   docAbs,
+  docShown,
   readDoc,
   section,
   meaningfulLines,

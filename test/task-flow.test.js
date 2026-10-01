@@ -239,3 +239,26 @@ test('번호 잠금 — prepare-task를 동시에 불러도 번호가 겹치지 
   const nums = results.map((r) => r.all.match(/TASK-(\d+)/)[1]).sort();
   assert.deepStrictEqual(nums, ['001', '002', '003', '004']);
 });
+
+test('문서 경로 표시 — 워크트리 태스크는 워크트리 쪽(링크 너머 같은 파일), 분기 생략·워크트리가 지워진 뒤는 본진 쪽', (t) => {
+  const sb = installedRepo();
+  t.after(() => sb.cleanup());
+  const out = sb.ok(['prepare-task', '워크트리 태스크', '--slug', 'in-wt', '--type', 'feature', '--size', 'small', '--dev', 'claude']);
+  const st = sb.state(1);
+  const shown = path.join(st.worktree, st.doc);
+  assert.ok(out.includes(`- 태스크 문서: ${shown}\n`), out);
+  assert.strictEqual(fs.realpathSync(shown), fs.realpathSync(path.join(sb.repo, st.doc)), '같은 파일');
+  assert.ok(sb.ok(['status']).includes(`- 문서: ${shown}\n`));
+  assert.ok(sb.tk(['approve-plan', '1']).all.includes(`문서: ${shown}`));
+  assert.ok(!out.includes(path.join(sb.repo, st.doc)), '본진 경로는 보여 주지 않는다');
+  // 워크트리를 지운 뒤에는 본진 경로
+  sb.ok(['close-task', '1']);
+  assert.ok(sb.tk(['approve-plan', '1']).all.includes('이미 닫혔다'));
+  const { docShown } = require('../bin/lib');
+  assert.strictEqual(docShown(sb.repo, sb.state(1)), path.join(sb.repo, st.doc));
+  // 분기 생략은 본진 경로
+  const out2 = sb.ok(['prepare-task', '본진 태스크', '--slug', 'in-main', '--type', 'feature', '--size', 'small', '--dev', 'claude', '--no-branch']);
+  const st2 = sb.state(2);
+  assert.ok(out2.includes(`- 태스크 문서: ${path.join(sb.repo, st2.doc)}\n`), out2);
+  assert.ok(sb.ok(['status']).includes(`- 문서: ${path.join(sb.repo, st2.doc)}\n`));
+});
