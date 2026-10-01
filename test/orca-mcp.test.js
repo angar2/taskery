@@ -153,4 +153,7 @@ test('MCP — 정의표의 명령이 같은 이름의 도구로 뜨고, 같은 �
   assert.strictEqual(sb.read('src/app.txt'), 'mcp\n');
   r = await s.request('tools/call', { name: 'status', arguments: {} });
   assert.match(r.result.content[0].text, /열린 태스크 없음/);
+  r = await s.request('tools/call', { name: 'report-task', arguments: { task: 'TASK-001', text: '병합 완료' } });
+  assert.ok(!r.result.isError, r.result.content[0].text);
+  assert.match(sb.read('.project/reports.log'), /TASK-001 병합 완료\n$/);
 });
