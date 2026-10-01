@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const { execFileSync } = require('child_process');
 const L = require('./lib');
-const { checkMain, installPackages } = require('./prepare');
+const { checkMain, installPackages, reseedBuildOutputs } = require('./prepare');
 const B = require('./backlog');
 const { runCodeTests, lastEntry } = require('./check');
 
@@ -322,7 +322,12 @@ async function closeTask(ctx, a) {
   const main = ctx.main;
   const st = openState(main, a.task);
   const finished = L.hasFinishRecord(st);
-  const notes = cleanup(main, st);
+  const notes = [];
+  // 끝난 태스크면 워크트리를 지우기 직전에 빌드 결과 폴더를 본진의 씨앗으로(§7). 남길 워크트리(커밋 안 된 변경)는 그대로 둔다
+  if (finished && st.worktree && fs.existsSync(st.worktree) && !L.changedFiles(st.worktree).length) {
+    notes.push(...reseedBuildOutputs(main, st.worktree, L.readManifest(main).buildOutput));
+  }
+  notes.push(...cleanup(main, st));
   const goal = L.goalLine(fs.existsSync(L.docAbs(main, st)) ? L.readDoc(main, st) : '') || st.title;
   st.closed = { at: L.nowIso(), finished };
   L.writeState(main, st);

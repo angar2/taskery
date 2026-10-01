@@ -60,7 +60,7 @@
 - 부모 브랜치 = 본진(리포 원래 폴더)이 서 있는 브랜치다. 본진은 다른 태스크가 병합받는 자리라 부모 브랜치에 그대로 둔다.
 - 생략은 사용자가 명시할 때만: `--no-worktree`(본진에서 브랜치만), `--no-branch`(본진의 현재 브랜치에서). 생략 태스크가 열려 있는 동안 본진이 부모 브랜치를 떠나 있거나 커밋 안 된 코드를 가지면, 다른 태스크의 `prepare-task`·`merge-task`가 원인 태스크를 알리고 멈춘다.
 - 워크트리를 지우는 일은 태스크를 연 주인이 본진에서 `close-task`로 한다. 정리가 막혀 남은 것은 `prune`으로 정리한다.
-- 새 워크트리 준비: `.taskery-manifest.json`의 `buildOutput`에 등록된 빌드 결과 폴더(예: Rust `target`)를 본진에서 APFS 복제(`cp -Rc`)로 심고, 워크트리마다 자기 폴더로 빌드한다. 등록이 없거나 APFS가 아니면 건너뛴다. `package-lock.json`이 있으면 `npm ci`를 한다. 등록은 `init`이 스택을 보고 적고, 바꿀 때는 매니페스트를 고친다.
+- 새 워크트리 준비: `.taskery-manifest.json`의 `buildOutput`에 등록된 빌드 결과 폴더(예: Rust `target`)를 본진에서 APFS 복제(`cp -Rc`)로 심고, 워크트리마다 자기 폴더로 빌드한다. 등록이 없거나 APFS가 아니면 건너뛴다. `package-lock.json`이 있으면 `npm ci`를 한다. 등록은 `init`이 스택을 보고 적고(Xcode 프로젝트는 `DerivedData` — 코드 테스트 명령에 `-derivedDataPath DerivedData`를 붙인다), 바꿀 때는 매니페스트를 고친다. 등록한 폴더는 `.git/info/exclude`에 들어가 코드로 커밋되지 않는다. 끝난 태스크를 `close-task`로 닫을 때 그 워크트리의 빌드 결과 폴더를 본진으로 복제해 다음 태스크의 씨앗으로 쓴다.
 
 ## 6. taskery 파일 — 모두 git 밖, 본진에 한 벌
 
@@ -102,4 +102,4 @@
 | 날짜 | 변경 사항 |
 |---|---|
 | 2026-10-01 | 1.0판 — 참고서로 다시 썼다. 7상태·멀티세션 내부 동작·훅·제품 관통 문서 7종·멀티리포 설명을 빼고, 다섯 단계·명령·워크트리·git 밖 파일·PLAN.md 목록 형식을 담았다 |
-| 2026-10-01 | S2 — `prune`·`backlog-*`·`prepare-task --from`·`status`의 시작할 수 있는 태스크, 새 워크트리 준비(빌드 결과 폴더 APFS 복제·`npm ci`)를 더했다 |
+| 2026-10-01 | S2 — `prune`·`backlog-*`·`prepare-task --from`·`status`의 시작할 수 있는 태스크, 새 워크트리 준비(빌드 결과 폴더 APFS 복제·exclude 등록·닫을 때 본진 씨앗 갱신·`npm ci`)를 더했다 |

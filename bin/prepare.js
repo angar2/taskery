@@ -151,15 +151,22 @@ function fsType(p) {
   }
 }
 
+// APFS 복제를 할 수 없는 이유(할 수 있으면 null). cp -c는 복제가 안 되는 곳(APFS 아님·다른 볼륨)에서
+// 조용히 통째 복사로 넘어가므로, 같은 APFS 볼륨일 때만 부른다
+function cloneBlocker(main, wt) {
+  if (process.platform !== 'darwin') return 'APFS 복제는 macOS 전용이다';
+  const type = fsType(main);
+  if (type !== 'apfs') return `본진이 APFS가 아니다(${type || '알 수 없음'})`;
+  if (fs.statSync(main).dev !== fs.statSync(wt).dev) return '워크트리가 본진과 다른 볼륨에 있어 APFS 복제가 되지 않는다';
+  return null;
+}
+
 // 등록된 빌드 결과 폴더를 본진에서 APFS 복제(cp -Rc)로 새 워크트리에 심는다. 워크트리마다 자기 폴더로 빌드한다(§7)
-// cp -c는 복제가 안 되는 곳(APFS 아님·다른 볼륨)에서 조용히 통째 복사로 넘어가므로, 같은 APFS 볼륨일 때만 부른다
 function cloneBuildOutputs(main, wt, list) {
   const notes = [];
   if (!Array.isArray(list) || !list.length) return notes;
-  if (process.platform !== 'darwin') return ['빌드 결과 폴더 복제를 건너뛰었다 — APFS 복제는 macOS 전용이다'];
-  const type = fsType(main);
-  if (type !== 'apfs') return [`빌드 결과 폴더 복제를 건너뛰었다 — 본진이 APFS가 아니다(${type || '알 수 없음'})`];
-  if (fs.statSync(main).dev !== fs.statSync(wt).dev) return ['빌드 결과 폴더 복제를 건너뛰었다 — 워크트리가 본진과 다른 볼륨에 있어 APFS 복제가 되지 않는다'];
+  const blocker = cloneBlocker(main, wt);
+  if (blocker) return [`빌드 결과 폴더 복제를 건너뛰었다 — ${blocker}`];
   for (const rel of list) {
     const src = path.join(main, rel);
     const dst = path.join(wt, rel);
@@ -177,6 +184,29 @@ function cloneBuildOutputs(main, wt, list) {
       fs.rmSync(dst, { recursive: true, force: true });
       const why = ((e.stderr || '') + '').trim().split('\n')[0] || e.message;
       notes.push(`빌드 결과 폴더 ${rel} 복제를 건너뛰었다(${why})`);
+    }
+  }
+  return notes;
+}
+
+// 끝난 태스크의 워크트리 빌드 결과 폴더를 본진으로 APFS 복제해 씨앗을 갱신한다 — 다음 태스크가 증분 빌드하게.
+// close-task가 워크트리를 지우기 직전에 부른다. 새로 복제한 뒤 옛 폴더와 바꾼다. 안 되면 조용히 건너뛴다
+function reseedBuildOutputs(main, wt, list) {
+  const notes = [];
+  if (!Array.isArray(list) || !list.length || !fs.existsSync(wt) || cloneBlocker(main, wt)) return notes;
+  for (const rel of list) {
+    const src = path.join(wt, rel);
+    const dst = path.join(main, rel);
+    if (!fs.existsSync(src) || fs.lstatSync(src).isSymbolicLink()) continue;
+    const tmp = `${dst}.taskery-${process.pid}`;
+    try {
+      fs.mkdirSync(path.dirname(dst), { recursive: true });
+      execFileSync('cp', ['-Rc', src, tmp], { stdio: ['ignore', 'pipe', 'pipe'] });
+      fs.rmSync(dst, { recursive: true, force: true });
+      fs.renameSync(tmp, dst);
+      notes.push(`빌드 결과 폴더 ${rel}를 본진으로 APFS 복제해 다음 태스크의 씨앗으로 바꿨다`);
+    } catch (e) {
+      fs.rmSync(tmp, { recursive: true, force: true });
     }
   }
   return notes;
@@ -237,7 +267,7 @@ async function prepareTask(ctx, a) {
       worktree = createTaskeryWorktree(main, { projectId: manifest.projectId, nnn, slug: a.slug, parent, branch });
       by = 'taskery';
     }
-    L.ensureExclude(main);
+    L.ensureExclude(main, manifest.buildOutput);
     if (worktree) plant(main, worktree);
 
     const doc = path.join('.project', 'plans', plan, 'tasks', `${nnn}_${a.slug}.md`);
@@ -297,4 +327,4 @@ async function prepareTask(ctx, a) {
   return out.join('\n');
 }
 
-module.exports = { prepareTask, checkMain, installPackages };
+module.exports = { prepareTask, checkMain, installPackages, reseedBuildOutputs };

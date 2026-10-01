@@ -34,6 +34,8 @@ function proposeBuildOutput(main) {
     }
   }
   if (fs.existsSync(path.join(main, 'Package.swift'))) found.push('.build');
+  // Xcode 프로젝트 — 기본 DerivedData는 리포 밖·워크트리마다 다른 곳이라 리포 안 고정 경로로 쓴다
+  if (fs.readdirSync(main).some((n) => /\.(xcodeproj|xcworkspace)$/.test(n))) found.push('DerivedData');
   return found;
 }
 
@@ -90,12 +92,13 @@ async function main() {
       if (it.kind !== 'once') files[it.dst] = I.hashText(text);
     }
     notes.push(...I.writeConfigs(main, platforms));
-    const added = L.ensureExclude(main);
-    if (added.length) notes.push(`.git/info/exclude — ${added.join(' ')}`);
     const buildOutput = proposeBuildOutput(main);
     if (buildOutput.length) {
       notes.push(`빌드 결과 폴더 등록: ${buildOutput.join(', ')} — 새 워크트리에 본진의 이 폴더를 APFS 복제한다(바꾸려면 .taskery-manifest.json의 buildOutput을 고친다)`);
+      if (buildOutput.includes('DerivedData')) notes.push('코드 테스트 명령에 -derivedDataPath DerivedData를 붙인다');
     }
+    const added = L.ensureExclude(main, buildOutput);
+    if (added.length) notes.push(`.git/info/exclude — ${added.join(' ')}`);
     L.writeManifest(main, {
       version: L.getPackageVersion(),
       installed_at: new Date().toISOString(),

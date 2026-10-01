@@ -101,12 +101,14 @@ function fingerprint(dir) {
   }
 }
 
-function ensureExclude(main) {
+// extra = 매니페스트에 등록된 빌드 결과 폴더 — 코드로 커밋되지 않게 같은 이름 규칙으로 넣는다(§7)
+function ensureExclude(main, extra = []) {
   const common = git(main, ['rev-parse', '--path-format=absolute', '--git-common-dir']);
   const file = path.join(common, 'info', 'exclude');
   const cur = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '';
   const have = new Set(cur.split('\n').map((l) => l.trim()));
-  const missing = EXCLUDE_NAMES.map((n) => `/${n}`).filter((r) => !have.has(r));
+  const names = [...EXCLUDE_NAMES, ...(Array.isArray(extra) ? extra : [])].map((n) => String(n).replace(/^\/+|\/+$/g, ''));
+  const missing = [...new Set(names.map((n) => `/${n}`))].filter((r) => !have.has(r));
   if (missing.length === 0) return [];
   fs.mkdirSync(path.dirname(file), { recursive: true });
   const sep = cur && !cur.endsWith('\n') ? '\n' : '';
