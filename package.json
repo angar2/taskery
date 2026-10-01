@@ -14,7 +14,8 @@
   ],
   "scripts": {
     "smoke:init": "node bin/init.js",
-    "smoke:update": "node bin/update.js"
+    "smoke:update": "node bin/update.js",
+    "test": "node --test test/*.test.js"
   },
   "keywords": [
     "claude-code",
