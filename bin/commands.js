@@ -5,6 +5,8 @@ const { approvePlan, testCode, testScenario } = require('./check');
 const { verifyClose, commitTask, mergeTask, closeTask } = require('./finish');
 const { status } = require('./status');
 const { planInit } = require('./plan');
+const { backlogAdd, backlogGet, backlogMark } = require('./backlog');
+const { prune } = require('./prune');
 
 // 인자 종류: positional(순서대로) · string(--이름 값) · bool(--이름) · list(--이름 값 값 …)
 const TASK = { name: 'task', positional: true, desc: '태스크 번호 (TASK-012 또는 12)' };
@@ -13,7 +15,7 @@ const RANGE = { name: 'range', desc: '사용자가 새로 말한 진행 범위 �
 const COMMANDS = [
   {
     name: 'status',
-    summary: '열린 태스크·단계 표·단계별 시간·문서 경로·워크트리 경로를 보여 준다',
+    summary: '열린 태스크·단계 표·단계별 시간·문서 경로·워크트리 경로, 플랜별 시작할 수 있는 태스크를 보여 준다',
     args: [],
     run: status,
   },
@@ -38,6 +40,7 @@ const COMMANDS = [
       { name: 'range', desc: '사용자가 말한 진행 범위 그대로 (기본 한 단계)' },
       { name: 'plan', desc: '플랜 폴더 이름 (플랜이 하나면 생략)' },
       { name: 'item', desc: 'PLAN.md 태스크 목록의 항목 번호' },
+      { name: 'from', desc: '옮겨 오는 백로그 번호 목록, 예 BL-3,BL-7' },
       { name: 'dev', desc: '작업자 식별자 (GIT_RULE.md 브랜치 이름에 작업자 칸이 있을 때 필수)' },
       { name: 'no-worktree', type: 'bool', desc: '워크트리 생략 — 사용자가 명시했을 때만' },
       { name: 'no-branch', type: 'bool', desc: '브랜치·워크트리 생략 — 사용자가 명시했을 때만' },
@@ -76,11 +79,43 @@ const COMMANDS = [
   { name: 'commit-task', summary: 'Phase별 코드 커밋만 하고 병합 확인 요약을 낸다', args: [TASK, RANGE], run: commitTask },
   { name: 'merge-task', summary: '병합 잠금 안에서 부모 최신으로 rebase한 뒤 병합한다', args: [TASK, RANGE], run: mergeTask },
   { name: 'close-task', summary: '워크트리·브랜치를 정리하고 태스크를 닫는다(주인이 본진에서)', args: [TASK], run: closeTask },
+  {
+    name: 'prune',
+    summary: '닫힌 태스크에 남은 워크트리·브랜치를 정리한다 — 기본은 항목마다 묻는다',
+    args: [{ name: 'yes', type: 'bool', desc: '묻지 않고 정리 — 사용자가 명시했을 때만. 커밋 안 된 변경이 있는 곳은 건너뛴다' }],
+    interactive: true,
+    run: prune,
+  },
+  {
+    name: 'backlog-add',
+    summary: '백로그 번호를 발급해 BACKLOG.md 열린 항목 맨 위에 빈 양식을 넣는다',
+    args: [
+      { name: 'title', positional: true, desc: '항목 제목 한 줄 (필수)' },
+      { name: 'type', desc: 'bug · improve · feature · refactor · docs · chore' },
+    ],
+    run: backlogAdd,
+  },
+  {
+    name: 'backlog-get',
+    summary: '번호를 주면 그 항목 전문, 없으면 열린 항목 목록(번호·종류·제목·상태)',
+    args: [{ name: 'id', positional: true, desc: '백로그 번호 (BL-3 또는 3)' }],
+    run: backlogGet,
+  },
+  {
+    name: 'backlog-mark',
+    summary: '--from 없이 연 태스크를 백로그 항목에 연결한다(연결 태스크 칸·상태 진행)',
+    args: [
+      { name: 'id', positional: true, desc: '백로그 번호 (BL-3 또는 3)' },
+      { name: 'task', positional: true, desc: '태스크 번호 (TASK-012 또는 12)' },
+    ],
+    run: backlogMark,
+  },
 ];
 
 // 명령 실행 공통 — 본진을 찾고, --range가 있으면 범위 메모를 먼저 갱신한다
-async function execute(cmd, args, { cwd = process.cwd(), main = null } = {}) {
-  const ctx = { cwd, main: main || L.findMain(cwd) };
+// ask는 묻는 명령(prune)에 CLI가 넘기는 질문 함수다. MCP에는 없다
+async function execute(cmd, args, { cwd = process.cwd(), main = null, ask = null } = {}) {
+  const ctx = { cwd, main: main || L.findMain(cwd), ask };
   if (args.range && args.task && cmd.args.includes(RANGE)) {
     const st = L.readState(ctx.main, L.parseTaskNum(args.task));
     L.updateRange(ctx.main, st, String(args.range));

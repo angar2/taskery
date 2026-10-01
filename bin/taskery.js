@@ -71,13 +71,16 @@ async function main() {
     console.error(`taskery: 모르는 명령 '${sub}'.\n\n${help()}`);
     return 1;
   }
+  const asker = cmd.interactive ? require('./install').makeAsker() : null;
   try {
-    const out = await execute(cmd, parseArgs(cmd, process.argv.slice(3)));
+    const out = await execute(cmd, parseArgs(cmd, process.argv.slice(3)), { ask: asker && asker.ask });
     if (out) console.log(out);
     return 0;
   } catch (e) {
     console.error(e instanceof L.TaskeryError ? e.message : `taskery ${sub} 실패: ${e.stack || e.message}`);
     return 1;
+  } finally {
+    if (asker) asker.close();
   }
 }
 

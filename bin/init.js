@@ -23,6 +23,20 @@ function startGit(cwd) {
   return branch;
 }
 
+// 스택을 보고 빌드 결과 폴더를 제안한다 — 새 워크트리에 APFS 복제할 폴더(§7). Node는 npm ci라 등록하지 않는다
+function proposeBuildOutput(main) {
+  const found = [];
+  const dirs = ['', ...fs.readdirSync(main, { withFileTypes: true }).filter((d) => d.isDirectory() && !d.name.startsWith('.')).map((d) => d.name)];
+  for (const d of dirs) {
+    if (fs.existsSync(path.join(main, d, 'Cargo.toml'))) {
+      found.push(path.posix.join(d, 'target'));
+      if (d === '') break; // 루트 워크스페이스면 target 하나
+    }
+  }
+  if (fs.existsSync(path.join(main, 'Package.swift'))) found.push('.build');
+  return found;
+}
+
 function checkRepo(cwd) {
   if (!fs.existsSync(path.join(cwd, '.git')) && !L.gitOk(cwd, ['rev-parse', '--git-dir'])) {
     L.fail('init: git이 없는 폴더에 파일이 이미 있다. 무엇을 첫 커밋에 넣을지(.env 같은 비밀값 포함 여부)는 사용자가 정할 일이라, `git init` 후 첫 커밋을 직접 만든 뒤 다시 부른다.');
@@ -78,17 +92,22 @@ async function main() {
     notes.push(...I.writeConfigs(main, platforms));
     const added = L.ensureExclude(main);
     if (added.length) notes.push(`.git/info/exclude — ${added.join(' ')}`);
+    const buildOutput = proposeBuildOutput(main);
+    if (buildOutput.length) {
+      notes.push(`빌드 결과 폴더 등록: ${buildOutput.join(', ')} — 새 워크트리에 본진의 이 폴더를 APFS 복제한다(바꾸려면 .taskery-manifest.json의 buildOutput을 고친다)`);
+    }
     L.writeManifest(main, {
       version: L.getPackageVersion(),
       installed_at: new Date().toISOString(),
       projectId: crypto.randomBytes(4).toString('hex'),
       platforms,
       files,
+      ...(buildOutput.length ? { buildOutput } : {}),
     });
     console.log(`taskery v${L.getPackageVersion()} 설치 완료 — ${main}`);
     console.log(`- 플랫폼: ${platforms.join(', ')}`);
     for (const n of notes) console.log(`- ${n}`);
-    console.log('다음: 에이전트 세션에서 프로젝트 정보를 채우고(AGENTS.md `## 프로젝트`), `plan-init <slug>`으로 첫 플랜을 만든다.');
+    console.log('다음: 에이전트 세션에서 project-init 스킬로 프로젝트 정보·용어집·코드 테스트 등록·첫 플랜을 만든다.');
   } finally {
     asker.close();
   }

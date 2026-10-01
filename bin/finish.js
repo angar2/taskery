@@ -3,7 +3,8 @@ const fs = require('fs');
 const path = require('path');
 const { execFileSync } = require('child_process');
 const L = require('./lib');
-const { checkMain } = require('./prepare');
+const { checkMain, installPackages } = require('./prepare');
+const B = require('./backlog');
 const { runCodeTests, lastEntry } = require('./check');
 
 function openState(main, task) {
@@ -211,6 +212,8 @@ async function mergeTask(ctx, a) {
 
   if (!st.mergeStart) {
     st.mergeStart = L.nowIso();
+    // rebase 전 브랜치 끝 — 부모에서 받아 온 변경에 의존성 파일이 있는지 볼 때 쓴다(충돌 뒤 다시 불러도 같은 값)
+    st.mergeFrom = L.git(st.noWorktree ? main : st.worktree, ['rev-parse', 'HEAD']);
     L.writeState(main, st);
   }
   const rule = L.readGitRule(main);
@@ -222,6 +225,10 @@ async function mergeTask(ctx, a) {
     // 새 커밋이 들어와 코드가 test-code 때와 달라졌을 때만 코드 테스트를 다시 돌린다
     const fp = L.fingerprint(dir);
     if (st.testCode && fp !== st.testCode.fingerprint) {
+      // 의존성 파일(package-lock.json)이 바뀌었으면 다시 설치한 뒤 테스트한다
+      if (st.mergeFrom && L.git(dir, ['diff', '--name-only', st.mergeFrom, 'HEAD', '--', 'package-lock.json'])) {
+        for (const n of await installPackages(dir)) notes.push(`의존성 파일이 바뀌어 다시 설치했다: ${n}`);
+      }
       const r = await runCodeTests(main, dir);
       st.testCode.fingerprint = fp;
       L.writeState(main, st);
@@ -267,8 +274,9 @@ function writeChangelog(main, st, goal) {
   return file;
 }
 
-// 워크트리·브랜치 정리 — 커밋 안 된 변경이 있으면 남기고, 브랜치는 병합된 것만 지운다(강제 삭제 없음)
-function cleanup(main, st) {
+// 워크트리·브랜치 정리 — 커밋 안 된 변경이 있으면 남기고, 브랜치는 병합된 것만 지운다.
+// force는 prune에서 사용자가 확인했을 때만 — 병합 안 된 브랜치도 지운다(복구 명령 출력)
+function cleanup(main, st, { force = false } = {}) {
   const notes = [];
   if (st.noBranch) return notes;
   const exists = L.branchExists(main, st.branch);
@@ -303,9 +311,9 @@ function cleanup(main, st) {
     if (exists) notes.push(`브랜치 ${st.branch}가 지워졌다. 복구: git branch ${st.branch} ${tip}`);
     return notes;
   }
-  if (!merged) notes.push(`브랜치 ${st.branch}는 부모에 병합되지 않아 남겼다.`);
+  if (!merged && !force) notes.push(`브랜치 ${st.branch}는 부모에 병합되지 않아 남겼다.`);
   else if (!branchFree || L.currentBranch(main) === st.branch) notes.push(`브랜치 ${st.branch}를 지우지 못해 남겼다(사용 중).`);
-  else if (L.git(main, ['branch', '-d', st.branch], { allowFail: true }) === null) notes.push(`브랜치 ${st.branch}를 지우지 못해 남겼다.`);
+  else if (L.git(main, ['branch', merged ? '-d' : '-D', st.branch], { allowFail: true }) === null) notes.push(`브랜치 ${st.branch}를 지우지 못해 남겼다.`);
   else notes.push(`브랜치 ${st.branch}를 지웠다. 복구: git branch ${st.branch} ${tip}`);
   return notes;
 }
@@ -319,6 +327,9 @@ async function closeTask(ctx, a) {
   st.closed = { at: L.nowIso(), finished };
   L.writeState(main, st);
   L.syncDoc(main, st);
+  // 백로그 연결 표시 — (완료)·(포기), 연결 태스크가 모두 닫히면 항목 이동(§5-3)
+  const blNotes = await L.withLock(main, 'number', async () => B.markClosed(main, L.taskLabel(st.num), finished));
+  for (const n of blNotes) notes.push(`백로그: ${n}`);
   if (finished) notes.push(`변경 기록: ${writeChangelog(main, st, goal)}`);
   const d = L.stageDurations(st);
   const row = (label, on, v) => `  - ${label}: ${on ? L.minutes(v) || '–' : '꺼짐'}`;
@@ -334,4 +345,4 @@ async function closeTask(ctx, a) {
   ].join('\n');
 }
 
-module.exports = { verifyClose, commitTask, mergeTask, closeTask };
+module.exports = { verifyClose, commitTask, mergeTask, closeTask, cleanup };
