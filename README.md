@@ -196,7 +196,7 @@ npx @angar2/taskery update
 
 ## 0.8.x에서 옮겨 오는 경우
 
-1.0은 0.8.x와 호환되지 않으며 이관 기능도 없다. 0.8.x로 운영하던 리포는 옛 taskery 파일(`AGENTS.md`·`CLAUDE.md`·`.claude/`·`.codex/`·`.agents/`·`.project/`·`.mcp.json`·`.taskery-manifest.json`)을 리포 밖으로 옮기고, git이 추적하고 있었다면 추적을 해제해 커밋한 뒤 새로 `init`한다. 필요한 옛 문서(백로그·제품 문서)는 옮겨 둔 곳에서 새 `.project/`로 직접 가져온다.
+1.0은 0.8.x와 호환되지 않으며 이관 기능도 없다. 0.8.x로 운영하던 리포는 옛 taskery 파일(`AGENTS.md`·`CLAUDE.md`·`.claude/`·`.codex/`·`.agents/`·`.project/`·`.mcp.json`·`.taskery-manifest.json`)을 리포 밖으로 옮기고, git이 추적하고 있었다면 추적을 해제해 커밋한 뒤 새로 `init`한다. 필요한 옛 문서(백로그·제품 문서)는 옮겨 둔 곳에서 새 `.project/`로 직접 가져온다. 0.x 리포에서 `update`를 부르면 아무 파일도 바꾸지 않고 이 절차를 알린 뒤 멈춘다.
 
 ---
 
