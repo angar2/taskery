@@ -101,12 +101,14 @@ function fingerprint(dir) {
   }
 }
 
-function ensureExclude(main) {
+// extra = 매니페스트에 등록된 빌드 결과 폴더 — 코드로 커밋되지 않게 같은 이름 규칙으로 넣는다(§7)
+function ensureExclude(main, extra = []) {
   const common = git(main, ['rev-parse', '--path-format=absolute', '--git-common-dir']);
   const file = path.join(common, 'info', 'exclude');
   const cur = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '';
   const have = new Set(cur.split('\n').map((l) => l.trim()));
-  const missing = EXCLUDE_NAMES.map((n) => `/${n}`).filter((r) => !have.has(r));
+  const names = [...EXCLUDE_NAMES, ...(Array.isArray(extra) ? extra : [])].map((n) => String(n).replace(/^\/+|\/+$/g, ''));
+  const missing = [...new Set(names.map((n) => `/${n}`))].filter((r) => !have.has(r));
   if (missing.length === 0) return [];
   fs.mkdirSync(path.dirname(file), { recursive: true });
   const sep = cur && !cur.endsWith('\n') ? '\n' : '';
@@ -294,9 +296,16 @@ function docAbs(main, st) {
   return path.join(main, st.doc);
 }
 
+// 사람·AI에게 보여 주는 문서 경로 — 워크트리가 있으면 그 안의 링크 너머 경로(같은 파일).
+// 워크트리에 들어간 세션은 본진 경로 편집이 막히기 때문이다. 읽기·쓰기는 docAbs(본진) 그대로
+function docShown(main, st) {
+  if (st.worktree && fs.existsSync(st.worktree)) return path.join(st.worktree, st.doc);
+  return docAbs(main, st);
+}
+
 function readDoc(main, st) {
   const file = docAbs(main, st);
-  if (!fs.existsSync(file)) fail(`태스크 문서가 없다: ${file}`);
+  if (!fs.existsSync(file)) fail(`태스크 문서가 없다: ${docShown(main, st)}`);
   return fs.readFileSync(file, 'utf8');
 }
 
@@ -603,6 +612,7 @@ module.exports = {
   readGitRule,
   fillTemplate,
   docAbs,
+  docShown,
   readDoc,
   section,
   meaningfulLines,

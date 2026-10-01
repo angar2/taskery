@@ -28,9 +28,9 @@
 
 | 명령 | 하는 일 |
 |---|---|
-| `status` | 열린 태스크·단계 표·단계별 시간·문서 경로·워크트리 경로 |
+| `status` | 열린 태스크·단계 표·단계별 시간·문서 경로·워크트리 경로, 플랜별 시작할 수 있는 태스크·읽지 못한 항목 |
 | `plan-init <slug> [--title "<제목>"]` | 다음 플랜 번호로 `plans/<NNN>_<slug>/PLAN.md` 틀 |
-| `prepare-task "<제목>" --slug --type --size [--switch] [--range] [--plan] [--item] [--dev] [--no-worktree] [--no-branch]` | 번호·브랜치·워크트리·태스크 문서·기록 |
+| `prepare-task "<제목>" --slug --type --size [--switch] [--range] [--plan] [--item] [--from] [--dev] [--no-worktree] [--no-branch]` | 번호·브랜치·워크트리·태스크 문서·기록 |
 | `approve-plan <TASK>` | 태스크 문서 검사 → 계획 끝 기록 |
 | `test-code [TASK]` | 등록된 코드 테스트 실행. 태스크를 주면 개발 칸 기록 |
 | `test-code --register "<명령>" …` | 코드 테스트 명령 목록 등록(부를 때마다 전체 교체). 없으면 `--register none` |
@@ -39,7 +39,11 @@
 | `verify-close <TASK>` | 마무리 검사만 |
 | `commit-task <TASK>` | Phase별 코드 커밋 + 병합 확인 요약 |
 | `merge-task <TASK>` | 병합 잠금 안에서 부모 최신으로 rebase → 병합 |
-| `close-task <TASK>` | 워크트리·브랜치 정리 → 닫기 → 변경 기록 → 시간 보고 |
+| `close-task <TASK>` | 워크트리·브랜치 정리 → 닫기 → 백로그 연결 표시 → 변경 기록 → 시간 보고 |
+| `prune [--yes]` | 닫힌 태스크에 남은 워크트리·브랜치 정리. 기본은 항목마다 묻는다. 커밋 안 된 변경이 있는 곳은 건너뛴다 |
+| `backlog-add "<제목>" [--type <종류>]` | 백로그 번호를 발급해 `BACKLOG.md` 열린 항목 맨 위에 빈 양식 |
+| `backlog-get [BL-번호]` | 번호를 주면 그 항목 전문, 없으면 열린 항목 목록 |
+| `backlog-mark <BL-번호> <TASK>` | `--from` 없이 연 태스크를 백로그 항목에 연결 |
 | `init` · `update` · `add <claude\|codex>` | 설치 · 갱신 · 플랫폼 추가 (CLI만) |
 
 태스크 명령(`approve-plan`~`merge-task`)에 `--range "<새 범위>"`를 붙이면 태스크 문서의 범위 메모만 바뀐다.
@@ -55,7 +59,8 @@
 - 워크트리는 Orca 탭 안이면 Orca가, 아니면 `~/.taskery/worktrees/<projectId>/`에 taskery가 만든다.
 - 부모 브랜치 = 본진(리포 원래 폴더)이 서 있는 브랜치다. 본진은 다른 태스크가 병합받는 자리라 부모 브랜치에 그대로 둔다.
 - 생략은 사용자가 명시할 때만: `--no-worktree`(본진에서 브랜치만), `--no-branch`(본진의 현재 브랜치에서). 생략 태스크가 열려 있는 동안 본진이 부모 브랜치를 떠나 있거나 커밋 안 된 코드를 가지면, 다른 태스크의 `prepare-task`·`merge-task`가 원인 태스크를 알리고 멈춘다.
-- 워크트리를 지우는 일은 태스크를 연 주인이 본진에서 `close-task`로 한다.
+- 워크트리를 지우는 일은 태스크를 연 주인이 본진에서 `close-task`로 한다. 정리가 막혀 남은 것은 `prune`으로 정리한다.
+- 새 워크트리 준비: `.taskery-manifest.json`의 `buildOutput`에 등록된 빌드 결과 폴더(예: Rust `target`)를 본진에서 APFS 복제(`cp -Rc`)로 심고, 워크트리마다 자기 폴더로 빌드한다. 등록이 없거나 APFS가 아니면 건너뛴다. `package-lock.json`이 있으면 `npm ci`를 한다. 등록은 `init`이 스택을 보고 적고(Xcode 프로젝트는 `DerivedData` — 코드 테스트 명령에 `-derivedDataPath DerivedData`를 붙인다), 바꿀 때는 매니페스트를 고친다. 등록한 폴더는 `.git/info/exclude`에 들어가 코드로 커밋되지 않는다. 끝난 태스크를 `close-task`로 닫을 때 그 워크트리의 빌드 결과 폴더를 본진으로 복제해 다음 태스크의 씨앗으로 쓴다.
 
 ## 6. taskery 파일 — 모두 git 밖, 본진에 한 벌
 
@@ -83,6 +88,7 @@
 
 - 한 줄 형식은 `<항목 번호>. <한 줄 설명> — 선행: <항목 번호들 또는 없음>`이다.
 - `prepare-task --item <항목 번호>`로 열면 명령이 그 줄 끝에 `(TASK-012)`를 붙인다.
+- `status`는 끝나지 않았고 열린 태스크가 없으며 선행 항목이 모두 끝난 항목을 시작할 수 있는 태스크로 보여 준다. 항목이 끝났다 = 줄 끝에 가장 최근 연결된 태스크가 마무리 기록(병합, 병합이 없는 태스크는 `commit-task` 완료)을 남기고 닫힌 것. 형식을 읽지 못한 줄은 '읽지 못한 항목'으로 따로 보여 준다.
 
 ## 8. 로컬 규칙
 
@@ -96,3 +102,4 @@
 | 날짜 | 변경 사항 |
 |---|---|
 | 2026-10-01 | 1.0판 — 참고서로 다시 썼다. 7상태·멀티세션 내부 동작·훅·제품 관통 문서 7종·멀티리포 설명을 빼고, 다섯 단계·명령·워크트리·git 밖 파일·PLAN.md 목록 형식을 담았다 |
+| 2026-10-01 | S2 — `prune`·`backlog-*`·`prepare-task --from`·`status`의 시작할 수 있는 태스크, 새 워크트리 준비(빌드 결과 폴더 APFS 복제·exclude 등록·닫을 때 본진 씨앗 갱신·`npm ci`)를 더했다 |

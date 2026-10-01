@@ -27,4 +27,37 @@ async function planInit(ctx, a) {
   });
 }
 
-module.exports = { planInit };
+// PLAN.md `## 태스크 목록`을 읽는다. 한 줄 형식 `<항목 번호>. <한 줄 설명> — 선행: <항목 번호들 또는 없음>`,
+// 줄 끝의 `(TASK-012)`는 prepare-task --item이 붙인 연결 표시다(마지막 것이 가장 최근 연결). 읽지 못한 줄은 따로 돌려준다
+function parsePlanItems(text) {
+  const items = [];
+  const unreadable = [];
+  const body = L.section(text, '태스크 목록');
+  if (body == null) return { items, unreadable, noList: true };
+  for (const raw of body.replace(/<!--[\s\S]*?-->/g, '').split('\n')) {
+    const line = raw.trim();
+    if (!line) continue;
+    const tasks = [];
+    let rest = line;
+    for (let m; (m = rest.match(/\s*\(TASK-(\d+)\)\s*$/)); ) {
+      tasks.unshift(parseInt(m[1], 10));
+      rest = rest.slice(0, m.index);
+    }
+    const m = rest.match(/^(\d+)\.\s+(.+?)\s+[—–-]\s+선행\s*:\s*(.+)$/);
+    const pre = m && m[3].trim();
+    if (!m || !(pre === '없음' || /^\d+(\s*[,·]\s*\d+)*$/.test(pre))) {
+      unreadable.push(line);
+      continue;
+    }
+    items.push({
+      num: parseInt(m[1], 10),
+      desc: m[2].trim(),
+      pre: pre === '없음' ? [] : pre.split(/\s*[,·]\s*/).map((n) => parseInt(n, 10)),
+      tasks,
+      line,
+    });
+  }
+  return { items, unreadable, noList: false };
+}
+
+module.exports = { planInit, parsePlanItems };

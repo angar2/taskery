@@ -7,8 +7,8 @@ const L = require('./lib');
 
 const TEMPLATE = path.resolve(__dirname, '..', 'template');
 const PLATFORMS = ['claude', 'codex'];
-// 1.0 스킬 중 지금 설치하는 것 — S2·S3에서 project-init·plan-init·add-backlog·log-friction·task-orche가 더해진다
-const SKILLS = ['task-init', 'task-plan', 'task-dev', 'task-test', 'task-close'];
+// 1.0 스킬 중 지금 설치하는 것 — S3에서 task-orche가 더해진다
+const SKILLS = ['task-init', 'task-plan', 'task-dev', 'task-test', 'task-close', 'project-init', 'plan-init', 'add-backlog', 'log-friction'];
 const RULES = ['TASKERY_RULE.md', 'GIT_RULE.md', 'TASK_DOC_RULE.md', 'CHANGELOG_RULE.md', 'MOCKUP_RULE.md'];
 const SKILL_ROOT = { claude: '.claude/skills', codex: '.codex/skills' };
 

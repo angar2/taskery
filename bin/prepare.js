@@ -4,6 +4,7 @@ const path = require('path');
 const os = require('os');
 const { execFileSync } = require('child_process');
 const L = require('./lib');
+const B = require('./backlog');
 
 const SLUG_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 
@@ -132,6 +133,95 @@ function plant(main, wt) {
   }
 }
 
+function seconds(t0) {
+  return `${((Date.now() - t0) / 1000).toFixed(1)}초`;
+}
+
+// 경로가 놓인 파일 시스템 이름(apfs·hfs 등) — df로 마운트 위치를 찾고 mount 목록에서 읽는다
+function fsType(p) {
+  try {
+    const row = execFileSync('df', ['-P', p], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim().split('\n')[1];
+    const mp = row.split(/\s+/).slice(5).join(' ');
+    const line = execFileSync('mount', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] })
+      .split('\n')
+      .find((l) => l.includes(` on ${mp} (`));
+    return line ? line.slice(line.indexOf(` on ${mp} (`) + mp.length + 6).split(/[,)]/)[0].trim() : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+// APFS 복제를 할 수 없는 이유(할 수 있으면 null). cp -c는 복제가 안 되는 곳(APFS 아님·다른 볼륨)에서
+// 조용히 통째 복사로 넘어가므로, 같은 APFS 볼륨일 때만 부른다
+function cloneBlocker(main, wt) {
+  if (process.platform !== 'darwin') return 'APFS 복제는 macOS 전용이다';
+  const type = fsType(main);
+  if (type !== 'apfs') return `본진이 APFS가 아니다(${type || '알 수 없음'})`;
+  if (fs.statSync(main).dev !== fs.statSync(wt).dev) return '워크트리가 본진과 다른 볼륨에 있어 APFS 복제가 되지 않는다';
+  return null;
+}
+
+// 등록된 빌드 결과 폴더를 본진에서 APFS 복제(cp -Rc)로 새 워크트리에 심는다. 워크트리마다 자기 폴더로 빌드한다(§7)
+function cloneBuildOutputs(main, wt, list) {
+  const notes = [];
+  if (!Array.isArray(list) || !list.length) return notes;
+  const blocker = cloneBlocker(main, wt);
+  if (blocker) return [`빌드 결과 폴더 복제를 건너뛰었다 — ${blocker}`];
+  for (const rel of list) {
+    const src = path.join(main, rel);
+    const dst = path.join(wt, rel);
+    if (!fs.existsSync(src)) {
+      notes.push(`빌드 결과 폴더 ${rel}가 본진에 없어 복제를 건너뛰었다(처음부터 빌드한다)`);
+      continue;
+    }
+    if (fs.existsSync(dst)) continue;
+    fs.mkdirSync(path.dirname(dst), { recursive: true });
+    const t0 = Date.now();
+    try {
+      execFileSync('cp', ['-Rc', src, dst], { stdio: ['ignore', 'pipe', 'pipe'] });
+      notes.push(`빌드 결과 폴더 ${rel}를 APFS 복제했다(${seconds(t0)})`);
+    } catch (e) {
+      fs.rmSync(dst, { recursive: true, force: true });
+      const why = ((e.stderr || '') + '').trim().split('\n')[0] || e.message;
+      notes.push(`빌드 결과 폴더 ${rel} 복제를 건너뛰었다(${why})`);
+    }
+  }
+  return notes;
+}
+
+// 끝난 태스크의 워크트리 빌드 결과 폴더를 본진으로 APFS 복제해 씨앗을 갱신한다 — 다음 태스크가 증분 빌드하게.
+// close-task가 워크트리를 지우기 직전에 부른다. 새로 복제한 뒤 옛 폴더와 바꾼다. 안 되면 조용히 건너뛴다
+function reseedBuildOutputs(main, wt, list) {
+  const notes = [];
+  if (!Array.isArray(list) || !list.length || !fs.existsSync(wt) || cloneBlocker(main, wt)) return notes;
+  for (const rel of list) {
+    const src = path.join(wt, rel);
+    const dst = path.join(main, rel);
+    if (!fs.existsSync(src) || fs.lstatSync(src).isSymbolicLink()) continue;
+    const tmp = `${dst}.taskery-${process.pid}`;
+    try {
+      fs.mkdirSync(path.dirname(dst), { recursive: true });
+      execFileSync('cp', ['-Rc', src, tmp], { stdio: ['ignore', 'pipe', 'pipe'] });
+      fs.rmSync(dst, { recursive: true, force: true });
+      fs.renameSync(tmp, dst);
+      notes.push(`빌드 결과 폴더 ${rel}를 본진으로 APFS 복제해 다음 태스크의 씨앗으로 바꿨다`);
+    } catch (e) {
+      fs.rmSync(tmp, { recursive: true, force: true });
+    }
+  }
+  return notes;
+}
+
+// Node 패키지 설치 — package-lock.json이 있으면 npm ci 그대로(§7). 실패해도 멈추지 않고 알린다.
+// 비동기라 병합 잠금 안에서 불러도 잠금 갱신이 멈추지 않는다
+async function installPackages(dir) {
+  if (!fs.existsSync(path.join(dir, 'package-lock.json'))) return [];
+  const r = await L.runShell('npm ci', dir);
+  const took = `${(r.ms / 1000).toFixed(1)}초`;
+  if (r.code === 0) return [`npm ci(${took})`];
+  return [`npm ci 실패(${took}) — 워크트리에서 직접 설치한다(${dir}):\n${L.tail(r.out, 15)}`];
+}
+
 // PLAN.md 목록 항목 줄 끝에 태스크 번호를 붙인다(`--item`)
 function linkItem(main, plan, item, label) {
   const file = path.join(main, '.project', 'plans', plan, 'PLAN.md');
@@ -154,7 +244,8 @@ async function prepareTask(ctx, a) {
   const noWorktree = noBranch || !!a['no-worktree'];
   const parent = checkMain(main);
 
-  return L.withLock(main, 'number', async () => {
+  const opened = await L.withLock(main, 'number', async () => {
+    const fromNums = a.from ? B.parseFromList(main, a.from) : [];
     const num = nextNumber(main);
     const nnn = L.pad(num);
     const branch = noBranch
@@ -176,7 +267,7 @@ async function prepareTask(ctx, a) {
       worktree = createTaskeryWorktree(main, { projectId: manifest.projectId, nnn, slug: a.slug, parent, branch });
       by = 'taskery';
     }
-    L.ensureExclude(main);
+    L.ensureExclude(main, manifest.buildOutput);
     if (worktree) plant(main, worktree);
 
     const doc = path.join('.project', 'plans', plan, 'tasks', `${nnn}_${a.slug}.md`);
@@ -203,14 +294,14 @@ async function prepareTask(ctx, a) {
     fs.writeFileSync(path.join(main, doc), L.renderDoc(st));
     L.writeState(main, st);
     const itemNote = a.item != null ? linkItem(main, plan, a.item, L.taskLabel(num)) : null;
-    if (a.item != null) {
-      st.item = parseInt(a.item, 10);
-      L.writeState(main, st);
-    }
+    if (a.item != null) st.item = parseInt(a.item, 10);
+    const fromNotes = fromNums.length ? B.linkTasks(main, fromNums, L.taskLabel(num)) : [];
+    if (fromNums.length) st.from = fromNums.map((n) => `BL-${n}`);
+    if (a.item != null || fromNums.length) L.writeState(main, st);
 
     const out = [
       `${L.taskLabel(num)} 「${st.title}」을 열었다.`,
-      `- 태스크 문서: ${path.join(main, doc)}`,
+      `- 태스크 문서: ${L.docShown(main, st)}`,
       `- 플랜: ${plan}${st.item ? ` (항목 ${st.item})` : ''} · 크기: ${st.size} · 스위치: ${switches.join(',')} · 범위: ${st.range}`,
       `- 부모 브랜치: ${parent}`,
     ];
@@ -220,10 +311,20 @@ async function prepareTask(ctx, a) {
       out.push(`- 브랜치: ${branch}`);
       out.push(`- 워크트리: ${worktree} (${by === 'orca' ? 'Orca가 만듦' : 'taskery가 만듦'})`);
     }
+    if (st.from) out.push(`- 백로그: ${st.from.join(', ')} — 진행`);
     if (itemNote) out.push(`- 알림: ${itemNote}`);
-    out.push(worktree ? `다음: 워크트리로 들어가(Claude Code는 EnterWorktree) task-plan을 한다.` : '다음: task-plan을 한다.');
-    return out.join('\n');
+    for (const n of fromNotes) out.push(`- 알림: ${n}`);
+    return { out, worktree };
   });
+
+  // ⑤ 워크트리 준비 — 번호 잠금 밖에서 한다(동시에 여는 태스크끼리 기다리지 않게)
+  const out = opened.out;
+  if (opened.worktree) {
+    const prep = [...cloneBuildOutputs(main, opened.worktree, manifest.buildOutput), ...(await installPackages(opened.worktree))];
+    for (const n of prep) out.push(`- 준비: ${n}`);
+  }
+  out.push(opened.worktree ? `다음: 워크트리로 들어가(Claude Code는 EnterWorktree) task-plan을 한다.` : '다음: task-plan을 한다.');
+  return out.join('\n');
 }
 
-module.exports = { prepareTask, checkMain };
+module.exports = { prepareTask, checkMain, installPackages, reseedBuildOutputs };
