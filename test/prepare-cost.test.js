@@ -140,11 +140,12 @@ test('npm ci — package-lock.json이 있으면 새 워크트리에서 설치, m
   assert.strictEqual(calls(c.worktree), 1);
 });
 
-test('init — 스택을 보고 빌드 결과 폴더를 매니페스트에 등록한다(Rust 루트·하위 폴더, SwiftPM), 없으면 등록하지 않는다', (t) => {
+test('init — 스택을 보고 빌드 결과 폴더를 매니페스트와 .git/info/exclude에 등록한다(Rust 루트·하위 폴더, SwiftPM, Xcode), 없으면 등록하지 않는다', (t) => {
   const cases = [
     { files: { 'Cargo.toml': '[package]\n' }, want: ['target'] },
     { files: { 'package.json': '{}', 'src-tauri/Cargo.toml': '[package]\n' }, want: ['src-tauri/target'] },
     { files: { 'Package.swift': '// swift-tools-version:5.9\n' }, want: ['.build'] },
+    { files: { 'Stash.xcodeproj/project.pbxproj': '// pbx\n' }, want: ['DerivedData'] },
     { files: { 'package.json': '{}' }, want: undefined },
   ];
   for (const c of cases) {
@@ -156,6 +157,60 @@ test('init — 스택을 보고 빌드 결과 폴더를 매니페스트에 등�
     const out = sb.ok(['init'], { input: '1\n' });
     const m = JSON.parse(sb.read('.taskery-manifest.json'));
     assert.deepStrictEqual(m.buildOutput, c.want, JSON.stringify(c.files));
-    if (c.want) assert.match(out, new RegExp(`빌드 결과 폴더 등록: ${c.want[0].replace('.', '\\.')}`));
+    const exclude = sb.read('.git/info/exclude');
+    if (c.want) {
+      assert.match(out, new RegExp(`빌드 결과 폴더 등록: ${c.want[0].replace('.', '\\.')}`));
+      assert.ok(exclude.split('\n').includes(`/${c.want[0]}`), exclude);
+      // 빌드하면 생기는 폴더가 코드 변경으로 보이지 않는다
+      sb.write(`${c.want[0]}/out.bin`, 'BIG');
+      assert.strictEqual(sb.git(['status', '--porcelain']), '');
+    } else {
+      assert.ok(!/target|DerivedData|\.build/.test(exclude));
+    }
+    assert.strictEqual(/-derivedDataPath DerivedData/.test(out), !!(c.want && c.want[0] === 'DerivedData'));
   }
+});
+
+test('prepare-task — 매니페스트에 새로 등록한 빌드 결과 폴더를 .git/info/exclude에 넣는다', (t) => {
+  const sb = installedRepo();
+  t.after(() => sb.cleanup());
+  setManifest(sb, { buildOutput: ['build/out'] });
+  assert.ok(!sb.read('.git/info/exclude').includes('/build/out'));
+  open(sb, 'reg');
+  assert.ok(sb.read('.git/info/exclude').split('\n').includes('/build/out'));
+  const wt = sb.state(1).worktree;
+  sb.write('build/out/app.bin', 'BUILT', wt);
+  assert.strictEqual(sb.git(['status', '--porcelain'], wt), '', '워크트리의 빌드 결과도 코드 변경이 아니다');
+});
+
+test('close-task — 끝난 태스크의 빌드 결과 폴더를 본진으로 APFS 복제해 씨앗을 바꾼다, 포기한 태스크는 건드리지 않는다', { skip: process.platform !== 'darwin' && 'APFS는 macOS 전용' }, (t) => {
+  const sb = installedRepo();
+  t.after(() => sb.cleanup());
+  setManifest(sb, { buildOutput: ['target'] });
+  // 본진에 씨앗이 없어도 — 첫 태스크의 빌드 결과가 씨앗이 된다
+  open(sb, 'first');
+  const w1 = sb.state(1).worktree;
+  sb.write('target/debug/app.bin', 'BUILT-BY-1', w1);
+  fillDoc(sb, 1);
+  sb.ok(['approve-plan', '1']);
+  fs.writeFileSync(path.join(w1, 'src/app.txt'), 'one\n');
+  sb.ok(['test-code', '1']);
+  sb.ok(['test-scenario', '1', '1', 'pass', '확인']);
+  sb.ok(['verify-close', '1']);
+  sb.ok(['commit-task', '1']);
+  sb.ok(['merge-task', '1']);
+  const out = sb.ok(['close-task', '1']);
+  assert.match(out, /빌드 결과 폴더 target를 본진으로 APFS 복제해 다음 태스크의 씨앗으로 바꿨다/);
+  assert.ok(!fs.existsSync(w1), '워크트리는 지워졌다');
+  assert.strictEqual(sb.read('target/debug/app.bin'), 'BUILT-BY-1');
+  assert.ok(!fs.readdirSync(sb.repo).some((n) => /\.taskery-\d+$/.test(n)), '임시 폴더가 남지 않는다');
+  // 다음 태스크는 그 씨앗을 받는다
+  assert.match(open(sb, 'second'), /target를 APFS 복제했다/);
+  const w2 = sb.state(2).worktree;
+  assert.strictEqual(fs.readFileSync(path.join(w2, 'target/debug/app.bin'), 'utf8'), 'BUILT-BY-1');
+  // 포기한 태스크의 빌드 결과는 씨앗으로 쓰지 않는다
+  fs.writeFileSync(path.join(w2, 'target/debug/app.bin'), 'BUILT-BY-2');
+  const out2 = sb.ok(['close-task', '2']);
+  assert.ok(!/씨앗/.test(out2));
+  assert.strictEqual(sb.read('target/debug/app.bin'), 'BUILT-BY-1');
 });
