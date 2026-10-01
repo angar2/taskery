@@ -126,7 +126,7 @@ test('MCP — 정의표의 명령이 같은 이름의 도구로 뜨고, 같은 �
   s.notify('notifications/initialized', {});
   const list = await s.request('tools/list', {});
   const names = list.result.tools.map((x) => x.name).sort();
-  assert.deepStrictEqual(names, ['approve-plan', 'close-task', 'commit-task', 'merge-task', 'plan-init', 'prepare-task', 'status', 'test-code', 'test-scenario', 'verify-close']);
+  assert.deepStrictEqual(names, ['approve-plan', 'backlog-add', 'backlog-get', 'backlog-mark', 'close-task', 'commit-task', 'merge-task', 'plan-init', 'prepare-task', 'prune', 'status', 'test-code', 'test-scenario', 'verify-close']);
   const prep = list.result.tools.find((x) => x.name === 'prepare-task');
   assert.ok(prep.inputSchema.properties['no-worktree'], 'CLI 옵션과 같은 이름');
   let r = await s.request('tools/call', { name: 'prepare-task', arguments: { name: '빠짐' } });
