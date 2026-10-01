@@ -8,6 +8,8 @@ const AGENTS = ['claude', 'codex'];
 // 보고 없이 기다리는 시간이자 '오래 조용한 탭'의 기준. 환경 변수는 시험 전용 통로다
 const WAIT_MS = Number(process.env.TASKERY_WAIT_REPORTS_MS) || 10 * 60 * 1000;
 const POLL_MS = Math.min(1000, WAIT_MS);
+// 첫 지시문을 보낸 뒤 턴 시작을 지켜보는 시간(orca terminal send --wait-submit)
+const SUBMIT_WAIT_SEC = 30;
 
 function reportsFile(main) {
   return path.join(main, '.project', 'reports.log');
@@ -76,6 +78,26 @@ function firstInstruction(st, note) {
   return lines.join('\n');
 }
 
+// 지시문을 보내고 턴 시작이 관측됐는지 돌려준다. 받지 않았으면 refused. 관측할 수 없는 곳(영수증 없음·provider가 보고 못 함)은 보낸 것으로 본다
+function sendPrompt(handle, text) {
+  const r = orca(['terminal', 'send', '--terminal', handle, '--text', text, '--enter', '--wait-submit', String(SUBMIT_WAIT_SEC)]);
+  const send = (r && r.send) || {};
+  if (send.accepted === false) return { refused: send.refusedReason || '거부' };
+  const p = send.prompt;
+  return { observed: !p || (p.stages || []).includes('turn_started') || ['unsupported', 'old-host'].includes(p.provider) };
+}
+
+// 탭 화면에 첫 지시문 첫머리가 보이나 — 보이면 들어간 것이라 다시 보내지 않는다
+function onScreen(handle, marker) {
+  try {
+    const r = orca(['terminal', 'read', '--terminal', handle, '--screen']);
+    const screen = ((r && r.terminal && r.terminal.tail) || []).join('').replace(/\s+/g, '');
+    return screen.includes(marker.replace(/\s+/g, ''));
+  } catch (e) {
+    return false;
+  }
+}
+
 async function orcaDispatchTask(ctx, a) {
   const main = ctx.main;
   if (!L.inOrca()) {
@@ -121,20 +143,33 @@ async function orcaDispatchTask(ctx, a) {
     const why = waited.wait.reason || waited.wait.status || '준비 대기 미충족';
     L.fail(`orca-dispatch-task: ${label} 탭(${handle})을 열었지만 준비(tui-idle)가 되지 않아 첫 지시문을 보내지 않았다 — ${why}\n${manual}`);
   }
-  let sent;
-  try {
-    sent = orca(['terminal', 'send', '--terminal', handle, '--text', text, '--enter']);
-  } catch (e) {
-    L.fail(`orca-dispatch-task: ${label} 탭(${handle})에 첫 지시문을 보내지 못했다 — ${e.message}\n${manual}`);
-  }
-  if (sent && sent.send && sent.send.accepted === false) {
-    L.fail(`orca-dispatch-task: ${label} 탭(${handle})이 첫 지시문을 받지 않았다 — ${sent.send.refusedReason || '거부'}\n${manual}`);
+  const send = () => {
+    let r;
+    try {
+      r = sendPrompt(handle, text);
+    } catch (e) {
+      L.fail(`orca-dispatch-task: ${label} 탭(${handle})에 첫 지시문을 보내지 못했다 — ${e.message}\n${manual}`);
+    }
+    if (r.refused) L.fail(`orca-dispatch-task: ${label} 탭(${handle})이 첫 지시문을 받지 않았다 — ${r.refused}\n${manual}`);
+    return r.observed;
+  };
+  // 턴 시작이 관측되지 않으면 화면을 보고, 지시문이 보이지 않을 때만 한 번 더 보낸다(준비 전 입력이 사라진 경우)
+  let sendNote = null;
+  if (!send()) {
+    if (onScreen(handle, text.split('\n')[0].split(' ').slice(0, 4).join(' '))) {
+      sendNote = '턴 시작은 관측되지 않았지만 탭 화면에 첫 지시문이 보인다 — 탭에서 진행을 확인한다.';
+    } else if (send()) {
+      sendNote = '첫 전송은 턴 시작이 관측되지 않고 화면에도 없어 한 번 더 보냈다.';
+    } else {
+      L.fail(`orca-dispatch-task: ${label} 탭(${handle})에 첫 지시문을 두 번 보냈지만 턴 시작이 관측되지 않았다.\n${manual}`);
+    }
   }
   return [
     `${label} 태스크 세션을 띄웠다 — 탭 ${handle}`,
     `- 실행: ${command}`,
     `- 폴더: ${dir}`,
     `- 첫 지시문을 보냈다(시작: ${startSkill(fresh)}, 범위: ${fresh.range}).`,
+    ...(sendNote ? [`- 알림: ${sendNote}`] : []),
     '다음: wait-reports를 백그라운드 셸로 걸어 둔다.',
   ].join('\n');
 }

@@ -95,6 +95,7 @@ function writeConfigs(main, platforms) {
         'command = "npx"',
         'args = ["-y", "@angar2/taskery", "mcp"]',
         'default_tools_approval_mode = "approve"',
+        'tool_timeout_sec = 3600',
         '',
       ].join('\n');
       fs.mkdirSync(path.dirname(cFile), { recursive: true });

@@ -1,7 +1,6 @@
 // taskery 1.0 명령이 함께 쓰는 도구 — git·경로·매니페스트·.state·잠금·태스크 문서·GIT_RULE 표·코드 지문
 const fs = require('fs');
 const path = require('path');
-const os = require('os');
 const crypto = require('crypto');
 const { execFileSync, spawn } = require('child_process');
 
@@ -87,10 +86,13 @@ function branchExists(dir, branch) {
   return gitOk(dir, ['rev-parse', '--verify', '-q', `refs/heads/${branch}`]);
 }
 
-// 코드 지문 = 작업 트리 전체(추적 안 되는 파일 포함, 무시 파일 제외)의 트리 해시. 커밋하지 않는다
+// 코드 지문 = 작업 트리 전체(추적 안 되는 파일 포함, 무시 파일 제외)의 트리 해시. 커밋하지 않는다.
+// 임시 인덱스는 본진 .project/.state/ 아래에 둔다 — Codex 샌드박스에서도 쓰기가 허용된 곳이다(--add-dir <본진>/.project)
 function fingerprint(dir) {
   const index = git(dir, ['rev-parse', '--path-format=absolute', '--git-path', 'index']);
-  const tmp = path.join(os.tmpdir(), `taskery-index-${process.pid}-${crypto.randomBytes(4).toString('hex')}`);
+  const tmpDir = stateDir(findMain(dir));
+  fs.mkdirSync(tmpDir, { recursive: true });
+  const tmp = path.join(tmpDir, `taskery-index-${process.pid}-${crypto.randomBytes(4).toString('hex')}`);
   try {
     if (fs.existsSync(index)) fs.copyFileSync(index, tmp);
     const env = { GIT_INDEX_FILE: tmp };
