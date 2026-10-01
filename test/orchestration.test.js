@@ -27,7 +27,15 @@ if (cmd === 'terminal wait') {
   if (process.env.FAKE_WAIT_FAIL) say({ ok: true, result: { wait: { handle: opt('--terminal'), satisfied: false, reason: 'timeout' } } }, 1);
   say({ ok: true, result: { wait: { handle: opt('--terminal'), satisfied: true } } });
 }
-if (cmd === 'terminal send') say({ ok: true, result: { send: { handle: opt('--terminal'), accepted: true } } });
+if (cmd === 'terminal send') {
+  // FAKE_TURN: never = 턴 시작이 관측되지 않음 · second = 첫 전송만 관측되지 않음 · 없으면 관측됨
+  const cnt = ${JSON.stringify(path.join(sb.root, 'send-count'))};
+  const n = (fs.existsSync(cnt) ? Number(fs.readFileSync(cnt, 'utf8')) : 0) + 1;
+  fs.writeFileSync(cnt, String(n));
+  const turn = process.env.FAKE_TURN === 'never' || (process.env.FAKE_TURN === 'second' && n === 1) ? [] : ['turn_started'];
+  say({ ok: true, result: { send: { handle: opt('--terminal'), accepted: true, prompt: { provider: 'claude', stages: ['input_accepted', ...turn] } } } });
+}
+if (cmd === 'terminal read') say({ ok: true, result: { terminal: { handle: opt('--terminal'), tail: (process.env.FAKE_SCREEN || '').split('\\n'), source: 'screen' } } });
 if (cmd === 'terminal show') {
   const map = fs.existsSync(${JSON.stringify(show)}) ? JSON.parse(fs.readFileSync(${JSON.stringify(show)}, 'utf8')) : {};
   const v = map[opt('--terminal')];
@@ -89,7 +97,8 @@ test('orca-dispatch-task(Claude) — terminal create → wait tui-idle → 첫 �
     '- 마무리(merge-task)까지 끝나면 보고하고 멈춘다. 워크트리 정리와 태스크 닫기는 오케스트레이션이 한다.',
     '- 오케스트레이션이 전하는 말: BL-3과 BL-5는 같은 흐름이라 묶었다.',
   ].join('\n');
-  assert.deepStrictEqual(calls[2], ['terminal', 'send', '--terminal', 'term_TASK-001', '--text', text, '--enter', '--json']);
+  assert.deepStrictEqual(calls[2], ['terminal', 'send', '--terminal', 'term_TASK-001', '--text', text, '--enter', '--wait-submit', '30', '--json']);
+  assert.doesNotMatch(out, /알림/);
   assert.ok(fs.existsSync(path.join(st.worktree, st.doc)), '첫 지시문의 문서 경로는 워크트리에서 열린다');
 
   assert.strictEqual(sb.state(1).tab, 'term_TASK-001');
@@ -141,6 +150,39 @@ test('orca-dispatch-task — 준비 대기가 끝나지 않으면 첫 지시문�
   assert.match(r.all, /--- 첫 지시문 ---\n\[오케스트레이션\] taskery 태스크 TASK-001/);
   assert.deepStrictEqual(orca.calls().map((c) => c[1]), ['create', 'wait']);
   assert.strictEqual(sb.state(1).tab, 'term_TASK-001', '열린 탭은 기록된다');
+});
+
+test('orca-dispatch-task 첫 지시문 삼킴(F1) — 턴 시작이 관측되지 않으면 화면을 보고, 지시문이 없으면 같은 지시문을 한 번 더 보낸다', (t) => {
+  const sb = installedRepo();
+  t.after(() => sb.cleanup());
+  for (const n of [1, 2, 3]) prep(sb, n);
+  const orca = fakeOrca(sb);
+  const reset = () => fs.rmSync(path.join(sb.root, 'send-count'), { force: true });
+  const mine = (label) => orca.calls().filter((c) => c.includes(label) || c.includes(`term_${label}`));
+  const textOf = (c) => c[c.indexOf('--text') + 1];
+
+  // 첫 전송이 사라짐(빈 화면) → 화면 확인 → 같은 지시문 재전송 → 관측됨
+  let out = sb.ok(['orca-dispatch-task', '1', '--agent', 'claude', '--model', 'm'], { extraEnv: { ...orca.env, FAKE_TURN: 'second' } });
+  let calls = mine('TASK-001');
+  assert.deepStrictEqual(calls.map((c) => c[1]), ['create', 'wait', 'send', 'read', 'send']);
+  assert.deepStrictEqual(calls[3], ['terminal', 'read', '--terminal', 'term_TASK-001', '--screen', '--json']);
+  assert.strictEqual(textOf(calls[4]), textOf(calls[2]), '같은 지시문');
+  assert.match(out, /알림: 첫 전송은 턴 시작이 관측되지 않고 화면에도 없어 한 번 더 보냈다/);
+
+  // 두 번 다 관측되지 않음 → 지금처럼 멈추고 알린다
+  reset();
+  let r = sb.tk(['orca-dispatch-task', '2', '--agent', 'claude', '--model', 'm'], { extraEnv: { ...orca.env, FAKE_TURN: 'never' } });
+  assert.notStrictEqual(r.code, 0);
+  assert.match(r.all, /첫 지시문을 두 번 보냈지만 턴 시작이 관측되지 않았다[\s\S]*--- 첫 지시문 ---\n\[오케스트레이션\] taskery 태스크 TASK-002/);
+  assert.deepStrictEqual(mine('TASK-002').map((c) => c[1]), ['create', 'wait', 'send', 'read', 'send']);
+
+  // 관측은 안 됐지만 화면에 지시문이 보임 → 다시 보내지 않는다
+  reset();
+  out = sb.ok(['orca-dispatch-task', '3', '--agent', 'claude', '--model', 'm'], {
+    extraEnv: { ...orca.env, FAKE_TURN: 'never', FAKE_SCREEN: '> [오케스트레이션] taskery 태스크 TASK-003 「태스크 3」를\n맡는다.' },
+  });
+  assert.deepStrictEqual(mine('TASK-003').map((c) => c[1]), ['create', 'wait', 'send', 'read']);
+  assert.match(out, /알림: 턴 시작은 관측되지 않았지만 탭 화면에 첫 지시문이 보인다/);
 });
 
 test('orca-dispatch-task 동시 호출 — 태스크 3개를 한꺼번에 띄워도 각자 자기 탭·자기 지시문·자기 메타', async (t) => {
@@ -244,8 +286,31 @@ test('설치 — task-orche 스킬이 Claude·Codex 양쪽에 깔리고, Codex t
     assert.match(text, /## 운영 방식\n\n아래는 상황에 따라 고를 수 있는 길이다\. 정해진 절차가 아니다\./);
     assert.match(text, /- `prepare-task`, `orca-dispatch-task`, `wait-reports`, `close-task`/);
   }
-  assert.match(sb.read('.codex/config.toml'), /\[mcp_servers\.taskery\][\s\S]*default_tools_approval_mode = "approve"/);
+  assert.match(sb.read('.codex/config.toml'), /\[mcp_servers\.taskery\][\s\S]*default_tools_approval_mode = "approve"\ntool_timeout_sec = 3600\n/);
   const help = sb.ok(['help']);
   assert.match(help, /wait-reports\n/);
   assert.match(help, /orca-dispatch-task <task> \[--agent <값>\] \[--model <값>\] \[--note <값>\]/);
+});
+
+test('코드 지문 임시 인덱스(F3) — 시스템 임시 폴더에 쓸 수 없어도 test-code·verify-close가 되고, 본진 .state/에 남는 것이 없다', (t) => {
+  const sb = installedRepo();
+  const locked = path.join(sb.root, 'locked-tmp');
+  fs.mkdirSync(locked);
+  fs.chmodSync(locked, 0o555);
+  t.after(() => {
+    fs.chmodSync(locked, 0o755);
+    sb.cleanup();
+  });
+  prep(sb, 1);
+  const st = sb.state(1);
+  fillDoc(sb, 1);
+  sb.ok(['approve-plan', '1']);
+  fs.writeFileSync(path.join(st.worktree, 'src/app.txt'), 'changed\n');
+  const sandboxed = { cwd: st.worktree, extraEnv: { TMPDIR: locked } };
+  sb.ok(['test-code', '1'], sandboxed);
+  sb.ok(['test-scenario', '1', '1', 'pass', '확인'], sandboxed);
+  sb.ok(['verify-close', '1'], sandboxed);
+  const left = fs.readdirSync(path.join(sb.repo, '.project', '.state')).filter((f) => f.startsWith('taskery-index-'));
+  assert.deepStrictEqual(left, []);
+  assert.strictEqual(fs.readdirSync(locked).length, 0);
 });
