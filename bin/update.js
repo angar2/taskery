@@ -10,6 +10,10 @@ async function main() {
   const main = L.findMain(cwd);
   const manifest = L.readManifest(main);
   if (!manifest) L.fail("update: taskery가 설치돼 있지 않다. 'npx @angar2/taskery init'을 먼저 부른다.");
+  // 1.0은 훅을 설치하지 않는다 — 매니페스트에 훅이 있으면 0.x 설치본이고, 0.x는 update로 옮길 수 없다
+  if (Object.keys(manifest.files || {}).some((rel) => rel.startsWith('.claude/hooks/'))) {
+    L.fail(`update: 이 리포는 taskery ${manifest.version || '0.x'}로 설치돼 있어 update로 옮길 수 없다(1.0은 0.x와 호환되지 않는다). 옛 taskery 파일(AGENTS.md·CLAUDE.md·.claude/·.codex/·.agents/·.project/·.mcp.json·.taskery-manifest.json)을 리포 밖으로 옮긴 뒤 'npx @angar2/taskery init'으로 새로 설치한다. 필요한 옛 문서(백로그·제품 문서)는 옮겨 둔 곳에서 새 .project/로 가져온다.`);
+  }
   const platforms = Array.isArray(manifest.platforms) ? manifest.platforms : ['claude'];
   const old = manifest.files || {};
   const files = {};

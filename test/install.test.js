@@ -98,3 +98,20 @@ test('update — AGENTS.md 프로젝트 절 유지, 고치지 않은 파일 갱�
   assert.match(sb.read('.codex/config.toml'), /default_tools_approval_mode = "approve"/);
   assert.deepStrictEqual(JSON.parse(sb.read('.taskery-manifest.json')).platforms, ['claude', 'codex']);
 });
+
+test('update 거부 — 0.x 설치본(매니페스트에 훅)은 바꾸지 않고 멈추며 새 init 절차를 알린다', (t) => {
+  const sb = sandbox();
+  t.after(() => sb.cleanup());
+  sb.ok(['init'], { input: '1\n' });
+  const m = JSON.parse(sb.read('.taskery-manifest.json'));
+  m.version = '0.8.1';
+  m.files['.claude/hooks/git-guard.sh'] = 'sha256:old';
+  sb.write('.taskery-manifest.json', JSON.stringify(m));
+  sb.write('.project/rules/TASKERY_RULE.md', 'old');
+  const r = sb.tk(['update'], { input: 'y\n' });
+  assert.notStrictEqual(r.code, 0);
+  assert.match(r.all, /0\.8\.1로 설치돼 있어 update로 옮길 수 없다/);
+  assert.match(r.all, /init'으로 새로 설치한다/);
+  assert.strictEqual(sb.read('.project/rules/TASKERY_RULE.md'), 'old', '아무 파일도 바꾸지 않는다');
+  assert.strictEqual(JSON.parse(sb.read('.taskery-manifest.json')).version, '0.8.1');
+});
