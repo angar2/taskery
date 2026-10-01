@@ -96,7 +96,7 @@
 
 ## 8. 로컬 규칙
 
-- 이 리포만의 규칙은 `.project/rules/<문서>.local.md`에 적는다. `update`는 `*.local.md`를 건드리지 않는다.
+- 이 리포만의 규칙은 `.project/rules/<문서>.local.md`에 적는다. `init`이 `TEST_RULE.local.md`·`DEV_RULE.local.md` 틀을 만들고, `update`는 `*.local.md`를 건드리지 않는다.
 - `TEST_RULE.local.md` — 이 프로젝트의 앱 실행 방법(검수 서버·터널 포함)과 테스트 방식.
 - `DEV_RULE.local.md` — 이 프로젝트의 구현 규칙.
 - 코드·테스트 방식에 관한 새 규칙은 AI가 문장을 제안하고 사용자가 승인한 뒤 넣는다.
@@ -106,5 +106,6 @@
 | 날짜 | 변경 사항 |
 |---|---|
 | 2026-10-01 | 1.0판 — 참고서로 다시 썼다. 7상태·멀티세션 내부 동작·훅·제품 관통 문서 7종·멀티리포 설명을 빼고, 다섯 단계·명령·워크트리·git 밖 파일·PLAN.md 목록 형식을 담았다 |
+| 2026-10-01 | S4 — 로컬 규칙 틀(`TEST_RULE.local.md`·`DEV_RULE.local.md`)을 `init`이 만든다는 줄을 더했다 |
 | 2026-10-01 | S3 — 오케스트레이션 명령 `orca-dispatch-task`·`report-task`·`wait-reports`와 `reports.log`를 더했다 |
 | 2026-10-01 | S2 — `prune`·`backlog-*`·`prepare-task --from`·`status`의 시작할 수 있는 태스크, 새 워크트리 준비(빌드 결과 폴더 APFS 복제·exclude 등록·닫을 때 본진 씨앗 갱신·`npm ci`)를 더했다 |

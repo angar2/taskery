@@ -18,7 +18,7 @@ test('빈 폴더 init — git 시작·빈 첫 커밋·dev로 이동·exclude·�
     assert.ok(exclude.split('\n').includes(n), `exclude에 ${n}`);
   }
   assert.strictEqual(sb.git(['status', '--porcelain']), '', '설치가 추적 파일을 바꾸지 않는다');
-  for (const f of ['AGENTS.md', 'CLAUDE.md', '.project/BACKLOG.md', '.project/rules/GIT_RULE.md', '.project/rules/TASKERY_RULE.md', '.project/rules/TASK_DOC_RULE.md', '.project/rules/CHANGELOG_RULE.md', '.claude/skills/task-init/SKILL.md', '.claude/skills/task-close/SKILL.md']) {
+  for (const f of ['AGENTS.md', 'CLAUDE.md', '.project/BACKLOG.md', '.project/rules/GIT_RULE.md', '.project/rules/TASKERY_RULE.md', '.project/rules/TASK_DOC_RULE.md', '.project/rules/CHANGELOG_RULE.md', '.project/rules/MOCKUP_RULE.md', '.project/rules/TEST_RULE.local.md', '.project/rules/DEV_RULE.local.md', '.claude/skills/task-init/SKILL.md', '.claude/skills/task-close/SKILL.md']) {
     assert.ok(fs.existsSync(path.join(sb.repo, f)), f);
   }
   assert.ok(!fs.existsSync(path.join(sb.repo, '.claude', 'hooks')), '훅 없음');
@@ -29,6 +29,7 @@ test('빈 폴더 init — git 시작·빈 첫 커밋·dev로 이동·exclude·�
   const m = JSON.parse(sb.read('.taskery-manifest.json'));
   assert.deepStrictEqual(m.platforms, ['claude']);
   assert.match(m.projectId, /^[0-9a-f]{8}$/);
+  assert.ok(!Object.keys(m.files).some((f) => f.endsWith('.local.md')), '로컬 규칙 틀은 갱신 대상이 아니다');
   const again = sb.tk(['init'], { input: '1\n' });
   assert.notStrictEqual(again.code, 0);
   assert.match(again.all, /이미 설치된/);
@@ -71,13 +72,15 @@ test('기존 리포 init — Codex 포함: .codex/config.toml 자동 승인, .co
   assert.strictEqual(sb.git(['status', '--porcelain']), '');
 });
 
-test('update — AGENTS.md 프로젝트 절 유지, 고치지 않은 파일 갱신, 고친 파일은 묻기, add codex', (t) => {
+test('update — AGENTS.md 프로젝트 절 유지, 고치지 않은 파일 갱신, 고친 파일은 묻기, 로컬 규칙은 없을 때만, add codex', (t) => {
   const sb = sandbox();
   t.after(() => sb.cleanup());
   sb.ok(['init'], { input: '1\n' });
   const agents = sb.read('AGENTS.md').replace('- 이름: <프로젝트명>', '- 이름: 스태시');
   sb.write('AGENTS.md', agents);
   sb.write('.project/rules/GIT_RULE.md', sb.read('.project/rules/GIT_RULE.md') + '\n사용자 메모\n');
+  sb.write('.project/rules/TEST_RULE.local.md', '# 이 리포의 앱 실행\n');
+  fs.rmSync(path.join(sb.repo, '.project/rules/DEV_RULE.local.md'));
   const m = JSON.parse(sb.read('.taskery-manifest.json'));
   m.files['.project/rules/TASKERY_RULE.md'] = 'sha256:old';
   sb.write('.project/rules/TASKERY_RULE.md', 'old');
@@ -89,6 +92,8 @@ test('update — AGENTS.md 프로젝트 절 유지, 고치지 않은 파일 갱�
   assert.match(sb.read('.project/rules/GIT_RULE.md'), /사용자 메모/);
   assert.match(out, /갱신: \.project\/rules\/TASKERY_RULE\.md/);
   assert.notStrictEqual(sb.read('.project/rules/TASKERY_RULE.md'), 'old');
+  assert.strictEqual(sb.read('.project/rules/TEST_RULE.local.md'), '# 이 리포의 앱 실행\n', '로컬 규칙은 덮지 않는다');
+  assert.match(out, /새로 만듦: \.project\/rules\/DEV_RULE\.local\.md/);
   sb.ok(['add', 'codex']);
   assert.match(sb.read('.codex/config.toml'), /default_tools_approval_mode = "approve"/);
   assert.deepStrictEqual(JSON.parse(sb.read('.taskery-manifest.json')).platforms, ['claude', 'codex']);
