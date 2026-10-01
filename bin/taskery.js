@@ -1,131 +1,84 @@
 #!/usr/bin/env node
-/**
- * bin/taskery.js
- * `npx @angar2/taskery <subcommand>` — 진입점 dispatcher.
- *
- * 서브커맨드:
- *   init    — 현재 디렉토리에 taskery 자산 카피 + manifest 생성 (플랫폼 선택)
- *   add     — 기존 설치 리포에 플랫폼 자산 추가 (claude | codex)
- *   update  — 최신 버전 fetch + manifest 비교 + 머지 갱신
- *   status  — 멀티세션 현황 요약 (진행중 태스크 / 워크트리 / 머지 락, 0.1.2+)
- *   prune   — stale 워크트리 / 브랜치 대화형 정리 (0.1.2+)
- *   fork    — task 분기 (채번+워크트리+브랜치 생성 init 락 원자 실행, 0.3.2+) + 골격 task.md 자동 생성(--size/--title)
- *   backlog-add/get/mark — 활성 plan BACKLOG.md 조작 (채번/조회/확인 마킹, 코드화)
- *   set-status — task 헤더 상태 전이 (7×7 유효전이 검증, 코드화)
- *   plan-init — plan 생성 (채번+폴더+ROADMAP/PLAN/BACKLOG 골격+manifest.activePlan 갱신, 코드화)
- *   plan-switch — 활성 plan 전환 (manifest.activePlan 갱신, 0.7.0+)
- *   close   — close 결정적 준비 (Phase커밋+status=closed+문서커밋+추적마커; 비가역 머지/정리는 스킬, 코드화)
- *   mcp     — stdio MCP 서버 기동 (lib core를 도구 8종으로 노출; Claude/Codex 등록)
- *   help    — 사용법 출력
- */
-
-const { spawnSync } = require('child_process');
+// taskery CLI 입구 — 설치 명령(init·update·add)·mcp는 각 스크립트로, 나머지는 명령 정의표에서 만든다
 const path = require('path');
+const { spawnSync } = require('child_process');
+const { COMMANDS, execute } = require('./commands');
+const L = require('./lib');
 
-const sub = process.argv[2];
+const INSTALL = { init: 'init.js', update: 'update.js', add: 'add.js', mcp: 'mcp.js' };
 
-function runScript(scriptName, injectArgs = []) {
-  // injectArgs: dispatcher가 스크립트에 주입하는 선행 인자(예: backlog 서브op). 그 뒤로 사용자 인자.
-  const scriptPath = path.resolve(__dirname, scriptName);
-  const r = spawnSync(process.execPath, [scriptPath, ...injectArgs, ...process.argv.slice(3)], {
-    stdio: 'inherit',
-  });
-  process.exit(r.status ?? 1);
+function usage(cmd) {
+  const pos = cmd.args.filter((a) => a.positional).map((a) => `<${a.name}>`);
+  const opts = cmd.args
+    .filter((a) => !a.positional)
+    .map((a) => (a.type === 'bool' ? `[--${a.name}]` : a.type === 'list' ? `[--${a.name} <값> …]` : `[--${a.name} <값>]`));
+  return [cmd.name, ...pos, ...opts].join(' ');
 }
 
 function help() {
-  console.log(`taskery v${require('./lib').getPackageVersion()}
-
-사용법:
-  npx @angar2/taskery init      현재 디렉토리에 taskery 자산 설치 (플랫폼 선택)
-  npx @angar2/taskery add <p>   기존 설치에 플랫폼 추가 (claude | codex)
-  npx @angar2/taskery update    최신 버전 fetch + 머지 갱신
-  npx @angar2/taskery status    멀티세션 현황 (진행중 태스크 / 워크트리 / 머지 락)
-  npx @angar2/taskery prune     stale 워크트리 / 브랜치 대화형 정리
-  npx @angar2/taskery fork <type> <dev> <src> <slug> [--size <s> --title "<제목>" --promote]   task 분기 + 골격 생성 (통상 /task-init 경유)
-  npx @angar2/taskery backlog-add --type <t> --title <제목> --slug <slug> --summary <개요> --target <대상영역>   백로그 추가
-  npx @angar2/taskery backlog-get <BL-NNN>             백로그 항목 조회 (JSON)
-  npx @angar2/taskery backlog-mark <BL-NNN> <TASK-NNN> 백로그 확인 마킹
-  npx @angar2/taskery set-status <TASK-NNN> <state>    task 상태 전이 (유효전이 검증)
-  npx @angar2/taskery plan-init <slug> [--force]       plan 생성 (채번+폴더+골격+활성plan 갱신)
-  npx @angar2/taskery plan-switch <NNN_slug>           활성 plan 전환
-  npx @angar2/taskery close <TASK-NNN>                 close 결정적 준비 (Phase커밋+status=closed+추적마커)
-  npx @angar2/taskery mcp                              MCP stdio 서버 기동 (Claude .mcp.json / Codex codex mcp add 등록)
-  npx @angar2/taskery help      도움말
-
-새 프로젝트 시작:
-  npx -p @angar2/taskery create-taskery <project-name>
-
-상세: https://github.com/angar2/taskery
-`);
+  const lines = [`taskery v${L.getPackageVersion()}`, '', '설치:'];
+  lines.push('  init                현재 리포(또는 빈 폴더)에 taskery를 설치한다');
+  lines.push('  update              설치된 파일을 이 버전으로 갱신한다');
+  lines.push('  add <claude|codex>  플랫폼을 추가한다');
+  lines.push('  mcp                 MCP 서버를 띄운다(.mcp.json·.codex/config.toml이 부른다)');
+  lines.push('', '명령:');
+  for (const c of COMMANDS) {
+    lines.push(`  ${usage(c)}`);
+    lines.push(`      ${c.summary}`);
+  }
+  return lines.join('\n');
 }
 
-switch (sub) {
-  case 'init':
-    runScript('init.js');
-    break;
-  case 'add':
-    runScript('add.js');
-    break;
-  case 'update':
-    runScript('update.js');
-    break;
-  case 'status':
-    runScript('status.js');
-    break;
-  case 'prune':
-    if (process.argv[3] === '--help' || process.argv[3] === '-h') {
-      console.log(`taskery prune — stale 워크트리 / 브랜치 대화형 정리
-
-사용법:
-  npx @angar2/taskery prune
-
-설명:
-  .taskery-manifest.json의 stale_days (기본 30일) 기준으로 비활성 워크트리 + 브랜치를 대화형 정리합니다.
-  케이스 분기: A (워크트리 + 브랜치 모두 stale) / B (브랜치만 stale) / C (워크트리 폴더 잔존) / D (정합 영역).
-  각 케이스마다 y/n/k 선택 가능 (y = 삭제 / n = 건너뜀 / k = 보존 명시).
-
-상세: https://github.com/angar2/taskery
-`);
-      break;
+function parseArgs(cmd, argv) {
+  const out = {};
+  const positional = cmd.args.filter((a) => a.positional);
+  let pi = 0;
+  for (let i = 0; i < argv.length; i++) {
+    const tok = argv[i];
+    if (tok.startsWith('--')) {
+      const name = tok.slice(2);
+      const def = cmd.args.find((a) => !a.positional && a.name === name);
+      if (!def) L.fail(`${cmd.name}: 모르는 옵션 --${name}.\n사용법: ${usage(cmd)}`);
+      if (def.type === 'bool') out[name] = true;
+      else if (def.type === 'list') {
+        const vals = [];
+        while (i + 1 < argv.length && !argv[i + 1].startsWith('--')) vals.push(argv[++i]);
+        out[name] = vals;
+      } else {
+        if (i + 1 >= argv.length) L.fail(`${cmd.name}: --${name}에 값을 넣는다.`);
+        out[name] = argv[++i];
+      }
+    } else {
+      if (pi >= positional.length) L.fail(`${cmd.name}: 인자가 너무 많다 ('${tok}').\n사용법: ${usage(cmd)}`);
+      out[positional[pi++].name] = tok;
     }
-    runScript('prune.js');
-    break;
-  case 'fork':
-    runScript('fork.js');
-    break;
-  case 'backlog-add':
-    runScript('backlog.js', ['add']);
-    break;
-  case 'backlog-get':
-    runScript('backlog.js', ['get']);
-    break;
-  case 'backlog-mark':
-    runScript('backlog.js', ['mark']);
-    break;
-  case 'set-status':
-    runScript('set-status.js');
-    break;
-  case 'plan-init':
-    runScript('plan.js', ['init']);
-    break;
-  case 'plan-switch':
-    runScript('plan.js', ['switch']);
-    break;
-  case 'close':
-    runScript('close.js');
-    break;
-  case 'mcp':
-    runScript('mcp.js');
-    break;
-  case 'help':
-  case '--help':
-  case '-h':
-  case undefined:
-    help();
-    break;
-  default:
-    console.error(`taskery: 알 수 없는 서브커맨드 '${sub}'.`);
-    help();
-    process.exit(1);
+  }
+  return out;
 }
+
+async function main() {
+  const sub = process.argv[2];
+  if (!sub || sub === 'help' || sub === '--help' || sub === '-h') {
+    console.log(help());
+    return 0;
+  }
+  if (INSTALL[sub]) {
+    const r = spawnSync(process.execPath, [path.join(__dirname, INSTALL[sub]), ...process.argv.slice(3)], { stdio: 'inherit' });
+    return r.status ?? 1;
+  }
+  const cmd = COMMANDS.find((c) => c.name === sub);
+  if (!cmd) {
+    console.error(`taskery: 모르는 명령 '${sub}'.\n\n${help()}`);
+    return 1;
+  }
+  try {
+    const out = await execute(cmd, parseArgs(cmd, process.argv.slice(3)));
+    if (out) console.log(out);
+    return 0;
+  } catch (e) {
+    console.error(e instanceof L.TaskeryError ? e.message : `taskery ${sub} 실패: ${e.stack || e.message}`);
+    return 1;
+  }
+}
+
+main().then((code) => process.exit(code));
