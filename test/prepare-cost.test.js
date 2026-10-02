@@ -6,8 +6,8 @@ const path = require('path');
 const { installedRepo, sandbox, fillDoc } = require('./helpers');
 
 function setManifest(sb, patch) {
-  const m = JSON.parse(sb.read('.taskery-manifest.json'));
-  sb.write('.taskery-manifest.json', JSON.stringify({ ...m, ...patch }, null, 2));
+  const m = JSON.parse(sb.read('.taskery/manifest.json'));
+  sb.write('.taskery/manifest.json', JSON.stringify({ ...m, ...patch }, null, 2));
 }
 
 function commitAll(sb, msg) {
@@ -155,7 +155,7 @@ test('init — 스택을 보고 빌드 결과 폴더를 매니페스트와 .git/
     sb.git(['init', '-q']);
     commitAll(sb, 'chore: 시작');
     const out = sb.ok(['init'], { input: '1\n' });
-    const m = JSON.parse(sb.read('.taskery-manifest.json'));
+    const m = JSON.parse(sb.read('.taskery/manifest.json'));
     assert.deepStrictEqual(m.buildOutput, c.want, JSON.stringify(c.files));
     const exclude = sb.read('.git/info/exclude');
     if (c.want) {

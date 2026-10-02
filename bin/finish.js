@@ -250,7 +250,7 @@ async function mergeTask(ctx, a) {
 
 // CHANGELOG_RULE.md의 "항목 틀" 코드 블록을 읽어 변경 기록 한 항목을 쓴다
 function changelogTemplate(main) {
-  const file = path.join(main, '.project', 'rules', 'CHANGELOG_RULE.md');
+  const file = path.join(main, '.taskery', 'rules', 'CHANGELOG_RULE.md');
   const fallback = '## [TASK-{num}] {title}\n\n- 날짜: {date}\n- 유형: {type}\n- 요약: {goal}';
   if (!fs.existsSync(file)) return fallback;
   const m = fs.readFileSync(file, 'utf8').match(/## 항목 틀[\s\S]*?```(?:markdown)?\n([\s\S]*?)```/);
@@ -260,7 +260,7 @@ function changelogTemplate(main) {
 function writeChangelog(main, st, goal) {
   const date = L.todayLocal();
   const entry = L.fillTemplate(changelogTemplate(main), { num: L.pad(st.num), title: st.title, date, type: st.type, goal });
-  const file = path.join(main, '.project', 'changelog', `${date.slice(0, 7)}.md`);
+  const file = path.join(main, '.taskery', 'changelog', `${date.slice(0, 7)}.md`);
   fs.mkdirSync(path.dirname(file), { recursive: true });
   if (!fs.existsSync(file)) {
     fs.writeFileSync(file, `# 변경 기록 ${date.slice(0, 7)}\n\n${entry}\n`);

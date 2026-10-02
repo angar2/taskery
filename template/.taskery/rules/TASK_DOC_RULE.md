@@ -4,7 +4,7 @@
 
 ## 1. 모양
 
-`prepare-task`가 `.project/plans/<플랜>/tasks/<NNN>_<slug>.md`를 만든다.
+`prepare-task`가 `.taskery/plans/<플랜>/tasks/<NNN>_<slug>.md`를 만든다.
 
 ```markdown
 # TASK-012 설정 화면 저장 버튼 색 변경

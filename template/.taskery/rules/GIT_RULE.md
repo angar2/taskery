@@ -64,7 +64,7 @@ feat: [TASK-001] Phase 1 - 사용자 인증 로직
 - 사유: 기존 세션 방식의 한계로 토큰 인증으로 바꾼다
 ```
 
-- 커밋은 `commit-task`가 한다. 커밋 대상은 코드뿐이다 — taskery 파일(`.project/` 등)은 git 밖이다.
+- 커밋은 `commit-task`가 한다. 커밋 대상은 코드뿐이다 — taskery 파일(`.taskery/` 등)은 git 밖이다.
 - 병합 커밋 메시지는 git 기본 메시지를 쓴다.
 
 ---

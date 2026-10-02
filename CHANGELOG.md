@@ -23,15 +23,16 @@
 
 ### 변경
 
-- **taskery 파일을 모두 git 밖에 둔다** — `.project/`·`AGENTS.md`·`CLAUDE.md`·`.claude/`·`.codex/`·`.mcp.json`·`.taskery-manifest.json`을 `init`이 `.git/info/exclude`에 넣는다. `.gitignore`는 건드리지 않는다. 워크트리에는 `AGENTS.md`·`CLAUDE.md`를 복사하고 나머지는 본진을 가리키는 링크로 심어, 모든 세션이 본진의 한 벌을 보고 고친다. 커밋 대상은 코드뿐이다. git이 이미 이 이름을 추적하는 리포에서는 `init`이 멈추고 알린다.
+- **taskery 파일을 모두 git 밖에 둔다** — `.taskery/`·`AGENTS.md`·`CLAUDE.md`·`.claude/`·`.codex/`·`.mcp.json`을 `init`이 `.git/info/exclude`에 넣는다. `.gitignore`는 건드리지 않는다. 워크트리에는 `AGENTS.md`·`CLAUDE.md`를 복사하고 나머지는 본진을 가리키는 링크로 심어, 모든 세션이 본진의 한 벌을 보고 고친다. 커밋 대상은 코드뿐이다. git이 이미 이 이름을 추적하는 리포에서는 `init`이 멈추고 알린다.
 - **모든 태스크는 브랜치와 워크트리를 분기하고, 수행은 그 워크트리 안에서 한다** — 생략은 사용자가 명시할 때만(`--no-worktree`·`--no-branch`). 부모 브랜치는 본진이 서 있는 브랜치다. Orca 탭 안이면 Orca가, 아니면 `~/.taskery/worktrees/`에 taskery가 워크트리를 만든다.
 - **태스크 상태를 7개에서 열림·닫힘 2개로** — 손으로 상태를 바꾸는 명령이 없다. 태스크 문서의 단계 표는 명령이 성공할 때만 채워진다.
-- **태스크 문서를 15~30줄로** — 메타 두 줄과 단계 표(명령이 씀), 목표·완료 기준·만질 파일·결정·결과 절. medium·large는 요구사항과 Phase를 더한다. 문서는 `.project/plans/<플랜>/tasks/`에 있다.
+- **태스크 문서를 15~30줄로** — 메타 두 줄과 단계 표(명령이 씀), 목표·완료 기준·만질 파일·결정·결과 절. medium·large는 요구사항과 Phase를 더한다. 문서는 `.taskery/plans/<플랜>/tasks/`에 있다.
 - **테스트를 둘로 나눔** — 코드 테스트(개발 단계, 앱·화면을 켜지 않는 명령만, 3분을 넘으면 알림)와 실사용 테스트(테스트 단계, 사용자가 화면에서 보는 결과로 적은 완료 기준 최대 5개를 실제로 실행, 증거 없는 PASS 불인정).
 - **스킬을 얇게** — 단계 스킬은 판단과 부르는 명령만 담는다. `AGENTS.md`는 약 15줄의 지침과 프로젝트 정보만 담는다. Codex 스킬은 `.codex/skills/`에 설치한다.
-- **백로그를 프로젝트에 하나로** — `.project/BACKLOG.md`. 플랜 백로그·글로벌 백로그 구분을 없앴다.
+- **백로그를 프로젝트에 하나로** — `.taskery/BACKLOG.md`. 플랜 백로그·글로벌 백로그 구분을 없앴다.
 - **규칙 문서 1.0판** — `TASKERY_RULE.md`(참고서), `GIT_RULE.md`(맨 위 표를 명령이 읽음), `TASK_DOC_RULE.md`, `CHANGELOG_RULE.md`(명령이 읽는 항목 틀), `MOCKUP_RULE.md`(위치·형식만).
-- **변경 기록은 `close-task`가 끝난 태스크만** `.project/changelog/<YYYY-MM>.md`에 쓴다.
+- **변경 기록은 `close-task`가 끝난 태스크만** `.taskery/changelog/<YYYY-MM>.md`에 쓴다.
+- **taskery 작업 폴더와 매니페스트 위치** — 작업 폴더가 `.project/`에서 `.taskery/`로, 매니페스트가 리포 맨 위 `.taskery-manifest.json`에서 `.taskery/manifest.json`으로 바뀌었다.
 
 ### 삭제
 

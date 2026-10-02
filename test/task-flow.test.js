@@ -23,14 +23,14 @@ test('small 태스크 처음부터 끝까지 — 문서·링크·단계 표·커
   // taskery 파일 심기 — 지침 파일은 복사, 나머지는 링크
   assert.ok(!fs.lstatSync(path.join(wt, 'AGENTS.md')).isSymbolicLink());
   assert.ok(!fs.lstatSync(path.join(wt, 'CLAUDE.md')).isSymbolicLink());
-  for (const n of ['.project', '.claude', '.mcp.json']) assert.ok(fs.lstatSync(path.join(wt, n)).isSymbolicLink(), n);
+  for (const n of ['.taskery', '.claude', '.mcp.json']) assert.ok(fs.lstatSync(path.join(wt, n)).isSymbolicLink(), n);
   assert.strictEqual(sb.git(['status', '--porcelain'], wt), '', '링크·복사본은 git에 보이지 않는다');
   // 문서·메타·PLAN.md 연결
   const doc = sb.read(st.doc);
   assert.match(doc, /^# TASK-001 첫 기능 만들기\n<!-- taskery: plan=001_mvp type=feature size=small switch=plan,dev,test range=끝까지 parent=dev by=taskery -->/);
   assert.match(doc, /\| ⏳ \| – \| – \| – \|/);
   assert.ok(!/## Phase/.test(doc), 'small은 Phase 절 없음');
-  assert.match(sb.read('.project/plans/001_mvp/PLAN.md'), /1\. 첫 기능 — 선행: 없음 \(TASK-001\)/);
+  assert.match(sb.read('.taskery/plans/001_mvp/PLAN.md'), /1\. 첫 기능 — 선행: 없음 \(TASK-001\)/);
 
   // approve-plan — 빈 문서는 거부
   let r = sb.tk(['approve-plan', 'TASK-001']);
@@ -74,13 +74,13 @@ test('small 태스크 처음부터 끝까지 — 문서·링크·단계 표·커
   assert.match(cl, /복구: git branch feature\/claude_TASK-001_first-feature [0-9a-f]{40}/);
   assert.ok(!fs.existsSync(wt), '워크트리 삭제');
   assert.ok(!sb.git(['branch', '--list', st.branch]), '브랜치 삭제');
-  assert.ok(fs.existsSync(path.join(sb.repo, '.project', 'rules', 'GIT_RULE.md')), '링크를 지워도 본진 .project는 그대로');
+  assert.ok(fs.existsSync(path.join(sb.repo, '.taskery', 'rules', 'GIT_RULE.md')), '링크를 지워도 본진 .taskery는 그대로');
   assert.ok(fs.existsSync(path.join(sb.repo, 'AGENTS.md')));
   assert.match(sb.read(st.doc), /\| ✅ [^|]+ \| ✅ [^|]+ \| ✅ [^|]+ \| ✅ [^|]+\(합계 [^|]+\) \|/);
   const month = new Date().toISOString().slice(0, 7);
-  const changelog = fs.readdirSync(path.join(sb.repo, '.project', 'changelog'));
+  const changelog = fs.readdirSync(path.join(sb.repo, '.taskery', 'changelog'));
   assert.strictEqual(changelog.length, 1);
-  assert.match(sb.read(`.project/changelog/${changelog[0]}`), /## \[TASK-001\] 첫 기능 만들기\n\n- 날짜: .+\n- 유형: feature\n- 요약: 인사말을 바꾼다/);
+  assert.match(sb.read(`.taskery/changelog/${changelog[0]}`), /## \[TASK-001\] 첫 기능 만들기\n\n- 날짜: .+\n- 유형: feature\n- 요약: 인사말을 바꾼다/);
   assert.ok(changelog[0].startsWith(month.slice(0, 4)));
   assert.ok(sb.state(1).closed.finished);
   assert.match(sb.ok(['status']), /열린 태스크 없음/);
@@ -197,7 +197,7 @@ test('입력 거부 — 빠진 입력 목록, 개발·테스트 둘 다 꺼짐, 
   r = sb.tk(['test-code', '1']);
   assert.match(r.all, /실패 — `exit 3` \(종료 코드 3\)/);
   assert.strictEqual(sb.state(1).testCode.at, passedAt, '실패는 개발 칸을 바꾸지 않는다');
-  assert.deepStrictEqual(JSON.parse(sb.read('.taskery-manifest.json')).codeTest, ['echo 첫째', 'exit 3']);
+  assert.deepStrictEqual(JSON.parse(sb.read('.taskery/manifest.json')).codeTest, ['echo 첫째', 'exit 3']);
 });
 
 test('본진 검사 — 본진의 추적 안 되는 파일은 막지 않고, 추적 중인 파일의 커밋 안 된 변경만 막는다', (t) => {

@@ -105,7 +105,7 @@ test('orca-dispatch-task(Claude) — terminal create → wait tui-idle → 첫 �
   assert.match(sb.read(st.doc), /<!-- taskery: .* by=taskery tab=term_TASK-001 -->/);
 });
 
-test('orca-dispatch-task(Codex) — codex -m <모델> --add-dir <본진>/.project, --note 없으면 마지막 줄 없음, 다시 띄우면 시작은 비어 있는 첫 단계', (t) => {
+test('orca-dispatch-task(Codex) — codex -m <모델> --add-dir <본진>/.taskery, --note 없으면 마지막 줄 없음, 다시 띄우면 시작은 비어 있는 첫 단계', (t) => {
   const sb = installedRepo();
   t.after(() => sb.cleanup());
   prep(sb, 1, ['--switch', 'plan,test']);
@@ -114,7 +114,7 @@ test('orca-dispatch-task(Codex) — codex -m <모델> --add-dir <본진>/.projec
   const orca = fakeOrca(sb);
   sb.ok(['orca-dispatch-task', '1', '--agent', 'codex', '--model', 'gpt-5.6-terra'], { extraEnv: orca.env });
   const calls = orca.calls();
-  assert.strictEqual(calls[0][calls[0].indexOf('--command') + 1], `codex -m gpt-5.6-terra --add-dir ${path.join(sb.repo, '.project')}`);
+  assert.strictEqual(calls[0][calls[0].indexOf('--command') + 1], `codex -m gpt-5.6-terra --add-dir ${path.join(sb.repo, '.taskery')}`);
   const lines = calls[2][calls[2].indexOf('--text') + 1].split('\n');
   assert.strictEqual(lines.length, 6);
   assert.strictEqual(lines[2], '- 시작: task-test부터 한다. 태스크 만들기(task-init)와 워크트리 준비는 끝났다.');
@@ -220,14 +220,14 @@ test('report-task 동시 기록 — 여러 태스크 세션(워크트리·본진
   }
   const results = await Promise.all(jobs);
   for (const r of results) assert.strictEqual(r.code, 0, r.all);
-  const lines = sb.read('.project/reports.log').trim().split('\n');
+  const lines = sb.read('.taskery/reports.log').trim().split('\n');
   assert.strictEqual(lines.length, 20);
   for (const l of lines) assert.match(l, /^\d{4}-\d\d-\d\d \d\d:\d\d TASK-00[12] 보고 \d+ 가{200}$/);
   assert.deepStrictEqual(lines.map((l) => parseInt(l.match(/보고 (\d+)/)[1], 10)).sort((a, b) => a - b), Array.from({ length: 20 }, (_, i) => i + 1));
-  assert.ok(!fs.existsSync(path.join(wt1, '.project', 'reports.log')) || fs.lstatSync(path.join(wt1, '.project')).isSymbolicLink(), '워크트리에서 쓴 보고도 본진 한 벌에');
+  assert.ok(!fs.existsSync(path.join(wt1, '.taskery', 'reports.log')) || fs.lstatSync(path.join(wt1, '.taskery')).isSymbolicLink(), '워크트리에서 쓴 보고도 본진 한 벌에');
 
   sb.ok(['report-task', '1', '질문:\n색은 무엇으로?']);
-  assert.match(sb.read('.project/reports.log').trim().split('\n').pop(), /TASK-001 질문: 색은 무엇으로\?$/);
+  assert.match(sb.read('.taskery/reports.log').trim().split('\n').pop(), /TASK-001 질문: 색은 무엇으로\?$/);
   assert.match(sb.tk(['report-task', '1']).all, /보고 한 줄을 넣는다/);
 });
 
@@ -310,7 +310,7 @@ test('코드 지문 임시 인덱스(F3) — 시스템 임시 폴더에 쓸 수 
   sb.ok(['test-code', '1'], sandboxed);
   sb.ok(['test-scenario', '1', '1', 'pass', '확인'], sandboxed);
   sb.ok(['verify-close', '1'], sandboxed);
-  const left = fs.readdirSync(path.join(sb.repo, '.project', '.state')).filter((f) => f.startsWith('taskery-index-'));
+  const left = fs.readdirSync(path.join(sb.repo, '.taskery', '.state')).filter((f) => f.startsWith('taskery-index-'));
   assert.deepStrictEqual(left, []);
   assert.strictEqual(fs.readdirSync(locked).length, 0);
 });

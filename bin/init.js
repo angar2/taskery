@@ -18,7 +18,7 @@ function startGit(cwd) {
   L.git(cwd, ['init', '-q']);
   L.ensureExclude(cwd);
   L.git(cwd, ['commit', '-q', '--allow-empty', '-m', 'chore: 첫 커밋']);
-  const branch = L.parseGitRuleTable(I.readTemplate('.project/rules/GIT_RULE.md')).integration || 'dev';
+  const branch = L.parseGitRuleTable(I.readTemplate('.taskery/rules/GIT_RULE.md')).integration || 'dev';
   if (L.currentBranch(cwd) !== branch) L.git(cwd, ['checkout', '-q', '-b', branch]);
   return branch;
 }
@@ -62,6 +62,7 @@ function checkRepo(cwd) {
 
 async function main() {
   const cwd = process.cwd();
+  L.checkLegacyInstall(cwd, 'init');
   if (fs.existsSync(path.join(cwd, L.MANIFEST_NAME))) {
     L.fail('init: taskery가 이미 설치된 리포다. 갱신은 `npx @angar2/taskery update`.');
   }
@@ -94,7 +95,7 @@ async function main() {
     notes.push(...I.writeConfigs(main, platforms));
     const buildOutput = proposeBuildOutput(main);
     if (buildOutput.length) {
-      notes.push(`빌드 결과 폴더 등록: ${buildOutput.join(', ')} — 새 워크트리에 본진의 이 폴더를 APFS 복제한다(바꾸려면 .taskery-manifest.json의 buildOutput을 고친다)`);
+      notes.push(`빌드 결과 폴더 등록: ${buildOutput.join(', ')} — 새 워크트리에 본진의 이 폴더를 APFS 복제한다(바꾸려면 .taskery/manifest.json의 buildOutput을 고친다)`);
       if (buildOutput.includes('DerivedData')) notes.push('코드 테스트 명령에 -derivedDataPath DerivedData를 붙인다');
     }
     const added = L.ensureExclude(main, buildOutput);

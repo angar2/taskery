@@ -22,7 +22,7 @@ const COMMANDS = [
   },
   {
     name: 'plan-init',
-    summary: '다음 플랜 번호로 .project/plans/<NNN>_<slug>/PLAN.md 틀을 만든다',
+    summary: '다음 플랜 번호로 .taskery/plans/<NNN>_<slug>/PLAN.md 틀을 만든다',
     args: [
       { name: 'slug', positional: true, desc: '플랜 이름 — 영문 kebab-case (필수)' },
       { name: 'title', desc: '플랜 제목 (없으면 slug)' },
@@ -124,7 +124,7 @@ const COMMANDS = [
   },
   {
     name: 'report-task',
-    summary: '태스크 세션이 오케스트레이션에 보고 한 줄을 남긴다(.project/reports.log)',
+    summary: '태스크 세션이 오케스트레이션에 보고 한 줄을 남긴다(.taskery/reports.log)',
     args: [TASK, { name: 'text', positional: true, desc: '보고 한 줄 (필수)' }],
     run: reportTask,
   },

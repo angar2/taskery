@@ -24,10 +24,10 @@ function finish(sb, num, file) {
 }
 
 function openPart(sb) {
-  return sb.read('.project/BACKLOG.md').split('\n## 열린 항목\n')[1].split('\n## 끝난 항목\n')[0];
+  return sb.read('.taskery/BACKLOG.md').split('\n## 열린 항목\n')[1].split('\n## 끝난 항목\n')[0];
 }
 function donePart(sb) {
-  return sb.read('.project/BACKLOG.md').split('\n## 끝난 항목\n')[1];
+  return sb.read('.taskery/BACKLOG.md').split('\n## 끝난 항목\n')[1];
 }
 
 test('backlog-add·get·mark — 부록 B 양식, 번호 발급, 목록·전문, 연결', (t) => {
@@ -41,9 +41,9 @@ test('backlog-add·get·mark — 부록 B 양식, 번호 발급, 목록·전문,
   assert.match(openPart(sb), /^\n### BL-2 \[<종류>\] 로그인 오류\n- 상태: 대기\n- 등록: \d{4}-\d{2}-\d{2}\n- 현상: <현상>\n- 연결 태스크: –\n\n### BL-1 \[improve\] 저장 버튼 색\n/);
   // AI가 칸을 채운 뒤
   const filled = sb
-    .read('.project/BACKLOG.md')
+    .read('.taskery/BACKLOG.md')
     .replace(/(### BL-2 )\[<종류>\]( 로그인 오류\n(?:- .*\n)*?)- 현상: <현상>/, '$1[bug]$2- 현상: 비밀번호가 맞아도 실패\n- 우선순위: 높음');
-  sb.write('.project/BACKLOG.md', filled);
+  sb.write('.taskery/BACKLOG.md', filled);
   assert.strictEqual(sb.ok(['backlog-get']).trim().split('\n').slice(1).join('\n'), '- BL-2 [bug] 로그인 오류 — 대기\n- BL-1 [improve] 저장 버튼 색 — 대기');
   assert.match(sb.ok(['backlog-get', 'BL-2']), /^### BL-2 \[bug\] 로그인 오류\n- 상태: 대기\n- 등록: .+\n- 현상: 비밀번호가 맞아도 실패\n- 우선순위: 높음\n- 연결 태스크: –\n$/);
   assert.match(sb.tk(['backlog-get', 'BL-9']).all, /BL-9이 없다/);
@@ -61,7 +61,7 @@ test('--from — 백로그 연결, 없는 번호는 태스크를 만들기 전�
   sb.ok(['backlog-add', '포기될 것', '--type', 'bug']); // BL-2
   let r = sb.tk(['prepare-task', 'x', '--slug', 'x', '--type', 'feature', '--size', 'small', '--dev', 'claude', '--from', 'BL-1,BL-7']);
   assert.match(r.all, /--from의 BL-7이 BACKLOG.md에 없다/);
-  assert.ok(!fs.existsSync(path.join(sb.repo, '.project', '.state', 'tasks')), '아무것도 만들지 않았다');
+  assert.ok(!fs.existsSync(path.join(sb.repo, '.taskery', '.state', 'tasks')), '아무것도 만들지 않았다');
   assert.ok(!sb.git(['branch', '--list', 'feature/*']));
 
   assert.match(open(sb, 'first', ['--from', 'BL-1,BL-2']), /- 백로그: BL-1, BL-2 — 진행/);
@@ -93,7 +93,7 @@ test('status — 플랜별 시작할 수 있는 태스크(선행·열린 태스�
   const sb = installedRepo();
   t.after(() => sb.cleanup());
   sb.write(
-    '.project/plans/001_mvp/PLAN.md',
+    '.taskery/plans/001_mvp/PLAN.md',
     [
       '# MVP',
       '',
@@ -127,7 +127,7 @@ test('status — 플랜별 시작할 수 있는 태스크(선행·열린 태스�
   assert.match(plans(), /^- 001_mvp: 2\. 로그인 API 연결 · 4\. 도움말\n/, '포기로 닫힌 항목은 다시 시작 대상');
   // 끝난 항목에 다시 연결해 연 태스크가 포기되면, 가장 최근 연결 기준으로 끝나지 않은 항목이 된다
   open(sb, 'login-again', ['--plan', '001_mvp', '--item', '1']);
-  assert.match(sb.read('.project/plans/001_mvp/PLAN.md'), /1\. 로그인 화면 — 선행: 없음 \(TASK-001\) \(TASK-003\)/);
+  assert.match(sb.read('.taskery/plans/001_mvp/PLAN.md'), /1\. 로그인 화면 — 선행: 없음 \(TASK-001\) \(TASK-003\)/);
   sb.ok(['close-task', '3']);
   assert.match(plans(), /^- 001_mvp: 1\. 로그인 화면 · 4\. 도움말\n/);
 });
@@ -144,7 +144,7 @@ test('prune — 닫힌 태스크에 남은 워크트리·브랜치를 항목마�
   }
   fs.writeFileSync(path.join(sb.state(3).worktree, 'scratch.txt'), 'x');
   for (const n of [1, 2, 3]) sb.ok(['close-task', String(n)]);
-  assert.match(sb.read('.project/.state/tasks/001.json'), /"finished": false/);
+  assert.match(sb.read('.taskery/.state/tasks/001.json'), /"finished": false/);
   assert.ok(sb.git(['branch', '--list', 'feature/claude_TASK-001_aaa']));
   assert.ok(fs.existsSync(sb.state(3).worktree));
 

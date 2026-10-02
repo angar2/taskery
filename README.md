@@ -295,7 +295,7 @@ Node 프로젝트는 `package-lock.json`이 있으면 `npm ci`로 설치합니�
 
 ## 백로그
 
-떠오른 문제와 할 일은 `.project/BACKLOG.md` 한 곳에 모읍니다.
+떠오른 문제와 할 일은 `.taskery/BACKLOG.md` 한 곳에 모읍니다.
 
 ```markdown
 ### BL-3 [feature] 클립보드 확인 주기(500ms) 설정 노출
@@ -379,11 +379,11 @@ AI가 태스크를 열고 기획, 개발, 테스트, 마무리까지 진행합�
 my-app/
 ├─ AGENTS.md                 AI가 세션마다 읽는 짧은 지침 (약 15줄)
 ├─ CLAUDE.md                 AGENTS.md를 불러오는 한 줄
-├─ .taskery-manifest.json    설치 정보, 코드 테스트 명령, 빌드 결과 폴더 등록
 ├─ .mcp.json                 AI가 taskery 명령을 도구로 부르게 하는 연결 설정
 ├─ .claude/                  스킬 10장과 설정
 ├─ .codex/                   스킬 10장과 도구 연결 (Codex를 고른 경우)
-└─ .project/
+└─ .taskery/
+   ├─ manifest.json          설치 정보, 코드 테스트 명령, 빌드 결과 폴더 등록
    ├─ rules/                 규칙 문서 7장
    ├─ BACKLOG.md             백로그
    └─ (쓰면서 생기는 것)     PROJECT.md · GLOSSARY.md · spec/ · plans/ · changelog/ …
@@ -395,7 +395,7 @@ taskery 파일은 그 리포에만 적용되는 git 무시 목록(`.git/info/exc
 
 - 설치해도 리포의 추적 파일이 하나도 바뀌지 않습니다. 커밋되는 것은 코드뿐입니다.
 - 모든 작업 폴더가 본진의 taskery 문서 한 벌을 함께 봅니다. 한 태스크가 고친 용어집을 다른 태스크가 곧바로 봅니다.
-- 그 대신 태스크 문서와 백로그는 git 이력에 남지 않습니다. 다른 사람과 git으로 공유해야 하는 문서는 `.project/` 밖(예: `docs/`)에 두면 됩니다.
+- 그 대신 태스크 문서와 백로그는 git 이력에 남지 않습니다. 다른 사람과 git으로 공유해야 하는 문서는 `.taskery/` 밖(예: `docs/`)에 두면 됩니다.
 - git이 이미 이 파일들 중 하나를 추적하고 있으면 `init`은 설치를 멈추고 어떤 파일인지 알려 줍니다. 추적 해제는 리포 이력을 바꾸는 일이라 사용자가 직접 합니다.
 
 ### 규칙 문서 7장
@@ -427,7 +427,7 @@ taskery 파일은 그 리포에만 적용되는 git 무시 목록(`.git/info/exc
 | `task-close` | 마무리 단계 | 검사, 커밋, 병합을 하고, 태스크를 연 쪽이 작업 폴더를 정리합니다 |
 | `task-orche` | 여러 태스크를 나눠 맡길 때 | 백로그를 태스크로 나누고, 새 탭에 맡기고, 보고를 받아 정리합니다 |
 | `add-backlog` | 할 일을 적어 둘 때 | 백로그에 항목 하나를 등록합니다 |
-| `log-friction` | taskery가 불편할 때 | 사용자가 겪은 불편을 `.project/FRICTION_LOG.md`에 한 줄로 남깁니다(사용자가 원할 때만) |
+| `log-friction` | taskery가 불편할 때 | 사용자가 겪은 불편을 `.taskery/FRICTION_LOG.md`에 한 줄로 남깁니다(사용자가 원할 때만) |
 
 ---
 
@@ -499,7 +499,7 @@ taskery 파일은 그 리포에만 적용되는 git 무시 목록(`.git/info/exc
 됩니다. 설치할 때 둘 다 고르거나 나중에 `npx @angar2/taskery add codex`로 추가합니다. 오케스트레이션에서는 태스크마다 다른 에이전트와 모델을 맡길 수 있습니다.
 
 **우리 프로젝트만의 앱 실행 방법이나 코딩 규칙은 어디에 적나요?**
-`.project/rules/TEST_RULE.local.md`(앱 실행과 테스트 방식)와 `DEV_RULE.local.md`(구현 규칙)에 적습니다. 업데이트가 덮어쓰지 않는 프로젝트 전용 파일입니다. 일하다 새 규칙이 필요해지면 AI가 문장을 제안하고, 사용자가 승인하면 들어갑니다.
+`.taskery/rules/TEST_RULE.local.md`(앱 실행과 테스트 방식)와 `DEV_RULE.local.md`(구현 규칙)에 적습니다. 업데이트가 덮어쓰지 않는 프로젝트 전용 파일입니다. 일하다 새 규칙이 필요해지면 AI가 문장을 제안하고, 사용자가 승인하면 들어갑니다.
 
 **taskery를 쓰다 불편한 점이 있으면요?**
 `log-friction` 스킬로 그 불편을 한 줄 기록해 둡니다. 사용자가 실제로 겪은 불편만 적습니다.
@@ -512,7 +512,7 @@ taskery 파일은 그 리포에만 적용되는 git 무시 목록(`.git/info/exc
 
 1. 옛 taskery 파일(`AGENTS.md`·`CLAUDE.md`·`.claude/`·`.codex/`·`.agents/`·`.project/`·`.mcp.json`·`.taskery-manifest.json`)을 리포 밖으로 옮깁니다. git이 추적하고 있었다면 추적을 해제해 커밋합니다.
 2. `npx @angar2/taskery init`으로 새로 설치합니다.
-3. 필요한 옛 백로그와 제품 문서는 옮겨 둔 곳에서 새 `.project/`로 직접 가져옵니다.
+3. 필요한 옛 백로그와 제품 문서는 옮겨 둔 곳에서 새 `.taskery/`로 직접 가져옵니다.
 
 0.x로 설치된 리포에서 `update`를 부르면 아무 파일도 바꾸지 않고 이 절차를 알려 준 뒤 멈춥니다.
 

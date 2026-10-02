@@ -1,13 +1,13 @@
 ---
 name: log-friction
-description: 불편 기록 — 사용자가 taskery를 쓰다 겪은 불편을 .project/FRICTION_LOG.md에 한 줄로 남긴다(사용자가 부르거나 동의했을 때만)
+description: 불편 기록 — 사용자가 taskery를 쓰다 겪은 불편을 .taskery/FRICTION_LOG.md에 한 줄로 남긴다(사용자가 부르거나 동의했을 때만)
 ---
 
 # log-friction
 
 taskery 불편 기록을 한 줄 남긴다. 명령 없이 파일에 직접 쓴다.
 
-- taskery를 쓰다 사용자가 겪은 불편을 `.project/FRICTION_LOG.md`에 한 줄로 남긴다. 기록만 한다 — 분석·규칙 제안을 하지 않는다.
+- taskery를 쓰다 사용자가 겪은 불편을 `.taskery/FRICTION_LOG.md`에 한 줄로 남긴다. 기록만 한다 — 분석·규칙 제안을 하지 않는다.
 - 부르는 때: 사용자가 직접 부를 때, 또는 사용자가 taskery 사용 중 불만을 말했을 때 "불편 기록에 남길까요?"라고 한 번 묻고 동의했을 때. AI 스스로 헤맨 것은 적지 않는다.
 - 파일이 없으면 만든다. 머리에 `# FRICTION_LOG`와 표 머리 `| 날짜 | 불편 | 맥락 |`를 둔다.
 - 표 끝에 `| YYYY-MM-DD | <사용자의 말을 되도록 그대로> | <태스크 번호·스킬·명령> |` 한 줄을 붙인다. 칸 구성은 바꾸지 않는다.

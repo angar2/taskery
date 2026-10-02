@@ -56,7 +56,7 @@ function sandbox() {
       return fs.readFileSync(path.join(base, rel), 'utf8');
     },
     state(num) {
-      return JSON.parse(fs.readFileSync(path.join(repo, '.project', '.state', 'tasks', `${String(num).padStart(3, '0')}.json`), 'utf8'));
+      return JSON.parse(fs.readFileSync(path.join(repo, '.taskery', '.state', 'tasks', `${String(num).padStart(3, '0')}.json`), 'utf8'));
     },
     cleanup() {
       fs.rmSync(root, { recursive: true, force: true });
@@ -70,7 +70,7 @@ function installedRepo({ platform = '1', codeTest = ['true'] } = {}) {
   const sb = sandbox();
   sb.ok(['init'], { input: `${platform}\n` });
   sb.ok(['plan-init', 'mvp', '--title', 'MVP']);
-  sb.write('.project/plans/001_mvp/PLAN.md', '# MVP\n\n## 목표\n시험\n\n## 태스크 목록\n1. 첫 기능 — 선행: 없음\n2. 둘째 기능 — 선행: 1\n');
+  sb.write('.taskery/plans/001_mvp/PLAN.md', '# MVP\n\n## 목표\n시험\n\n## 태스크 목록\n1. 첫 기능 — 선행: 없음\n2. 둘째 기능 — 선행: 1\n');
   sb.write('src/app.txt', 'hello\n');
   sb.git(['add', '-A']);
   sb.git(['commit', '-q', '-m', 'chore: 시작 코드']);

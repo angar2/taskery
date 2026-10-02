@@ -4,7 +4,7 @@
 
 ## 위치
 
-- `.project/changelog/<YYYY-MM>.md` — 달마다 한 파일. 없으면 명령이 만든다.
+- `.taskery/changelog/<YYYY-MM>.md` — 달마다 한 파일. 없으면 명령이 만든다.
 - 최신 항목이 맨 위에 온다.
 
 ## 항목 틀
