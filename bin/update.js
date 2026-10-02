@@ -8,7 +8,7 @@ const I = require('./install');
 async function main() {
   const cwd = process.cwd();
   const main = L.findMain(cwd);
-  L.checkLegacyInstall(main);
+  L.checkLegacyInstall(main, 'update');
   const manifest = L.readManifest(main);
   if (!manifest) L.fail("update: taskery가 설치돼 있지 않다. 'npx @angar2/taskery init'을 먼저 부른다.");
   const platforms = Array.isArray(manifest.platforms) ? manifest.platforms : ['claude'];

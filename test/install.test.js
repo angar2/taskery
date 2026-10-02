@@ -113,13 +113,14 @@ test('update 거부 — 0.x 설치본(루트에 .taskery-manifest.json)은 바�
   assert.ok(fs.existsSync(path.join(sb.repo, '.taskery-manifest.json')), '0.x 매니페스트도 그대로 둔다');
 });
 
-test('init 거부 — 0.x 설치본(루트에 .taskery-manifest.json)은 같은 문구로 멈추고 아무것도 설치하지 않는다', (t) => {
+test('init 거부 — 0.x 설치본(루트에 .taskery-manifest.json)은 init 전용 문구로 멈추고 아무것도 설치하지 않는다', (t) => {
   const sb = sandbox();
   t.after(() => sb.cleanup());
   sb.write('.taskery-manifest.json', JSON.stringify({ version: '0.7.0' }));
   const r = sb.tk(['init'], { input: '1\n' });
   assert.notStrictEqual(r.code, 0);
-  assert.match(r.all, /0\.7\.0로 설치돼 있어 update로 옮길 수 없다/);
-  assert.match(r.all, /init'으로 새로 설치한다/);
+  assert.match(r.all, /init: 이 리포는 taskery 0\.7\.0로 설치돼 있어 그 위에 1\.0을 설치할 수 없다/);
+  assert.match(r.all, /리포 밖으로 옮긴 뒤 다시 init한다/);
+  assert.match(r.all, /새 \.taskery\/로 가져온다/);
   assert.ok(!fs.existsSync(path.join(sb.repo, '.taskery')), '아무것도 설치하지 않았다');
 });

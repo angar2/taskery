@@ -150,8 +150,8 @@ function tail(text, lines) {
 // 0.x 설치본의 매니페스트 이름(리포 맨 위). 1.0은 이 이름을 쓰지 않으니, 있으면 0.x 설치본이다
 const OLD_MANIFEST_NAME = '.taskery-manifest.json';
 
-// 리포 맨 위에 0.x 매니페스트가 있으면 멈춘다 — update·init 공통(§3-1)
-function checkLegacyInstall(main) {
+// 리포 맨 위에 0.x 매니페스트가 있으면 멈춘다 — update·init 공통(§3-1). caller로 부르는 명령에 맞는 문구를 낸다
+function checkLegacyInstall(main, caller) {
   const old = path.join(main, OLD_MANIFEST_NAME);
   if (!fs.existsSync(old)) return;
   let version = '0.x';
@@ -160,8 +160,15 @@ function checkLegacyInstall(main) {
   } catch (e) {
     // 깨진 파일이어도 0.x 설치본으로 취급한다
   }
+  const oldFiles = '옛 taskery 파일(AGENTS.md·CLAUDE.md·.claude/·.codex/·.agents/·.project/·.mcp.json·.taskery-manifest.json)';
+  const moveOldDocs = "필요한 옛 문서(백로그·제품 문서)는 옮겨 둔 곳에서 새 .taskery/로 가져온다.";
+  if (caller === 'init') {
+    fail(
+      `init: 이 리포는 taskery ${version}로 설치돼 있어 그 위에 1.0을 설치할 수 없다(1.0은 0.x와 호환되지 않는다). ${oldFiles}을 리포 밖으로 옮긴 뒤 다시 init한다. ${moveOldDocs}`,
+    );
+  }
   fail(
-    `update: 이 리포는 taskery ${version}로 설치돼 있어 update로 옮길 수 없다(1.0은 0.x와 호환되지 않는다). 옛 taskery 파일(AGENTS.md·CLAUDE.md·.claude/·.codex/·.agents/·.project/·.mcp.json·.taskery-manifest.json)을 리포 밖으로 옮긴 뒤 'npx @angar2/taskery init'으로 새로 설치한다. 필요한 옛 문서(백로그·제품 문서)는 옮겨 둔 곳에서 새 .taskery/로 가져온다.`,
+    `update: 이 리포는 taskery ${version}로 설치돼 있어 update로 옮길 수 없다(1.0은 0.x와 호환되지 않는다). ${oldFiles}을 리포 밖으로 옮긴 뒤 'npx @angar2/taskery init'으로 새로 설치한다. ${moveOldDocs}`,
   );
 }
 

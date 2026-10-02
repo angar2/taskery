@@ -62,7 +62,7 @@ function checkRepo(cwd) {
 
 async function main() {
   const cwd = process.cwd();
-  L.checkLegacyInstall(cwd);
+  L.checkLegacyInstall(cwd, 'init');
   if (fs.existsSync(path.join(cwd, L.MANIFEST_NAME))) {
     L.fail('init: taskery가 이미 설치된 리포다. 갱신은 `npx @angar2/taskery update`.');
   }
