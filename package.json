@@ -1,7 +1,7 @@
 {
   "name": "@angar2/taskery",
-  "version": "0.8.1",
-  "description": "Lightweight task system for Claude Code & Codex — 1 메인 세션(또는 멀티세션) + 스킬 9종 + catastrophic hook 안전망 2종",
+  "version": "1.0.0",
+  "description": "AI 코딩 에이전트(Claude Code·Codex)에게 일을 태스크 단위로 맡겨 기획·개발·테스트·병합까지 진행하게 하는 작업 체계",
   "bin": {
     "taskery": "bin/taskery.js",
     "create-taskery": "bin/create.js"
@@ -14,7 +14,8 @@
   ],
   "scripts": {
     "smoke:init": "node bin/init.js",
-    "smoke:update": "node bin/update.js"
+    "smoke:update": "node bin/update.js",
+    "test": "node --test test/*.test.js"
   },
   "keywords": [
     "claude-code",
@@ -22,8 +23,7 @@
     "task-management",
     "ai-coding-workflow",
     "skills",
-    "slash-commands",
-    "agent-hooks"
+    "slash-commands"
   ],
   "author": "angar2 <angaridev@gmail.com>",
   "license": "MIT",
