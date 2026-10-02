@@ -161,7 +161,7 @@ function checkLegacyInstall(main) {
     // 깨진 파일이어도 0.x 설치본으로 취급한다
   }
   fail(
-    `update: 이 리포는 taskery ${version}로 설치돼 있어 update로 옮길 수 없다(1.0은 0.x와 호환되지 않는다). 옛 taskery 파일(AGENTS.md·CLAUDE.md·.claude/·.codex/·.agents/·.project/·.mcp.json·.taskery-manifest.json)을 리포 밖으로 옮긴 뒤 'npx @angar2/taskery init'으로 새로 설치한다. 필요한 옛 문서(백로그·제품 문서)는 옮겨 둔 곳에서 새 .project/로 가져온다.`,
+    `update: 이 리포는 taskery ${version}로 설치돼 있어 update로 옮길 수 없다(1.0은 0.x와 호환되지 않는다). 옛 taskery 파일(AGENTS.md·CLAUDE.md·.claude/·.codex/·.agents/·.project/·.mcp.json·.taskery-manifest.json)을 리포 밖으로 옮긴 뒤 'npx @angar2/taskery init'으로 새로 설치한다. 필요한 옛 문서(백로그·제품 문서)는 옮겨 둔 곳에서 새 .taskery/로 가져온다.`,
   );
 }
 
