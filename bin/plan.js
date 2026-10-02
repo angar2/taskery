@@ -1,125 +1,63 @@
-#!/usr/bin/env node
-// plan(기능 그룹) 생성·전환 CLI — 채번+폴더+ROADMAP/PLAN/BACKLOG 골격+활성plan 갱신 원자 실행
-/**
- * bin/plan.js
- * `npx @angar2/taskery plan-init <slug> [--force]`   — plan 생성.
- * `npx @angar2/taskery plan-switch <NNN_slug>`       — 활성 plan 전환.
- *
- * dispatcher가 op('init' | 'switch')를 선행 인자로 주입한다 (backlog.js와 동일 패턴).
- *
- * init: 채번(NNN) + legacy 게이트 + 폴더 mkdir(plans/<NNN_slug> + tasks/<NNN_slug>/{spec-diffs,screenshots,mockup})
- *   + ROADMAP/PLAN/BACKLOG 골격 Write + manifest.activePlan 갱신을 코드가 수행.
- *   성공 시 JSON 한 줄 — { plan, nnn, planDir, tasksDir }. 이후 ROADMAP Stage 내용·PLAN 링크·
- *   FEATURES/UX-UI delta는 LLM(plan-init 스킬)이 골격 placeholder를 채운다.
- *   legacy 폴더(NNN_ 아닌 plan 폴더) 잔존 + --force 없음 → exit 2 + { gated:true, legacyDirs }
- *     (스킬이 사용자 confirm 후 --force로 재호출).
- *
- * switch: 대상 plan 폴더 실재 검증 후 manifest.activePlan 갱신. 성공 시 JSON — { plan, planDir }.
- *
- * 그 외 실패 시 stderr + exit 1.
- */
-
+// plan-init — 잠금 안에서 다음 플랜 번호를 발급하고 plans/<NNN>_<slug>/PLAN.md 틀을 만든다(§5-3)
+const fs = require('fs');
 const path = require('path');
+const L = require('./lib');
 
-const {
-  MANIFEST_NAME,
-  readManifest,
-  getMainWorktreePath,
-  initPlan,
-  setActivePlan,
-} = require('./lib');
-
-function resolveMainWt() {
-  let mainWt;
-  try {
-    mainWt = getMainWorktreePath();
-  } catch (e) {
-    console.error(`taskery plan 실패: ${e.message}`);
-    process.exit(1);
-  }
-  if (!readManifest(path.join(mainWt, MANIFEST_NAME))) {
-    console.error(`${MANIFEST_NAME} 없음 — 'npx @angar2/taskery init' 먼저 실행 필요.`);
-    process.exit(1);
-  }
-  return mainWt;
+async function planInit(ctx, a) {
+  const main = ctx.main;
+  L.requireInstalled(main);
+  const slug = a.slug;
+  if (!slug) L.fail('plan-init: <slug>를 넣는다 — 영문 kebab-case (예: mvp, compare-products).');
+  if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(slug)) L.fail(`plan-init: '${slug}'는 영문 kebab-case가 아니다 (소문자·숫자·하이픈).`);
+  const dir = path.join(main, '.taskery', 'plans');
+  return L.withLock(main, 'number', async () => {
+    const names = fs.existsSync(dir) ? fs.readdirSync(dir) : [];
+    const same = names.find((n) => n.replace(/^\d{3}_/, '') === slug);
+    if (same) L.fail(`plan-init: 같은 slug의 플랜이 이미 있다: ${same}. 다른 slug를 쓴다.`);
+    let max = 0;
+    for (const n of names) {
+      const m = n.match(/^(\d{3})_/);
+      if (m) max = Math.max(max, parseInt(m[1], 10));
+    }
+    const plan = `${L.pad(max + 1)}_${slug}`;
+    const file = path.join(dir, plan, 'PLAN.md');
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    fs.writeFileSync(file, `# ${a.title || slug}\n\n## 목표\n\n## 태스크 목록\n`);
+    return `플랜 ${plan}을 만들었다: ${file}\n다음: PLAN.md에 목표와 태스크 목록(한 줄 형식 '<항목 번호>. <한 줄 설명> — 선행: <항목 번호들 또는 없음>')을 적는다.`;
+  });
 }
 
-function runInit(argv) {
-  const positional = [];
-  let force = false;
-  for (const a of argv) {
-    if (a === '--force') force = true;
-    else if (!a.startsWith('--')) positional.push(a);
+// PLAN.md `## 태스크 목록`을 읽는다. 한 줄 형식 `<항목 번호>. <한 줄 설명> — 선행: <항목 번호들 또는 없음>`,
+// 줄 끝의 `(TASK-012)`는 prepare-task --item이 붙인 연결 표시다(마지막 것이 가장 최근 연결). 읽지 못한 줄은 따로 돌려준다
+function parsePlanItems(text) {
+  const items = [];
+  const unreadable = [];
+  const body = L.section(text, '태스크 목록');
+  if (body == null) return { items, unreadable, noList: true };
+  for (const raw of body.replace(/<!--[\s\S]*?-->/g, '').split('\n')) {
+    const line = raw.trim();
+    if (!line) continue;
+    const tasks = [];
+    let rest = line;
+    for (let m; (m = rest.match(/\s*\(TASK-(\d+)\)\s*$/)); ) {
+      tasks.unshift(parseInt(m[1], 10));
+      rest = rest.slice(0, m.index);
+    }
+    const m = rest.match(/^(\d+)\.\s+(.+?)\s+[—–-]\s+선행\s*:\s*(.+)$/);
+    const pre = m && m[3].trim();
+    if (!m || !(pre === '없음' || /^\d+(\s*[,·]\s*\d+)*$/.test(pre))) {
+      unreadable.push(line);
+      continue;
+    }
+    items.push({
+      num: parseInt(m[1], 10),
+      desc: m[2].trim(),
+      pre: pre === '없음' ? [] : pre.split(/\s*[,·]\s*/).map((n) => parseInt(n, 10)),
+      tasks,
+      line,
+    });
   }
-  const slug = positional[0];
-
-  if (!slug) {
-    console.error('사용법: npx @angar2/taskery plan-init <slug> [--force]');
-    console.error('예: npx @angar2/taskery plan-init compare-products');
-    process.exit(1);
-  }
-  if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(slug)) {
-    console.error(`slug은 영어 kebab-case (받음: ${slug})`);
-    process.exit(1);
-  }
-
-  const mainWt = resolveMainWt();
-
-  let result;
-  try {
-    result = initPlan(mainWt, slug, { force });
-  } catch (e) {
-    console.error(`taskery plan-init 실패: ${e.message}`);
-    process.exit(1);
-  }
-
-  if (result.gated) {
-    // legacy 폴더 잔존 — 사용자 confirm 전 생성 금지. 스킬이 경고 + confirm 후 --force 재호출.
-    console.error(
-      `plans/에 NNN 채번이 아닌 폴더(${result.legacyDirs.join(', ')})가 있어 활성 plan이 갈릴 위험. ` +
-        `수동 이전 후 진행하거나, 그대로 진행하려면 --force 추가.`,
-    );
-    process.stdout.write(JSON.stringify({ gated: true, legacyDirs: result.legacyDirs }) + '\n');
-    process.exit(2);
-  }
-
-  process.stdout.write(
-    JSON.stringify({
-      plan: result.plan,
-      nnn: result.nnn,
-      planDir: result.planDir,
-      tasksDir: result.tasksDir,
-    }) + '\n',
-  );
+  return { items, unreadable, noList: false };
 }
 
-function runSwitch(argv) {
-  const plan = argv.filter((a) => !a.startsWith('--'))[0];
-  if (!plan) {
-    console.error('사용법: npx @angar2/taskery plan-switch <NNN_slug>');
-    console.error('예: npx @angar2/taskery plan-switch 002_compare-products');
-    process.exit(1);
-  }
-
-  const mainWt = resolveMainWt();
-
-  let result;
-  try {
-    result = setActivePlan(mainWt, plan);
-  } catch (e) {
-    console.error(`taskery plan-switch 실패: ${e.message}`);
-    process.exit(1);
-  }
-
-  process.stdout.write(JSON.stringify({ plan: result.plan, planDir: result.planDir }) + '\n');
-}
-
-function main() {
-  const [op, ...rest] = process.argv.slice(2);
-  if (op === 'init') return runInit(rest);
-  if (op === 'switch') return runSwitch(rest);
-  console.error(`taskery plan: 알 수 없는 op '${op}' (init | switch)`);
-  process.exit(1);
-}
-
-main();
+module.exports = { planInit, parsePlanItems };
