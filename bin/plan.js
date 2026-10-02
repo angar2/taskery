@@ -9,7 +9,7 @@ async function planInit(ctx, a) {
   const slug = a.slug;
   if (!slug) L.fail('plan-init: <slug>를 넣는다 — 영문 kebab-case (예: mvp, compare-products).');
   if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(slug)) L.fail(`plan-init: '${slug}'는 영문 kebab-case가 아니다 (소문자·숫자·하이픈).`);
-  const dir = path.join(main, '.project', 'plans');
+  const dir = path.join(main, '.taskery', 'plans');
   return L.withLock(main, 'number', async () => {
     const names = fs.existsSync(dir) ? fs.readdirSync(dir) : [];
     const same = names.find((n) => n.replace(/^\d{3}_/, '') === slug);

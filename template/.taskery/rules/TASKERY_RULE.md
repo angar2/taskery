@@ -45,7 +45,7 @@
 | `backlog-get [BL-번호]` | 번호를 주면 그 항목 전문, 없으면 열린 항목 목록 |
 | `backlog-mark <BL-번호> <TASK>` | `--from` 없이 연 태스크를 백로그 항목에 연결 |
 | `orca-dispatch-task <TASK> --agent claude\|codex --model <모델> [--note "<한 줄>"]` | 오케스트레이션이 Orca 새 탭에 태스크 세션을 띄우고 첫 지시문을 보낸다(Orca 전용). 탭 handle은 태스크 문서 메타 `tab`에 남는다 |
-| `report-task <TASK> "<한 줄>"` | 태스크 세션이 오케스트레이션에 보고 한 줄을 남긴다(`.project/reports.log`) |
+| `report-task <TASK> "<한 줄>"` | 태스크 세션이 오케스트레이션에 보고 한 줄을 남긴다(`.taskery/reports.log`) |
 | `wait-reports` | 오케스트레이션이 백그라운드 셸로 걸어 두는 대기. 안 읽은 보고가 생기면 출력하고 끝나고, 보고 없이 10분이면 오래 조용한 태스크 탭 목록과 함께 끝난다 (CLI만) |
 | `init` · `update` · `add <claude\|codex>` | 설치 · 갱신 · 플랫폼 추가 (CLI만) |
 
@@ -63,14 +63,15 @@
 - 부모 브랜치 = 본진(리포 원래 폴더)이 서 있는 브랜치다. 본진은 다른 태스크가 병합받는 자리라 부모 브랜치에 그대로 둔다.
 - 생략은 사용자가 명시할 때만: `--no-worktree`(본진에서 브랜치만), `--no-branch`(본진의 현재 브랜치에서). 생략 태스크가 열려 있는 동안 본진이 부모 브랜치를 떠나 있거나 커밋 안 된 코드를 가지면, 다른 태스크의 `prepare-task`·`merge-task`가 원인 태스크를 알리고 멈춘다.
 - 워크트리를 지우는 일은 태스크를 연 주인이 본진에서 `close-task`로 한다. 정리가 막혀 남은 것은 `prune`으로 정리한다.
-- 새 워크트리 준비: `.taskery-manifest.json`의 `buildOutput`에 등록된 빌드 결과 폴더(예: Rust `target`)를 본진에서 APFS 복제(`cp -Rc`)로 심고, 워크트리마다 자기 폴더로 빌드한다. 등록이 없거나 APFS가 아니면 건너뛴다. `package-lock.json`이 있으면 `npm ci`를 한다. 등록은 `init`이 스택을 보고 적고(Xcode 프로젝트는 `DerivedData` — 코드 테스트 명령에 `-derivedDataPath DerivedData`를 붙인다), 바꿀 때는 매니페스트를 고친다. 등록한 폴더는 `.git/info/exclude`에 들어가 코드로 커밋되지 않는다. 끝난 태스크를 `close-task`로 닫을 때 그 워크트리의 빌드 결과 폴더를 본진으로 복제해 다음 태스크의 씨앗으로 쓴다.
+- 새 워크트리 준비: `.taskery/manifest.json`의 `buildOutput`에 등록된 빌드 결과 폴더(예: Rust `target`)를 본진에서 APFS 복제(`cp -Rc`)로 심고, 워크트리마다 자기 폴더로 빌드한다. 등록이 없거나 APFS가 아니면 건너뛴다. `package-lock.json`이 있으면 `npm ci`를 한다. 등록은 `init`이 스택을 보고 적고(Xcode 프로젝트는 `DerivedData` — 코드 테스트 명령에 `-derivedDataPath DerivedData`를 붙인다), 바꿀 때는 매니페스트를 고친다. 등록한 폴더는 `.git/info/exclude`에 들어가 코드로 커밋되지 않는다. 끝난 태스크를 `close-task`로 닫을 때 그 워크트리의 빌드 결과 폴더를 본진으로 복제해 다음 태스크의 씨앗으로 쓴다.
 
 ## 6. taskery 파일 — 모두 git 밖, 본진에 한 벌
 
-`.project/`·`AGENTS.md`·`CLAUDE.md`·`.claude/`·`.codex/`·`.mcp.json`·`.taskery-manifest.json`은 git이 추적하지 않는다(`.git/info/exclude`). 워크트리에는 `AGENTS.md`·`CLAUDE.md`가 복사되고 나머지는 본진을 가리키는 링크로 놓인다 — 어느 워크트리에서 고쳐도 본진의 한 벌이 바뀐다. 커밋 대상은 코드뿐이다.
+`.taskery/`·`AGENTS.md`·`CLAUDE.md`·`.claude/`·`.codex/`·`.mcp.json`은 git이 추적하지 않는다(`.git/info/exclude`). 워크트리에는 `AGENTS.md`·`CLAUDE.md`가 복사되고 나머지는 본진을 가리키는 링크로 놓인다 — 어느 워크트리에서 고쳐도 본진의 한 벌이 바뀐다. 커밋 대상은 코드뿐이다.
 
 ```
-.project/
+.taskery/
+├─ manifest.json 설치 정보, 코드 테스트 명령, 빌드 결과 폴더 등록
 ├─ rules/        TASKERY_RULE · GIT_RULE · TASK_DOC_RULE · MOCKUP_RULE · CHANGELOG_RULE · TEST_RULE.local · DEV_RULE.local
 ├─ spec/         제품 문서 — 내용 있는 것만
 ├─ plans/<NNN>_<slug>/
@@ -96,7 +97,7 @@
 
 ## 8. 로컬 규칙
 
-- 이 리포만의 규칙은 `.project/rules/<문서>.local.md`에 적는다. `init`이 `TEST_RULE.local.md`·`DEV_RULE.local.md` 틀을 만들고, `update`는 `*.local.md`를 건드리지 않는다.
+- 이 리포만의 규칙은 `.taskery/rules/<문서>.local.md`에 적는다. `init`이 `TEST_RULE.local.md`·`DEV_RULE.local.md` 틀을 만들고, `update`는 `*.local.md`를 건드리지 않는다.
 - `TEST_RULE.local.md` — 이 프로젝트의 앱 실행 방법(검수 서버·터널 포함)과 테스트 방식.
 - `DEV_RULE.local.md` — 이 프로젝트의 구현 규칙.
 - 코드·테스트 방식에 관한 새 규칙은 AI가 문장을 제안하고 사용자가 승인한 뒤 넣는다.

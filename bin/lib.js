@@ -4,12 +4,12 @@ const path = require('path');
 const crypto = require('crypto');
 const { execFileSync, spawn } = require('child_process');
 
-const MANIFEST_NAME = '.taskery-manifest.json';
+const MANIFEST_NAME = path.join('.taskery', 'manifest.json');
 // taskery가 설치하고 쓰는 파일 — 모두 git 밖(.git/info/exclude 이름 규칙, §3-4)
-const EXCLUDE_NAMES = ['.project', '.claude', '.codex', '.mcp.json', '.taskery-manifest.json', 'AGENTS.md', 'CLAUDE.md'];
+const EXCLUDE_NAMES = ['.taskery', '.claude', '.codex', '.mcp.json', 'AGENTS.md', 'CLAUDE.md'];
 // 워크트리에 심는 방식 — 지침 파일은 복사, 나머지는 본진을 가리키는 링크(§3-4)
 const PLANT_COPY = ['AGENTS.md', 'CLAUDE.md'];
-const PLANT_LINK = ['.project', '.claude', '.codex', '.mcp.json'];
+const PLANT_LINK = ['.taskery', '.claude', '.codex', '.mcp.json'];
 
 const TYPES = ['feature', 'bug', 'improve', 'refactor', 'docs', 'chore'];
 const SIZES = ['small', 'medium', 'large'];
@@ -87,7 +87,7 @@ function branchExists(dir, branch) {
 }
 
 // 코드 지문 = 작업 트리 전체(추적 안 되는 파일 포함, 무시 파일 제외)의 트리 해시. 커밋하지 않는다.
-// 임시 인덱스는 본진 .project/.state/ 아래에 둔다 — Codex 샌드박스에서도 쓰기가 허용된 곳이다(--add-dir <본진>/.project)
+// 임시 인덱스는 본진 .taskery/.state/ 아래에 둔다 — Codex 샌드박스에서도 쓰기가 허용된 곳이다(--add-dir <본진>/.taskery)
 function fingerprint(dir) {
   const index = git(dir, ['rev-parse', '--path-format=absolute', '--git-path', 'index']);
   const tmpDir = stateDir(findMain(dir));
@@ -147,6 +147,24 @@ function tail(text, lines) {
 
 // ─── 매니페스트 · 설치 확인 ───────────────────────────
 
+// 0.x 설치본의 매니페스트 이름(리포 맨 위). 1.0은 이 이름을 쓰지 않으니, 있으면 0.x 설치본이다
+const OLD_MANIFEST_NAME = '.taskery-manifest.json';
+
+// 리포 맨 위에 0.x 매니페스트가 있으면 멈춘다 — update·init 공통(§3-1)
+function checkLegacyInstall(main) {
+  const old = path.join(main, OLD_MANIFEST_NAME);
+  if (!fs.existsSync(old)) return;
+  let version = '0.x';
+  try {
+    version = JSON.parse(fs.readFileSync(old, 'utf8')).version || '0.x';
+  } catch (e) {
+    // 깨진 파일이어도 0.x 설치본으로 취급한다
+  }
+  fail(
+    `update: 이 리포는 taskery ${version}로 설치돼 있어 update로 옮길 수 없다(1.0은 0.x와 호환되지 않는다). 옛 taskery 파일(AGENTS.md·CLAUDE.md·.claude/·.codex/·.agents/·.project/·.mcp.json·.taskery-manifest.json)을 리포 밖으로 옮긴 뒤 'npx @angar2/taskery init'으로 새로 설치한다. 필요한 옛 문서(백로그·제품 문서)는 옮겨 둔 곳에서 새 .project/로 가져온다.`,
+  );
+}
+
 function readManifest(main) {
   const file = path.join(main, MANIFEST_NAME);
   if (!fs.existsSync(file)) return null;
@@ -154,7 +172,9 @@ function readManifest(main) {
 }
 
 function writeManifest(main, m) {
-  fs.writeFileSync(path.join(main, MANIFEST_NAME), JSON.stringify(m, null, 2) + '\n');
+  const file = path.join(main, MANIFEST_NAME);
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(file, JSON.stringify(m, null, 2) + '\n');
 }
 
 function requireInstalled(main) {
@@ -170,7 +190,7 @@ function getPackageVersion() {
 // ─── .state · 잠금 ──────────────────────────────────
 
 function stateDir(main) {
-  return path.join(main, '.project', '.state');
+  return path.join(main, '.taskery', '.state');
 }
 
 function pad(num) {
@@ -218,7 +238,7 @@ function listStates(main) {
     .sort((a, b) => a.num - b.num);
 }
 
-// 잠금 — .project/.state/<name>.lock. wait=true면 풀릴 때까지 기다린다
+// 잠금 — .taskery/.state/<name>.lock. wait=true면 풀릴 때까지 기다린다
 async function withLock(main, name, fn) {
   const lockfile = require('proper-lockfile');
   const file = path.join(stateDir(main), `${name}.lock`);
@@ -284,7 +304,7 @@ function parseGitRuleTable(text) {
 }
 
 function readGitRule(main) {
-  const file = path.join(main, '.project', 'rules', 'GIT_RULE.md');
+  const file = path.join(main, '.taskery', 'rules', 'GIT_RULE.md');
   const rule = fs.existsSync(file) ? parseGitRuleTable(fs.readFileSync(file, 'utf8')) : {};
   const merged = { ...GIT_RULE_DEFAULTS, ...rule };
   if (!['no-ff', 'ff-only'].includes(merged.merge)) {
@@ -599,6 +619,8 @@ module.exports = {
   inOrca,
   runShell,
   tail,
+  OLD_MANIFEST_NAME,
+  checkLegacyInstall,
   readManifest,
   writeManifest,
   requireInstalled,

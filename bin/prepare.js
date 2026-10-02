@@ -36,7 +36,7 @@ function validate(a, rule) {
 }
 
 function resolvePlan(main, plan) {
-  const dir = path.join(main, '.project', 'plans');
+  const dir = path.join(main, '.taskery', 'plans');
   const plans = fs.existsSync(dir)
     ? fs.readdirSync(dir).filter((n) => fs.existsSync(path.join(dir, n, 'PLAN.md')))
     : [];
@@ -220,7 +220,7 @@ async function installPackages(dir) {
 
 // PLAN.md 목록 항목 줄 끝에 태스크 번호를 붙인다(`--item`)
 function linkItem(main, plan, item, label) {
-  const file = path.join(main, '.project', 'plans', plan, 'PLAN.md');
+  const file = path.join(main, '.taskery', 'plans', plan, 'PLAN.md');
   const lines = fs.readFileSync(file, 'utf8').split('\n');
   const idx = lines.findIndex((l) => new RegExp(`^\\s*${item}\\.\\s`).test(l));
   if (idx === -1) L.fail(`prepare-task: ${plan}/PLAN.md에 항목 ${item}이 없다. 목록 형식은 '${item}. <한 줄 설명> — 선행: <항목 번호들 또는 없음>'이다.`);
@@ -266,7 +266,7 @@ async function prepareTask(ctx, a) {
     L.ensureExclude(main, manifest.buildOutput);
     if (worktree) plant(main, worktree);
 
-    const doc = path.join('.project', 'plans', plan, 'tasks', `${nnn}_${a.slug}.md`);
+    const doc = path.join('.taskery', 'plans', plan, 'tasks', `${nnn}_${a.slug}.md`);
     const st = {
       num,
       title: String(a.name).trim(),

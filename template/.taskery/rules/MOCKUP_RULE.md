@@ -4,7 +4,7 @@
 
 ## 위치
 
-- 태스크 문서 옆 `mockup/` 폴더에 `<태스크 문서 이름>-mockup.html`로 둔다. 예: `.project/plans/001_mvp/tasks/mockup/012_settings-save-mockup.html`. 폴더는 처음 쓸 때 만든다.
+- 태스크 문서 옆 `mockup/` 폴더에 `<태스크 문서 이름>-mockup.html`로 둔다. 예: `.taskery/plans/001_mvp/tasks/mockup/012_settings-save-mockup.html`. 폴더는 처음 쓸 때 만든다.
 - 태스크 하나에 목업 파일 하나다. 화면이 여럿이면 한 파일 안에서 절로 나눈다.
 
 ## 형식

@@ -38,14 +38,14 @@ test('번호 잠금 — prepare-task·plan-init·backlog-add(·--from)를 한꺼
   assert.deepStrictEqual(taskNums, ['001', '002', '003', '004', '005']);
   const branches = sb.git(['branch', '--format=%(refname:short)']).split('\n').filter((b) => b.startsWith('feature/'));
   assert.strictEqual(branches.length, 5);
-  const plans = fs.readdirSync(path.join(sb.repo, '.project', 'plans')).sort();
+  const plans = fs.readdirSync(path.join(sb.repo, '.taskery', 'plans')).sort();
   assert.deepStrictEqual(plans.map((p) => p.slice(0, 4)), ['001_', '002_', '003_', '004_']);
-  const backlog = sb.read('.project/BACKLOG.md');
+  const backlog = sb.read('.taskery/BACKLOG.md');
   const bls = [...backlog.matchAll(/^### BL-(\d+) /gm)].map((m) => Number(m[1])).sort((a, b) => a - b);
   assert.deepStrictEqual(bls, [1, 2, 3, 4, 5, 6, 7], '덮어써 잃은 항목 없음');
   assert.match(backlog, /### BL-1 \[bug\] 먼저 있던 항목\n- 상태: 진행\n- 등록: .+\n- 현상: <현상>\n- 연결 태스크: TASK-\d{3}/);
   // 워크트리마다 taskery 링크가 제대로 심겼다
-  for (let n = 1; n <= 5; n++) assert.ok(fs.lstatSync(path.join(sb.state(n).worktree, '.project')).isSymbolicLink());
+  for (let n = 1; n <= 5; n++) assert.ok(fs.lstatSync(path.join(sb.state(n).worktree, '.taskery')).isSymbolicLink());
 });
 
 test('병합 잠금 — 세 태스크의 merge-task를 동시에 불러도 차례로 rebase·재테스트·병합하고 섞이지 않는다', async (t) => {

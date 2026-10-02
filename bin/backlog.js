@@ -1,4 +1,4 @@
-// backlog-add · backlog-get · backlog-mark — 프로젝트 백로그 하나(.project/BACKLOG.md, 부록 B)를 명령이 다룬다(§5-3, §6-3)
+// backlog-add · backlog-get · backlog-mark — 프로젝트 백로그 하나(.taskery/BACKLOG.md, 부록 B)를 명령이 다룬다(§5-3, §6-3)
 // BACKLOG.md 쓰기는 모두 번호 잠금 안에서 한다 — prepare-task --from·close-task도 같은 잠금 안에서 아래 텍스트 함수를 부른다
 const fs = require('fs');
 const path = require('path');
@@ -9,14 +9,14 @@ const DONE = '## 끝난 항목';
 const NONE = '–';
 
 function backlogFile(main) {
-  return path.join(main, '.project', 'BACKLOG.md');
+  return path.join(main, '.taskery', 'BACKLOG.md');
 }
 
 // BACKLOG.md가 없으면 설치 직후 모습(부록 B)으로 만든다
 function readBacklog(main) {
   const file = backlogFile(main);
   if (!fs.existsSync(file)) {
-    const tpl = fs.readFileSync(path.resolve(__dirname, '..', 'template', '.project', 'BACKLOG.md'), 'utf8');
+    const tpl = fs.readFileSync(path.resolve(__dirname, '..', 'template', '.taskery', 'BACKLOG.md'), 'utf8');
     fs.mkdirSync(path.dirname(file), { recursive: true });
     fs.writeFileSync(file, tpl);
   }

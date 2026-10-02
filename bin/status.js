@@ -25,7 +25,7 @@ function openTasks(main, open) {
 
 // 플랜 하나의 시작할 수 있는 항목 — 끝나지 않았고, 열린 태스크가 없고, 선행 항목이 모두 끝난 것(§5-3)
 function planLines(main, plan, byNum) {
-  const { items, unreadable, noList } = parsePlanItems(fs.readFileSync(path.join(main, '.project', 'plans', plan, 'PLAN.md'), 'utf8'));
+  const { items, unreadable, noList } = parsePlanItems(fs.readFileSync(path.join(main, '.taskery', 'plans', plan, 'PLAN.md'), 'utf8'));
   if (noList) return [`- ${plan}: \`## 태스크 목록\`이 없다`];
   const index = new Map(items.map((it) => [it.num, it]));
   // 항목이 끝났다 = 가장 최근 연결된 태스크가 끝난 태스크(마무리 기록이 있고 닫힘)
@@ -56,7 +56,7 @@ async function status(ctx) {
     main,
     states.filter((s) => !s.closed),
   );
-  const dir = path.join(main, '.project', 'plans');
+  const dir = path.join(main, '.taskery', 'plans');
   const plans = fs.existsSync(dir) ? fs.readdirSync(dir).filter((n) => fs.existsSync(path.join(dir, n, 'PLAN.md'))).sort() : [];
   if (plans.length) {
     const byNum = new Map(states.map((s) => [s.num, s]));

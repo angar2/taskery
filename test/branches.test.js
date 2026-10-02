@@ -28,7 +28,7 @@ test('충돌 — merge-task가 rebase 상태를 남기고 멈춤 → 파일 고�
   let r = sb.tk(['merge-task', '2']);
   assert.notStrictEqual(r.code, 0);
   assert.match(r.all, /충돌이 났다[\s\S]*- src\/app\.txt/);
-  assert.ok(fs.existsSync(path.join(sb.repo, '.project', '.state', 'merge.lock')), '잠금 파일은 남아도');
+  assert.ok(fs.existsSync(path.join(sb.repo, '.taskery', '.state', 'merge.lock')), '잠금 파일은 남아도');
   // 충돌 표시가 남아 있으면 다시 멈춘다
   r = sb.tk(['merge-task', '2']);
   assert.match(r.all, /충돌이 났다/);
@@ -108,7 +108,7 @@ test('포기 — 병합 없이 닫으면 워크트리는 지우고 병합 안 �
   assert.match(out, /병합되지 않아 남겼다/);
   assert.ok(!fs.existsSync(a.worktree));
   assert.ok(sb.git(['branch', '--list', a.branch]));
-  assert.strictEqual(fs.readdirSync(path.join(sb.repo, '.project')).includes('changelog'), false, '포기는 변경 기록 없음');
+  assert.strictEqual(fs.readdirSync(path.join(sb.repo, '.taskery')).includes('changelog'), false, '포기는 변경 기록 없음');
 
   sb.ok(['prepare-task', '남김', '--slug', 'keep', '--type', 'feature', '--size', 'small', '--dev', 'claude']);
   const b = sb.state(2);
@@ -123,10 +123,10 @@ test('GIT_RULE.md 표 — ff-only 병합, 작업자 칸 없는 브랜치 이름'
   const sb = installedRepo();
   t.after(() => sb.cleanup());
   const rule = sb
-    .read('.project/rules/GIT_RULE.md')
+    .read('.taskery/rules/GIT_RULE.md')
     .replace('| 브랜치 이름 | `{type}/{dev}_TASK-{num}_{slug}` |', '| 브랜치 이름 | `task/{num}-{slug}` |')
     .replace('| 병합 방식 | `no-ff` |', '| 병합 방식 | `ff-only` |');
-  sb.write('.project/rules/GIT_RULE.md', rule);
+  sb.write('.taskery/rules/GIT_RULE.md', rule);
   sb.ok(['prepare-task', '빠른', '--slug', 'fast', '--type', 'feature', '--size', 'small']);
   const st = sb.state(1);
   assert.strictEqual(st.branch, 'task/001-fast');

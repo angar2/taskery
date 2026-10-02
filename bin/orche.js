@@ -12,7 +12,7 @@ const POLL_MS = Math.min(1000, WAIT_MS);
 const SUBMIT_WAIT_SEC = 30;
 
 function reportsFile(main) {
-  return path.join(main, '.project', 'reports.log');
+  return path.join(main, '.taskery', 'reports.log');
 }
 
 function readPosFile(main) {
@@ -48,7 +48,7 @@ function shq(v) {
 // 에이전트 실행 명령 — 권한·승인 옵션은 붙이지 않는다(사용자 설정 그대로, I5)
 function agentCommand(main, agent, model) {
   if (agent === 'claude') return `claude --model ${shq(model)}`;
-  return `codex -m ${shq(model)} --add-dir ${shq(path.join(main, '.project'))}`;
+  return `codex -m ${shq(model)} --add-dir ${shq(path.join(main, '.taskery'))}`;
 }
 
 // 단계 표에서 비어 있는 첫 단계의 스킬 — 새 태스크면 task-plan

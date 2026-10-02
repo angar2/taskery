@@ -19,9 +19,9 @@ function installPlan(platforms, { agnostic = true } = {}) {
   const plan = [];
   if (agnostic) {
     plan.push({ src: 'AGENTS.md', dst: 'AGENTS.md', kind: 'agents' });
-    for (const r of RULES) plan.push({ src: `.project/rules/${r}`, dst: `.project/rules/${r}`, kind: 'managed' });
-    for (const r of LOCAL_RULES) plan.push({ src: `.project/rules/${r}`, dst: `.project/rules/${r}`, kind: 'once' });
-    plan.push({ src: '.project/BACKLOG.md', dst: '.project/BACKLOG.md', kind: 'once' });
+    for (const r of RULES) plan.push({ src: `.taskery/rules/${r}`, dst: `.taskery/rules/${r}`, kind: 'managed' });
+    for (const r of LOCAL_RULES) plan.push({ src: `.taskery/rules/${r}`, dst: `.taskery/rules/${r}`, kind: 'once' });
+    plan.push({ src: '.taskery/BACKLOG.md', dst: '.taskery/BACKLOG.md', kind: 'once' });
   }
   for (const p of platforms) {
     if (p === 'claude') plan.push({ src: 'CLAUDE.md', dst: 'CLAUDE.md', kind: 'managed' });
@@ -64,7 +64,7 @@ function readJson(file, fallback) {
   }
 }
 
-// 플랫폼 설정 — Claude: 링크 너머 .project 쓰기 허용 + MCP 등록 / Codex: MCP 등록(자동 승인)
+// 플랫폼 설정 — Claude: 링크 너머 .taskery 쓰기 허용 + MCP 등록 / Codex: MCP 등록(자동 승인)
 function writeConfigs(main, platforms) {
   const notes = [];
   const mcpEntry = { command: 'npx', args: ['-y', '@angar2/taskery', 'mcp'] };
@@ -73,12 +73,12 @@ function writeConfigs(main, platforms) {
     const s = readJson(sFile, {});
     s.permissions = s.permissions || {};
     const dirs = s.permissions.additionalDirectories || [];
-    const want = path.join(main, '.project');
+    const want = path.join(main, '.taskery');
     if (!dirs.includes(want)) {
       s.permissions.additionalDirectories = [...dirs, want];
       fs.mkdirSync(path.dirname(sFile), { recursive: true });
       fs.writeFileSync(sFile, JSON.stringify(s, null, 2) + '\n');
-      notes.push('.claude/settings.json — 링크 너머 .project 쓰기 허용(additionalDirectories)');
+      notes.push('.claude/settings.json — 링크 너머 .taskery 쓰기 허용(additionalDirectories)');
     }
     const mFile = path.join(main, '.mcp.json');
     const m = readJson(mFile, { mcpServers: {} });

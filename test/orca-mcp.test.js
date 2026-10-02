@@ -45,7 +45,7 @@ test('Orca 안 — orca worktree create --base-branch <부모> 후 브랜치 이
   assert.strictEqual(st.worktree, path.join(sb.root, 'orca-wt', 'TASK-001-in-orca'));
   assert.strictEqual(sb.git(['symbolic-ref', '--short', 'HEAD'], st.worktree), 'feature/claude_TASK-001_in-orca');
   assert.match(fs.readFileSync(orca.log, 'utf8'), new RegExp(`worktree create --repo path:${sb.repo} --name TASK-001-in-orca --base-branch dev --json`));
-  assert.ok(fs.lstatSync(path.join(st.worktree, '.project')).isSymbolicLink());
+  assert.ok(fs.lstatSync(path.join(st.worktree, '.taskery')).isSymbolicLink());
   assert.match(sb.read(st.doc), /by=orca/);
   fillDoc(sb, 1);
   sb.ok(['approve-plan', '1']);
@@ -155,5 +155,5 @@ test('MCP — 정의표의 명령이 같은 이름의 도구로 뜨고, 같은 �
   assert.match(r.result.content[0].text, /열린 태스크 없음/);
   r = await s.request('tools/call', { name: 'report-task', arguments: { task: 'TASK-001', text: '병합 완료' } });
   assert.ok(!r.result.isError, r.result.content[0].text);
-  assert.match(sb.read('.project/reports.log'), /TASK-001 병합 완료\n$/);
+  assert.match(sb.read('.taskery/reports.log'), /TASK-001 병합 완료\n$/);
 });
