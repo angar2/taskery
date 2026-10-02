@@ -1,7 +1,7 @@
 {
   "name": "@angar2/taskery",
   "version": "0.8.1",
-  "description": "Lightweight task system for Claude Code & Codex — 태스크마다 브랜치·워크트리, 스킬 10종 + 명령(CLI·MCP), 훅 없음",
+  "description": "AI 코딩 에이전트(Claude Code·Codex)에게 일을 태스크 단위로 맡겨 기획·개발·테스트·병합까지 진행하게 하는 작업 체계",
   "bin": {
     "taskery": "bin/taskery.js",
     "create-taskery": "bin/create.js"
