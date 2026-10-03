@@ -11,7 +11,7 @@ const { orcaDispatchTask, reportTask, waitReports } = require('./orche');
 
 // 인자 종류: positional(순서대로) · string(--이름 값) · bool(--이름) · list(--이름 값 값 …)
 const TASK = { name: 'task', positional: true, desc: '태스크 번호 (TASK-012 또는 12)' };
-const RANGE = { name: 'range', desc: '사용자가 새로 말한 진행 범위 — 태스크 문서의 범위 메모만 바꾼다' };
+const RANGE = { name: 'range', desc: '사용자가 새로 말한 진행 범위 — 태스크 문서 헤더 표의 범위 칸만 바꾼다' };
 
 const COMMANDS = [
   {
@@ -50,7 +50,7 @@ const COMMANDS = [
   },
   {
     name: 'approve-plan',
-    summary: '태스크 문서(목표·만질 파일·완료 기준)를 검사하고 계획 끝을 기록한다',
+    summary: '태스크 문서(요구사항·개발 계획·완료 기준)를 검사하고 계획 끝을 기록한다',
     args: [TASK, RANGE],
     run: approvePlan,
   },
@@ -113,7 +113,7 @@ const COMMANDS = [
   },
   {
     name: 'orca-dispatch-task',
-    summary: 'Orca 새 탭에 태스크 세션을 띄우고 첫 지시문을 보낸다(Orca 전용). 탭 handle은 태스크 문서 메타에 기록한다',
+    summary: 'Orca 새 탭에 태스크 세션을 띄우고 첫 지시문을 보낸다(Orca 전용). 탭 handle은 .state에 기록한다',
     args: [
       TASK,
       { name: 'agent', desc: 'claude · codex (필수)' },
@@ -137,7 +137,7 @@ const COMMANDS = [
   },
 ];
 
-// 명령 실행 공통 — 본진을 찾고, --range가 있으면 범위 메모를 먼저 갱신한다
+// 명령 실행 공통 — 본진을 찾고, --range가 있으면 범위를 먼저 갱신한다
 // ask는 묻는 명령(prune)에 CLI가 넘기는 질문 함수다. MCP에는 없다
 async function execute(cmd, args, { cwd = process.cwd(), main = null, ask = null } = {}) {
   const ctx = { cwd, main: main || L.findMain(cwd), ask };

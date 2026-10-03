@@ -293,7 +293,10 @@ async function prepareTask(ctx, a) {
     if (a.item != null) st.item = parseInt(a.item, 10);
     const fromNotes = fromNums.length ? B.linkTasks(main, fromNums, L.taskLabel(num)) : [];
     if (fromNums.length) st.from = fromNums.map((n) => `BL-${n}`);
-    if (a.item != null || fromNums.length) L.writeState(main, st);
+    if (a.item != null || fromNums.length) {
+      L.writeState(main, st);
+      L.syncDoc(main, st);
+    }
 
     const out = [
       `${L.taskLabel(num)} 「${st.title}」을 열었다.`,

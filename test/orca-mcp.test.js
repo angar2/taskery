@@ -46,7 +46,8 @@ test('Orca 안 — orca worktree create --base-branch <부모> 후 브랜치 이
   assert.strictEqual(sb.git(['symbolic-ref', '--short', 'HEAD'], st.worktree), 'feature/claude_TASK-001_in-orca');
   assert.match(fs.readFileSync(orca.log, 'utf8'), new RegExp(`worktree create --repo path:${sb.repo} --name TASK-001-in-orca --base-branch dev --json`));
   assert.ok(fs.lstatSync(path.join(st.worktree, '.taskery')).isSymbolicLink());
-  assert.match(sb.read(st.doc), /by=orca/);
+  assert.match(sb.read(st.doc), /\| feature\/claude_TASK-001_in-orca \| 열림 \|/);
+  assert.doesNotMatch(sb.read(st.doc), /<!-- taskery:/);
   fillDoc(sb, 1);
   sb.ok(['approve-plan', '1']);
   fs.writeFileSync(path.join(st.worktree, 'src/app.txt'), 'orca\n');

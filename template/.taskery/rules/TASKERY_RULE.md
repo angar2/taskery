@@ -44,12 +44,12 @@
 | `backlog-add "<제목>" [--type <종류>]` | 백로그 번호를 발급해 `BACKLOG.md` 열린 항목 맨 위에 빈 양식 |
 | `backlog-get [BL-번호]` | 번호를 주면 그 항목 전문, 없으면 열린 항목 목록 |
 | `backlog-mark <BL-번호> <TASK>` | `--from` 없이 연 태스크를 백로그 항목에 연결 |
-| `orca-dispatch-task <TASK> --agent claude\|codex --model <모델> [--note "<한 줄>"]` | 오케스트레이션이 Orca 새 탭에 태스크 세션을 띄우고 첫 지시문을 보낸다(Orca 전용). 탭 handle은 태스크 문서 메타 `tab`에 남는다 |
+| `orca-dispatch-task <TASK> --agent claude\|codex --model <모델> [--note "<한 줄>"]` | 오케스트레이션이 Orca 새 탭에 태스크 세션을 띄우고 첫 지시문을 보낸다(Orca 전용). 탭 handle은 `.state`에 남는다 |
 | `report-task <TASK> "<한 줄>"` | 태스크 세션이 오케스트레이션에 보고 한 줄을 남긴다(`.taskery/reports.log`) |
 | `wait-reports` | 오케스트레이션이 백그라운드 셸로 걸어 두는 대기. 안 읽은 보고가 생기면 출력하고 끝나고, 보고 없이 10분이면 오래 조용한 태스크 탭 목록과 함께 끝난다 (CLI만) |
 | `init` · `update` · `add <claude\|codex>` | 설치 · 갱신 · 플랫폼 추가 (CLI만) |
 
-태스크 명령(`approve-plan`~`merge-task`)에 `--range "<새 범위>"`를 붙이면 태스크 문서의 범위 메모만 바뀐다.
+태스크 명령(`approve-plan`~`merge-task`)에 `--range "<새 범위>"`를 붙이면 태스크 문서 헤더 표의 범위 칸만 바뀐다.
 
 ## 4. 코드 테스트와 실사용 테스트
 

@@ -8,13 +8,21 @@ async function approvePlan(ctx, a) {
   if (st.closed) L.fail(`${L.taskLabel(num)}은 이미 닫혔다.`);
   const text = L.readDoc(main, st);
   const problems = [];
-  if (!L.goalLine(text)) problems.push('`## 목표`가 비어 있다');
+  const newDoc = L.isNewDoc(text);
+  const goal = L.goalProblem(text);
+  if (goal) problems.push(goal);
   const files = L.plannedFiles(text);
-  if (!files.length) problems.push('`## 만질 파일`(medium·large는 `## Phase`의 `- 파일:` 포함)에 파일이 없다 — 한 줄에 `- 경로` 하나씩');
+  if (L.sw(st, 'dev') && !files.length) {
+    problems.push(
+      newDoc
+        ? '`## 개발 계획`에 파일이 없다 — small은 한 줄에 `- 경로` 하나, medium·large는 Phase마다 `- 파일:`'
+        : '`## 만질 파일`(medium·large는 `## Phase`의 `- 파일:` 포함)에 파일이 없다 — 한 줄에 `- 경로` 하나씩',
+    );
+  }
   if (L.sw(st, 'test')) {
     const n = L.parseCriteria(text).length;
     if (n < 1 || n > 5) {
-      problems.push(`\`## 완료 기준\` 시나리오가 ${n}개다 — 테스트 켜짐이면 1~5개를 \`1. [AUTO] 시작 → 행동 → 기대하는 끝 상태\` 형식으로 적는다`);
+      problems.push(`\`## ${newDoc ? '테스트 계획' : '완료 기준'}\` 완료 기준이 ${n}개다 — 테스트 켜짐이면 1~5개를 \`1. [AUTO] 시작 → 행동 → 기대하는 끝 상태\` 형식으로 적는다`);
     }
   }
   if (problems.length) L.fail(`approve-plan: ${L.taskLabel(num)} 태스크 문서를 고친 뒤 다시 부른다.\n${problems.map((p) => `- ${p}`).join('\n')}\n문서: ${L.docShown(main, st)}`);
@@ -23,7 +31,8 @@ async function approvePlan(ctx, a) {
   L.syncDoc(main, st);
   const d = L.stageDurations(st);
   const next = L.sw(st, 'dev') ? '개발(task-dev)' : '테스트(task-test)';
-  return `${L.taskLabel(num)} 계획을 기록했다 — 시작·기획 ${L.minutes(d.plan)}, 만질 파일 ${files.length}개.\n다음: ${next}.`;
+  const fileNote = L.sw(st, 'dev') ? `, 계획 파일 ${files.length}개` : '';
+  return `${L.taskLabel(num)} 계획을 기록했다 — 시작·기획 ${L.minutes(d.plan)}${fileNote}.\n다음: ${next}.`;
 }
 
 // 등록된 코드 테스트를 dir에서 차례로 실행한다. 실패하면 멈춤 오류를 던진다
@@ -92,6 +101,13 @@ async function testCode(ctx, a) {
     st.testCode = { at: L.nowIso(), fingerprint: L.fingerprint(dir) };
     L.writeState(main, st);
     L.syncDoc(main, st);
+    L.appendResult(
+      main,
+      st,
+      result.none
+        ? `- 코드 테스트 · 등록된 명령 없음 · ${L.clock(st.testCode.at)}`
+        : `- 코드 테스트 · 통과 · 명령 ${result.outputs.length}개 · ${L.minutes(result.ms)} · ${L.clock(st.testCode.at)}`,
+    );
     lines.push(`${L.taskLabel(st.num)} 개발 칸을 기록했다 — 개발 ${L.minutes(L.stageDurations(st).dev)}.`);
   }
   if (!result.none) lines.push(overNotice(result.ms, cmds).trim());
@@ -112,7 +128,7 @@ async function testScenario(ctx, a) {
   if (st.closed) L.fail(`${L.taskLabel(num)}은 이미 닫혔다.`);
   const criteria = L.parseCriteria(L.readDoc(main, st));
   const n = parseInt(a.number, 10);
-  if (!criteria.length) L.fail('test-scenario: 태스크 문서 `## 완료 기준`에 시나리오가 없다.');
+  if (!criteria.length) L.fail('test-scenario: 태스크 문서 `## 테스트 계획`에 완료 기준이 없다.');
   if (!(n >= 1 && n <= criteria.length)) L.fail(`test-scenario: 시나리오 번호는 1~${criteria.length} 중 하나다 (받음: '${a.number}').`);
   const result = String(a.result || '').toLowerCase();
   if (!RESULTS.includes(result)) L.fail("test-scenario: 결과는 pass · fail · accept 중 하나다.");
