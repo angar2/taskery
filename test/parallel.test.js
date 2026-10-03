@@ -75,6 +75,8 @@ test('병합 잠금 — 세 태스크의 merge-task를 동시에 불러도 차�
   const results = await Promise.all(names.map((_, i) => run(sb, ['merge-task', String(i + 1)])));
   allOk(results);
   assert.strictEqual(results.filter((r) => /코드 테스트를 다시 돌렸다/.test(r.all)).length, 2, '먼저 들어간 하나만 재테스트 없이 병합');
+  const retested = [1, 2, 3].filter((n) => /- 코드 테스트 · 부모 새 커밋 받아 다시 통과 · /.test(sb.read(sb.state(n).doc)));
+  assert.strictEqual(retested.length, 2, '재테스트한 두 태스크 문서에 결과 줄');
 
   // dev: 병합 커밋 3개, 각 병합의 두 번째 부모 쪽에 그 태스크의 Phase 커밋 2개만 있다
   const merges = sb.git(['log', '--merges', '--format=%H', 'dev']).split('\n');

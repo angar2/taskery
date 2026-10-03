@@ -40,7 +40,7 @@ async function verifyClose(ctx, a) {
   }
   if (L.sw(st, 'test')) {
     const criteria = L.parseCriteria(L.readDoc(main, st));
-    if (!criteria.length) problems.push('`## 완료 기준`에 시나리오가 없다');
+    if (!criteria.length) problems.push('`## 테스트 계획`에 완료 기준이 없다');
     for (let i = 1; i <= criteria.length; i++) {
       const last = lastEntry(st, i);
       if (!last) problems.push(`시나리오 ${i}의 결과·증거가 없다 — test-scenario로 기록한다`);
@@ -106,11 +106,14 @@ async function commitTask(ctx, a) {
       }
     }
   }
-  const prev = (st.commit && st.commit.commits) || [];
+  const before = st.commit;
+  const prev = (before && before.commits) || [];
   const commits = [...prev, ...made];
   const noCodeChange = !L.sw(st, 'dev') || (st.noBranch ? commits.length === 0 : !hasCodeChange(main, st));
   st.commit = { at: L.nowIso(), noCodeChange, commits };
   L.writeState(main, st);
+  for (const m of made) L.appendResult(main, st, `- 커밋 · ${m.subject}`);
+  if (L.sw(st, 'dev') && noCodeChange && !before) L.appendResult(main, st, '- 커밋 · 코드 변경 없음');
 
   // 병합 확인 화면 — 커밋 목록·바뀐 파일·단계별 시간·계획 확인 뒤 추가된 파일
   let changed;
@@ -199,6 +202,7 @@ async function mergeTask(ctx, a) {
   if (st.merge && st.merge.commit) return `${L.taskLabel(st.num)}은 이미 병합했다 (${st.merge.commit.slice(0, 7)}).`;
 
   if (L.needsNoMerge(st)) {
+    if (st.merge && st.merge.skipped) return `${L.taskLabel(st.num)} 병합은 이미 건너뛰었다(${st.merge.skipped}).\n다음: 태스크를 연 주인이 본진에서 close-task를 부른다.`;
     let note = '';
     if (st.noWorktree && L.currentBranch(main) !== st.parent) {
       L.git(main, ['checkout', st.parent]);
@@ -207,6 +211,7 @@ async function mergeTask(ctx, a) {
     const why = !L.sw(st, 'dev') ? '개발 꺼짐' : st.noBranch ? '브랜치 생략' : '코드 변경 없음';
     st.merge = { at: L.nowIso(), skipped: why };
     L.writeState(main, st);
+    L.appendResult(main, st, `- 병합 · 건너뜀(${why}) · ${L.clock(st.merge.at)}`);
     return `${L.taskLabel(st.num)} 병합을 건너뛴다(${why}).${note}\n다음: 태스크를 연 주인이 본진에서 close-task를 부른다.`;
   }
 
@@ -233,6 +238,12 @@ async function mergeTask(ctx, a) {
       st.testCode.fingerprint = fp;
       L.writeState(main, st);
       notes.push(r.none ? '부모의 새 커밋을 받았다 — 코드 테스트 없음으로 등록된 리포.' : `부모의 새 커밋을 받아 코드 테스트를 다시 돌렸다 — 통과(${L.minutes(r.ms)}).`);
+      const at = L.clock(L.nowIso());
+      L.appendResult(
+        main,
+        st,
+        r.none ? `- 코드 테스트 · 부모 새 커밋 받음 · 등록된 명령 없음 · ${at}` : `- 코드 테스트 · 부모 새 커밋 받아 다시 통과 · ${L.minutes(r.ms)} · ${at}`,
+      );
     }
     if (st.noWorktree) L.git(main, ['checkout', st.parent]);
     const args = rule.merge === 'ff-only' ? ['merge', '--ff-only', st.branch] : ['merge', '--no-ff', '--no-edit', st.branch];
@@ -240,6 +251,7 @@ async function mergeTask(ctx, a) {
     const head = L.git(main, ['rev-parse', 'HEAD']);
     st.merge = { at: L.nowIso(), commit: head };
     L.writeState(main, st);
+    L.appendResult(main, st, `- 병합 · ${st.parent} ← ${head.slice(0, 7)} · ${L.clock(st.merge.at)}`);
     return [
       `${L.taskLabel(st.num)}을 ${st.parent}에 병합했다(${rule.merge}, ${head.slice(0, 7)}).`,
       ...notes,

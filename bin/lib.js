@@ -343,17 +343,39 @@ function readDoc(main, st) {
   return fs.readFileSync(file, 'utf8');
 }
 
-// `## 제목` 절 본문(다음 `## `까지)
+// 줄마다 코드 블록 안인지 — ``` 또는 ~~~로 시작하는 줄이 블록을 열고 닫는다. 닫히지 않은 블록은 문서 끝에서 닫힌 것으로 본다
+function fenceMask(lines) {
+  const mask = [];
+  let open = false;
+  for (const l of lines) {
+    if (/^\s*(```|~~~)/.test(l)) {
+      mask.push(true);
+      open = !open;
+      continue;
+    }
+    mask.push(open);
+  }
+  return mask;
+}
+
+// `## 제목` 절 본문(다음 `## `까지). 코드 블록 안의 `## ` 줄은 절 제목으로 보지 않는다
 function section(text, title) {
   const lines = text.split('\n');
-  const start = lines.findIndex((l) => l.trim() === `## ${title}`);
+  const fenced = fenceMask(lines);
+  const start = lines.findIndex((l, i) => !fenced[i] && l.trim() === `## ${title}`);
   if (start === -1) return null;
   const out = [];
   for (let i = start + 1; i < lines.length; i++) {
-    if (/^## /.test(lines[i])) break;
+    if (!fenced[i] && /^## /.test(lines[i])) break;
     out.push(lines[i]);
   }
   return out.join('\n');
+}
+
+// 1.0.1 문서 = `## 개발 계획` 또는 `## 테스트 계획` 절이 있다(renderDoc이 둘 중 하나는 반드시 만든다).
+// 없으면 1.0.0 문서(목표·완료 기준·만질 파일·Phase 절)로 읽는다
+function isNewDoc(text) {
+  return section(text, '개발 계획') !== null || section(text, '테스트 계획') !== null;
 }
 
 function meaningfulLines(body) {
@@ -380,9 +402,10 @@ function parseFileList(body) {
     .filter(Boolean);
 }
 
-// `## Phase` 절: `### Phase N — 이름` + `- 파일:`(한 줄 쉼표·가운뎃점 구분 또는 들여쓴 목록) + `- 사유:`
+// Phase: `### Phase N — 이름` + `- 파일:`(한 줄 쉼표·가운뎃점 구분 또는 들여쓴 목록) + `- 사유:`
+// 1.0.1 문서는 `## 개발 계획` 안에, 1.0.0 문서는 `## Phase` 절에 있다
 function parsePhases(text) {
-  const body = section(text, 'Phase');
+  const body = section(text, isNewDoc(text) ? '개발 계획' : 'Phase');
   if (!body) return [];
   const phases = [];
   let cur = null;
@@ -422,16 +445,35 @@ function parsePhases(text) {
 
 // 완료 기준 — `[AUTO]`·`[USER]`가 붙은 줄을 차례로 1번부터 센다
 function parseCriteria(text) {
-  return meaningfulLines(section(text, '완료 기준')).filter((l) =>
+  return meaningfulLines(section(text, isNewDoc(text) ? '테스트 계획' : '완료 기준')).filter((l) =>
     /^(?:\d+[.)]|[-*])\s*\[(AUTO|USER)\]/.test(l),
   );
 }
 
+// 목표 = 1.0.1은 `## 요구사항` 첫 줄, 1.0.0은 `## 목표` 첫 줄(1.0.0 medium은 두 절이 다 있다)
 function goalLine(text) {
-  return meaningfulLines(section(text, '목표'))[0] || '';
+  return meaningfulLines(section(text, isNewDoc(text) ? '요구사항' : '목표'))[0] || '';
 }
 
+// approve-plan의 목표 검사 — 문제가 없으면 null
+function goalProblem(text) {
+  const goal = goalLine(text);
+  if (!isNewDoc(text)) return goal ? null : '`## 목표`가 비어 있다';
+  if (!goal) return '`## 요구사항` 첫 줄(목표)이 비어 있다 — 무엇을 왜 하는지 한 문장';
+  if (/^(?:[-*]|\d+[.)])\s/.test(goal)) return '`## 요구사항` 첫 줄은 목록 기호 없는 목표 한 문장이어야 한다(무엇을 왜) — 요구 목록은 그 아래에';
+  return null;
+}
+
+// 계획 파일 — 1.0.1은 `## 개발 계획`의 Phase `- 파일:`(Phase가 있으면 그것만), 없으면 목록.
+// 1.0.0은 `## 만질 파일` + `## Phase`
 function plannedFiles(text) {
+  if (isNewDoc(text)) {
+    const phases = parsePhases(text);
+    if (!phases.length) return parseFileList(section(text, '개발 계획'));
+    const files = [];
+    for (const p of phases) for (const f of p.files) if (!files.includes(f)) files.push(f);
+    return files;
+  }
   const files = parseFileList(section(text, '만질 파일'));
   for (const p of parsePhases(text)) for (const f of p.files) if (!files.includes(f)) files.push(f);
   return files;
@@ -443,22 +485,29 @@ function fileMatches(file, planned) {
   return file === base || file.startsWith(base + '/');
 }
 
-function quoteMeta(v) {
-  return /\s/.test(v) ? `"${v}"` : v;
+// ─── 헤더 표 ────────────────────────────────────────
+
+const HEADER_HEAD = '| 생성일 | 플랜 | 유형 | 크기 | 스위치 | 범위 | 부모 브랜치 | 브랜치 | 상태 |';
+const HEADER_SEP = '|---|---|---|---|---|---|---|---|---|';
+const SWITCH_LABEL = { plan: '기획', dev: '개발', test: '테스트' };
+
+function cell(v) {
+  return String(v == null ? '' : v).replace(/\r?\n/g, ' ').replace(/\|/g, '\\|');
 }
 
-function renderMeta(st) {
-  const parts = [
-    `plan=${st.plan}`,
-    `type=${st.type}`,
-    `size=${st.size}`,
-    `switch=${st.switch.join(',')}`,
-    `range=${quoteMeta(st.range)}`,
-    `parent=${st.parent}`,
-    `by=${st.by}`,
+function renderHeaderRow(st) {
+  const cells = [
+    clock(st.times.prepare).slice(0, 10),
+    st.item ? `${st.plan} (항목 ${st.item})` : st.plan,
+    st.type,
+    st.size,
+    ['plan', 'dev', 'test'].filter((n) => sw(st, n)).map((n) => SWITCH_LABEL[n]).join('·'),
+    st.range,
+    st.parent,
+    st.noBranch ? '분기 없음' : st.branch,
+    !st.closed ? '열림' : st.closed.finished ? '닫힘(완료)' : '닫힘(포기)',
   ];
-  if (st.tab) parts.push(`tab=${st.tab}`);
-  return `<!-- taskery: ${parts.join(' ')} -->`;
+  return `| ${cells.map(cell).join(' | ')} |`;
 }
 
 // ─── 시간 · 단계 표 ─────────────────────────────────
@@ -517,44 +566,60 @@ function renderTableRow(st) {
   return `| ${stageCells(st).join(' | ')} |`;
 }
 
-// 문서의 메타 줄과 단계 표 줄을 .state 기록으로 다시 쓴다(메타·표는 명령만 쓴다, §4-2)
+// 문서 머리(첫 `## ` 앞)에서 표 머리 줄을 찾는다
+function headIndex(lines, head) {
+  let end = lines.findIndex((l) => /^## /.test(l));
+  if (end === -1) end = lines.length;
+  for (let i = 0; i < end; i++) {
+    if (lines[i].trim() === head) return lines[i + 2] !== undefined && i + 2 < end && lines[i + 2].trim().startsWith('|') ? i : -1;
+  }
+  return -1;
+}
+
+// 문서의 헤더 표와 단계 표 줄을 .state 기록으로 다시 쓴다(두 표는 명령만 쓴다).
+// 1.0.0 문서는 제목 바로 아래 메타 줄을 헤더 표로 바꾼다
 function syncDoc(main, st) {
   const file = docAbs(main, st);
   if (!fs.existsSync(file)) return;
   const lines = fs.readFileSync(file, 'utf8').split('\n');
-  const mi = lines.findIndex((l) => l.startsWith('<!-- taskery:'));
-  if (mi !== -1) lines[mi] = renderMeta(st);
-  const hi = lines.findIndex((l) => l.trim() === TABLE_HEAD);
-  if (hi !== -1 && lines[hi + 2] !== undefined && lines[hi + 2].trim().startsWith('|')) {
-    lines[hi + 2] = renderTableRow(st);
+  if (headIndex(lines, HEADER_HEAD) === -1 && lines[1] !== undefined && lines[1].startsWith('<!-- taskery:')) {
+    lines.splice(1, 1, '', HEADER_HEAD, HEADER_SEP, renderHeaderRow(st));
   }
+  const hi = headIndex(lines, HEADER_HEAD);
+  if (hi !== -1) lines[hi + 2] = renderHeaderRow(st);
+  const ti = headIndex(lines, TABLE_HEAD);
+  if (ti !== -1) lines[ti + 2] = renderTableRow(st);
   fs.writeFileSync(file, lines.join('\n'));
 }
 
 function renderDoc(st) {
   const out = [
     `# ${taskLabel(st.num)} ${st.title}`,
-    renderMeta(st),
+    '',
+    HEADER_HEAD,
+    HEADER_SEP,
+    renderHeaderRow(st),
     '',
     TABLE_HEAD,
     '|---|---|---|---|',
     renderTableRow(st),
     '',
-    '## 목표',
+    '## 요구사항',
     '',
   ];
-  if (st.size !== 'small') out.push('## 요구사항', '');
-  out.push('## 완료 기준', '', '## 만질 파일', '');
-  if (st.size !== 'small') out.push('## Phase', '');
+  if (sw(st, 'dev')) out.push('## 개발 계획', '');
+  if (sw(st, 'test')) out.push('## 테스트 계획', '');
   out.push('## 결정', '', '## 결과', '');
   return out.join('\n');
 }
 
-// `## 결과` 절 끝에 한 줄을 붙인다
+// `## 결과` 절 끝에 한 줄을 붙인다(명령만 쓴다). 문서가 없으면 아무것도 하지 않는다
 function appendResult(main, st, line) {
   const file = docAbs(main, st);
+  if (!fs.existsSync(file)) return;
   const lines = fs.readFileSync(file, 'utf8').split('\n');
-  let start = lines.findIndex((l) => l.trim() === '## 결과');
+  const fenced = fenceMask(lines);
+  let start = lines.findIndex((l, i) => !fenced[i] && l.trim() === '## 결과');
   if (start === -1) {
     while (lines.length && lines[lines.length - 1].trim() === '') lines.pop();
     lines.push('', '## 결과', '');
@@ -562,7 +627,7 @@ function appendResult(main, st, line) {
   }
   let end = lines.length;
   for (let i = start + 1; i < lines.length; i++) {
-    if (/^## /.test(lines[i])) {
+    if (!fenced[i] && /^## /.test(lines[i])) {
       end = i;
       break;
     }
@@ -591,7 +656,7 @@ function todayLocal() {
   return clock(nowIso()).slice(0, 10);
 }
 
-// 범위 메모 갱신 — 태스크 명령에 --range를 붙이면 메타의 범위만 바꾼다(§3-5)
+// 범위 갱신 — 태스크 명령에 --range를 붙이면 헤더 표의 범위 칸만 바꾼다(§3-5)
 function updateRange(main, st, range) {
   if (!range || range === st.range) return st;
   st.range = range;
@@ -652,14 +717,16 @@ module.exports = {
   docShown,
   readDoc,
   section,
+  isNewDoc,
   meaningfulLines,
   parseFileList,
   parsePhases,
   parseCriteria,
   goalLine,
+  goalProblem,
   plannedFiles,
   fileMatches,
-  renderMeta,
+  renderHeaderRow,
   stageDurations,
   stageCells,
   minutes,

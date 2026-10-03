@@ -78,23 +78,47 @@ function installedRepo({ platform = '1', codeTest = ['true'] } = {}) {
   return sb;
 }
 
-// 태스크 문서의 판단 칸을 채운다
+// 태스크 문서의 판단 칸을 채운다(1.0.1 절 — 요구사항 첫 줄 목표·개발 계획·테스트 계획)
 function fillDoc(sb, num, { goal = '목표 한 줄', files = ['src/app.txt'], criteria = ['[AUTO] 앱 → 실행 → hello가 보인다'], phases = null } = {}) {
   const st = sb.state(num);
   let text = sb.read(st.doc);
   const put = (title, body) => {
     text = text.replace(`## ${title}\n`, `## ${title}\n${body}\n`);
   };
-  put('목표', goal);
-  put('완료 기준', criteria.map((c, i) => `${i + 1}. ${c}`).join('\n'));
-  put('만질 파일', files.map((f) => `- \`${f}\``).join('\n'));
-  if (phases) {
-    put(
-      'Phase',
-      phases.map((p, i) => `### Phase ${i + 1} — ${p.name}\n- 파일: ${p.files.map((f) => `\`${f}\``).join(', ')}\n- 사유: ${p.reason}\n`).join('\n'),
-    );
-  }
+  put('요구사항', goal);
+  put('테스트 계획', criteria.map((c, i) => `${i + 1}. ${c}`).join('\n'));
+  put(
+    '개발 계획',
+    phases
+      ? phases.map((p, i) => `### Phase ${i + 1} — ${p.name}\n- 파일: ${p.files.map((f) => `\`${f}\``).join(', ')}\n- 사유: ${p.reason}\n`).join('\n')
+      : files.map((f) => `- \`${f}\``).join('\n'),
+  );
   sb.write(st.doc, text);
 }
 
-module.exports = { sandbox, installedRepo, fillDoc, cleanEnv, BIN };
+// 1.0.0 모양 문서로 바꿔 쓴다(호환 시험용) — 메타 줄·목표·(medium) 요구사항·완료 기준·만질 파일·(medium) Phase
+function writeDocV100(sb, num, { goal = '목표 한 줄', files = ['src/app.txt'], criteria = ['[AUTO] 앱 → 실행 → hello가 보인다'], phases = null, requirements = null } = {}) {
+  const st = sb.state(num);
+  const out = [
+    `# TASK-${String(num).padStart(3, '0')} ${st.title}`,
+    `<!-- taskery: plan=${st.plan} type=${st.type} size=${st.size} switch=${st.switch.join(',')} range=${st.range} parent=${st.parent} by=${st.by} -->`,
+    '',
+    '| 시작·기획 | 개발 | 테스트 | 닫기 |',
+    '|---|---|---|---|',
+    '| ⏳ | – | – | – |',
+    '',
+    '## 목표',
+    goal,
+    '',
+  ];
+  if (requirements) out.push('## 요구사항', requirements, '');
+  out.push('## 완료 기준', criteria.map((c, i) => `${i + 1}. ${c}`).join('\n'), '');
+  out.push('## 만질 파일', files.map((f) => `- \`${f}\``).join('\n'), '');
+  if (phases) {
+    out.push('## Phase', phases.map((p, i) => `### Phase ${i + 1} — ${p.name}\n- 파일: ${p.files.map((f) => `\`${f}\``).join(', ')}\n- 사유: ${p.reason}\n`).join('\n'), '');
+  }
+  out.push('## 결정', '', '## 결과', '');
+  sb.write(st.doc, out.join('\n'));
+}
+
+module.exports = { sandbox, installedRepo, fillDoc, writeDocV100, cleanEnv, BIN };

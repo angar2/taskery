@@ -62,7 +62,8 @@ test('--no-worktree — 본진을 태스크 브랜치로, 다른 prepare-task는
   const st = sb.state(1);
   assert.strictEqual(st.worktree, null);
   assert.strictEqual(sb.git(['symbolic-ref', '--short', 'HEAD']), st.branch);
-  assert.match(sb.read(st.doc), /by=생략/);
+  assert.strictEqual(st.by, '생략');
+  assert.doesNotMatch(sb.read(st.doc), /<!-- taskery:/);
   const r = sb.tk(['prepare-task', '다른', '--slug', 'other', '--type', 'feature', '--size', 'small', '--dev', 'claude']);
   assert.notStrictEqual(r.code, 0);
   assert.match(r.all, /TASK-001의 브랜치[\s\S]*원인 태스크: TASK-001\(워크트리 생략\)/);
