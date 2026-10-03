@@ -125,7 +125,7 @@ async function orcaDispatchTask(ctx, a) {
   const handle = created && created.terminal && created.terminal.handle;
   if (!handle) L.fail(`orca-dispatch-task: ${label} 탭을 열었지만 Orca가 탭 handle을 돌려주지 않았다. 'orca terminal list'로 확인한다.`);
 
-  // 탭 handle을 메타에 기록한다 — 첫 지시문을 보내기 전이라 태스크 세션의 기록과 겹치지 않는다
+  // 탭 handle을 .state에 기록한다 — 첫 지시문을 보내기 전이라 태스크 세션의 기록과 겹치지 않는다
   const fresh = L.readState(main, num);
   fresh.tab = handle;
   L.writeState(main, fresh);

@@ -102,7 +102,7 @@ test('orca-dispatch-task(Claude) — terminal create → wait tui-idle → 첫 �
   assert.ok(fs.existsSync(path.join(st.worktree, st.doc)), '첫 지시문의 문서 경로는 워크트리에서 열린다');
 
   assert.strictEqual(sb.state(1).tab, 'term_TASK-001');
-  assert.match(sb.read(st.doc), /<!-- taskery: .* by=taskery tab=term_TASK-001 -->/);
+  assert.doesNotMatch(sb.read(st.doc), /<!-- taskery:|term_TASK-001/, '탭은 .state에만'); 
 });
 
 test('orca-dispatch-task(Codex) — codex -m <모델> --add-dir <본진>/.taskery, --note 없으면 마지막 줄 없음, 다시 띄우면 시작은 비어 있는 첫 단계', (t) => {
@@ -203,7 +203,7 @@ test('orca-dispatch-task 동시 호출 — 태스크 3개를 한꺼번에 띄워
     assert.match(text, new RegExp(`^\\[오케스트레이션\\] taskery 태스크 ${label} 「태스크 ${n}」`));
     assert.match(text, new RegExp(`report-task ${label} "<한 줄>"`));
     assert.strictEqual(sb.state(n).tab, handle);
-    assert.match(sb.read(sb.state(n).doc), new RegExp(`tab=${handle} -->`));
+    assert.doesNotMatch(sb.read(sb.state(n).doc), new RegExp(handle));
   }
 });
 
