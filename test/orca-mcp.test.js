@@ -130,6 +130,7 @@ test('MCP — 정의표의 명령이 같은 이름의 도구로 뜨고, 같은 �
   assert.deepStrictEqual(names, ['approve-plan', 'backlog-add', 'backlog-get', 'backlog-mark', 'close-task', 'commit-task', 'merge-task', 'orca-dispatch-task', 'plan-init', 'prepare-task', 'prune', 'report-task', 'status', 'test-code', 'test-scenario', 'verify-close']);
   const prep = list.result.tools.find((x) => x.name === 'prepare-task');
   assert.ok(prep.inputSchema.properties['no-worktree'], 'CLI 옵션과 같은 이름');
+  assert.deepStrictEqual(Object.keys(list.result.tools.find((x) => x.name === 'orca-dispatch-task').inputSchema.properties), ['task', 'agent', 'model', 'manual', 'scope', 'avoid', 'read', 'extra']);
   let r = await s.request('tools/call', { name: 'prepare-task', arguments: { name: '빠짐' } });
   assert.strictEqual(r.result.isError, true);
   assert.match(r.result.content[0].text, /빠진 입력/);
