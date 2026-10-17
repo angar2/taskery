@@ -286,6 +286,15 @@ function writeChangelog(main, st, goal) {
   return file;
 }
 
+// orca worktree rm 뒤 폴더가 사라지기를 기다리는 최대 시간
+const ORCA_RM_WAIT_MS = 30 * 1000;
+
+// 경로가 사라질 때까지 기다린다(최대 ms)
+function waitGone(p, ms) {
+  const until = Date.now() + ms;
+  while (fs.existsSync(p) && Date.now() < until) Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 200);
+}
+
 // 워크트리·브랜치 정리 — 커밋 안 된 변경이 있으면 남기고, 브랜치는 병합된 것만 지운다.
 // force는 prune에서 사용자가 확인했을 때만 — 병합 안 된 브랜치도 지운다(복구 명령 출력)
 function cleanup(main, st, { force = false } = {}) {
@@ -307,6 +316,8 @@ function cleanup(main, st, { force = false } = {}) {
       try {
         execFileSync('orca', ['worktree', 'rm', '--worktree', `path:${st.worktree}`, '--json'], { stdio: ['ignore', 'pipe', 'pipe'] });
         notes.push(`Orca 워크트리를 지웠다: ${st.worktree}`);
+        // Orca는 답한 뒤에도 뒤에서 폴더를 지우고 병합된 브랜치도 함께 지운다 — 폴더가 사라질 때까지 기다린 뒤 브랜치를 본다
+        waitGone(st.worktree, ORCA_RM_WAIT_MS);
       } catch (e) {
         notes.push(`Orca 워크트리를 지우지 못해 남겼다: ${((e.stderr || '') + '').trim() || e.message}`);
         branchFree = false;
@@ -325,7 +336,10 @@ function cleanup(main, st, { force = false } = {}) {
   }
   if (!merged && !force) notes.push(`브랜치 ${st.branch}는 부모에 병합되지 않아 남겼다.`);
   else if (!branchFree || L.currentBranch(main) === st.branch) notes.push(`브랜치 ${st.branch}를 지우지 못해 남겼다(사용 중).`);
-  else if (L.git(main, ['branch', merged ? '-d' : '-D', st.branch], { allowFail: true }) === null) notes.push(`브랜치 ${st.branch}를 지우지 못해 남겼다.`);
+  else if (L.git(main, ['branch', merged ? '-d' : '-D', st.branch], { allowFail: true }) === null) {
+    // 그 사이 Orca가 지웠으면 실패가 아니다
+    notes.push(L.branchExists(main, st.branch) ? `브랜치 ${st.branch}를 지우지 못해 남겼다.` : `브랜치 ${st.branch}가 지워졌다. 복구: git branch ${st.branch} ${tip}`);
+  }
   else notes.push(`브랜치 ${st.branch}를 지웠다. 복구: git branch ${st.branch} ${tip}`);
   return notes;
 }
