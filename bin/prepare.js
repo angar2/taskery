@@ -218,12 +218,26 @@ async function installPackages(dir) {
   return [`npm ci 실패(${took}) — 워크트리에서 직접 설치한다(${dir}):\n${L.tail(r.out, 15)}`];
 }
 
-// PLAN.md 목록 항목 줄 끝에 태스크 번호를 붙인다(`--item`)
-function linkItem(main, plan, item, label) {
+// PLAN.md `## 태스크 목록` 절에서 항목 줄을 찾는다. 다른 절의 번호 목록(목표 등)은 보지 않는다. 없으면 멈춘다
+function itemLine(main, plan, item) {
   const file = path.join(main, '.taskery', 'plans', plan, 'PLAN.md');
   const lines = fs.readFileSync(file, 'utf8').split('\n');
-  const idx = lines.findIndex((l) => new RegExp(`^\\s*${item}\\.\\s`).test(l));
-  if (idx === -1) L.fail(`prepare-task: ${plan}/PLAN.md에 항목 ${item}이 없다. 목록 형식은 '${item}. <한 줄 설명> — 선행: <항목 번호들 또는 없음>'이다.`);
+  const fenced = L.fenceMask(lines);
+  const start = lines.findIndex((l, i) => !fenced[i] && l.trim() === '## 태스크 목록');
+  let idx = -1;
+  for (let i = start + 1; start !== -1 && i < lines.length && !(!fenced[i] && /^## /.test(lines[i])); i++) {
+    if (!fenced[i] && new RegExp(`^\\s*${item}\\.\\s`).test(lines[i])) {
+      idx = i;
+      break;
+    }
+  }
+  if (idx === -1) L.fail(`prepare-task: ${plan}/PLAN.md \`## 태스크 목록\`에 항목 ${item}이 없다. 목록 형식은 '${item}. <한 줄 설명> — 선행: <항목 번호들 또는 없음>'이다.`);
+  return { file, lines, idx };
+}
+
+// 항목 줄 끝에 태스크 번호를 붙인다(`--item`)
+function linkItem(main, plan, item, label) {
+  const { file, lines, idx } = itemLine(main, plan, item);
   const linked = lines[idx].match(/TASK-\d+/g) || [];
   lines[idx] = `${lines[idx].replace(/\s+$/, '')} (${label})`;
   fs.writeFileSync(file, lines.join('\n'));
@@ -236,6 +250,7 @@ async function prepareTask(ctx, a) {
   const rule = L.readGitRule(main);
   const switches = validate(a, rule);
   const plan = resolvePlan(main, a.plan);
+  if (a.item != null) itemLine(main, plan, a.item); // 브랜치·워크트리를 만들기 전에 확인한다
   const noBranch = !!a['no-branch'];
   const noWorktree = noBranch || !!a['no-worktree'];
   const parent = checkMain(main);

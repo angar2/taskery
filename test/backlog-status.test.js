@@ -132,6 +132,24 @@ test('status — 플랜별 시작할 수 있는 태스크(선행·열린 태스�
   assert.match(plans(), /^- 001_mvp: 1\. 로그인 화면 · 4\. 도움말\n/);
 });
 
+test('prepare-task --item — 연결은 `## 태스크 목록` 절의 항목 줄에만 붙고, 목표 등 다른 절의 번호 목록은 건드리지 않는다', (t) => {
+  const sb = installedRepo();
+  t.after(() => sb.cleanup());
+  const goal = ['## 목표', '1. 첫 목표', '2. 둘째 목표', '3. 셋째 목표', ''];
+  sb.write('.taskery/plans/001_mvp/PLAN.md', ['# MVP', '', ...goal, '## 태스크 목록', '1. 로그인 화면 — 선행: 없음', '2. 도움말 — 선행: 1', ''].join('\n'));
+  open(sb, 'login', ['--plan', '001_mvp', '--item', '1']);
+  const plan = sb.read('.taskery/plans/001_mvp/PLAN.md');
+  assert.ok(plan.includes(goal.join('\n')), '목표 절은 그대로');
+  assert.match(plan, /## 태스크 목록\n1\. 로그인 화면 — 선행: 없음 \(TASK-001\)\n/);
+  assert.match(sb.ok(['status']), /- 001_mvp: 없음\n/, '연결이 목록에 붙어 진행 중인 항목 1은 시작 대상에서 빠진다');
+  // 목표에만 있는 번호는 목록 항목이 아니다
+  const r = sb.tk(['prepare-task', '태스크 x', '--slug', 'x', '--type', 'feature', '--size', 'small', '--dev', 'claude', '--plan', '001_mvp', '--item', '3']);
+  assert.notStrictEqual(r.code, 0);
+  assert.match(r.all, /001_mvp\/PLAN\.md `## 태스크 목록`에 항목 3이 없다/);
+  assert.ok(!sb.git(['branch', '--list', '*_x']).trim(), '브랜치를 만들기 전에 멈춘다');
+  assert.ok(!fs.existsSync(path.join(sb.repo, '.taskery', '.state', 'tasks', '002.json')), '태스크 상태도 남지 않는다');
+});
+
 test('prune — 닫힌 태스크에 남은 워크트리·브랜치를 항목마다 묻고 정리, --yes, 커밋 안 된 변경은 건너뜀, 묻지 못하면 목록만', async (t) => {
   const sb = installedRepo();
   t.after(() => sb.cleanup());
