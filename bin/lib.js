@@ -716,6 +716,7 @@ module.exports = {
   docAbs,
   docShown,
   readDoc,
+  fenceMask,
   section,
   isNewDoc,
   meaningfulLines,

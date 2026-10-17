@@ -111,7 +111,7 @@ const OUTSIDE_ORCA =
 const MANUAL_HEAD = '손 전달 — 탭을 띄우지 않았다. 사용자에게 아래를 전하고, 사용자가 작업 폴더에서 에이전트 세션을 열어 첫 지시문을 그대로 붙여 넣게 한다.';
 const REARM = '맡긴 태스크가 남아 있으면 곧바로 wait-reports를 다시 걸어 둔다(사용자 답을 기다리는 중이어도).';
 
-test('orca-dispatch-task(Claude) — terminal create → wait tui-idle → 첫 지시문 send 순서, 실행 명령에 권한 옵션 없음, 메타 tab 기록, 첫 지시문은 세 칸 틀', (t) => {
+test('orca-dispatch-task(Claude) — terminal create → wait tui-idle → 첫 지시문 send → 확인용 Enter 순서, 실행 명령에 권한 옵션 없음, 메타 tab 기록, 첫 지시문은 세 칸 틀', (t) => {
   const sb = installedRepo();
   t.after(() => sb.cleanup());
   prep(sb, 1, ['--range', '끝까지', '--item', '1']);
@@ -133,7 +133,7 @@ test('orca-dispatch-task(Claude) — terminal create → wait tui-idle → 첫 �
   const calls = orca.calls();
   assert.deepStrictEqual(
     calls.map((c) => c.slice(0, 2).join(' ')),
-    ['terminal create', 'terminal wait', 'terminal send'],
+    ['terminal create', 'terminal wait', 'terminal send', 'terminal send'],
   );
   assert.deepStrictEqual(calls[0], ['terminal', 'create', '--worktree', `path:${st.worktree}`, '--title', 'TASK-001', '--command', 'claude --model sonnet', '--json']);
   assert.deepStrictEqual(calls[1], ['terminal', 'wait', '--terminal', 'term_TASK-001', '--for', 'tui-idle', '--json']);
@@ -162,6 +162,8 @@ test('orca-dispatch-task(Claude) — terminal create → wait tui-idle → 첫 �
     '- 그 밖: BL-3과 BL-5는 같은 흐름이라 묶었다.',
   ].join('\n');
   assert.deepStrictEqual(calls[2], ['terminal', 'send', '--terminal', 'term_TASK-001', '--text', text, '--enter', '--wait-submit', '30', '--json']);
+  // 턴 시작이 관측돼도 입력창에 남은 경우(stash TASK-105)를 위해 Enter만 한 번 더
+  assert.deepStrictEqual(calls[3], ['terminal', 'send', '--terminal', 'term_TASK-001', '--enter', '--json']);
   assert.doesNotMatch(out, /알림/);
   assert.ok(fs.existsSync(path.join(st.worktree, st.doc)), '첫 지시문의 문서 경로는 워크트리에서 열린다');
   assert.ok(fs.existsSync(path.join(st.worktree, '.taskery/plans/001_mvp/PLAN.md')), '플랜 문서 경로도 워크트리에서 열린다');
@@ -310,7 +312,7 @@ test('orca-dispatch-task — 준비 대기가 끝나지 않으면 첫 지시문�
   assert.strictEqual(sb.state(1).tab, 'term_TASK-001', '열린 탭은 기록된다');
 });
 
-test('orca-dispatch-task 첫 지시문 삼킴(F1) — 턴 시작이 관측되지 않으면 화면을 보고, 지시문이 없으면 같은 지시문을 한 번 더 보낸다', (t) => {
+test('orca-dispatch-task 첫 지시문 삼킴(F1) — 턴 시작이 관측되지 않으면 확인용 Enter 뒤 화면을 본다. 지시문이 보이면 그대로, 없으면 같은 지시문을 한 번 더 보낸다', (t) => {
   const sb = installedRepo();
   t.after(() => sb.cleanup());
   for (const n of [1, 2, 3]) prep(sb, n);
@@ -318,31 +320,35 @@ test('orca-dispatch-task 첫 지시문 삼킴(F1) — 턴 시작이 관측되지
   const reset = () => fs.rmSync(path.join(sb.root, 'send-count'), { force: true });
   const mine = (label) => orca.calls().filter((c) => c.includes(label) || c.includes(`term_${label}`));
   const textOf = (c) => c[c.indexOf('--text') + 1];
+  const enterOnly = (handle) => ['terminal', 'send', '--terminal', handle, '--enter', '--json'];
 
-  // 첫 전송이 사라짐(빈 화면) → 화면 확인 → 같은 지시문 재전송 → 관측됨
+  // 첫 전송이 사라짐(빈 화면) → Enter → 화면 확인 → 같은 지시문 재전송 → 관측됨
   let out = sb.ok(['orca-dispatch-task', '1', '--agent', 'claude', '--model', 'm'], { extraEnv: { ...orca.env, FAKE_TURN: 'second' } });
   let calls = mine('TASK-001');
-  assert.deepStrictEqual(calls.map((c) => c[1]), ['create', 'wait', 'send', 'read', 'send']);
-  assert.deepStrictEqual(calls[3], ['terminal', 'read', '--terminal', 'term_TASK-001', '--screen', '--json']);
+  assert.deepStrictEqual(calls.map((c) => c[1]), ['create', 'wait', 'send', 'send', 'read', 'send']);
+  assert.deepStrictEqual(calls[3], enterOnly('term_TASK-001'), 'Enter만, 지시문 없이');
+  assert.deepStrictEqual(calls[4], ['terminal', 'read', '--terminal', 'term_TASK-001', '--screen', '--json']);
   assert.strictEqual(textOf(calls[2]), instruction(sb.state(1)));
-  assert.strictEqual(textOf(calls[4]), textOf(calls[2]), '같은 지시문');
-  assert.match(out, /알림: 첫 전송은 턴 시작이 관측되지 않고 화면에도 없어 한 번 더 보냈다/);
+  assert.strictEqual(textOf(calls[5]), textOf(calls[2]), '같은 지시문');
+  assert.match(out, /알림: 첫 전송은 턴 시작이 관측되지 않고 Enter 뒤 화면에도 없어 한 번 더 보냈다/);
 
-  // 두 번 다 관측되지 않음 → 지금처럼 멈추고 알린다
+  // 두 번 다 관측되지 않음 → 멈추고 알린다
   reset();
   let r = sb.tk(['orca-dispatch-task', '2', '--agent', 'claude', '--model', 'm'], { extraEnv: { ...orca.env, FAKE_TURN: 'never' } });
   assert.notStrictEqual(r.code, 0);
   assert.match(r.all, /첫 지시문을 두 번 보냈지만 턴 시작이 관측되지 않았다/);
   assert.ok(r.all.includes(`--- 첫 지시문 ---\n${instruction(sb.state(2))}\n`), '수동 안내에 §2 첫 지시문 전체');
-  assert.deepStrictEqual(mine('TASK-002').map((c) => c[1]), ['create', 'wait', 'send', 'read', 'send']);
+  assert.deepStrictEqual(mine('TASK-002').map((c) => c[1]), ['create', 'wait', 'send', 'send', 'read', 'send']);
 
-  // 관측은 안 됐지만 화면에 지시문이 보임 → 다시 보내지 않는다
+  // 입력창에 남은 초안(stash TASK-105) → Enter로 제출되어 화면에 지시문이 보임 → 지시문은 다시 보내지 않는다
   reset();
   out = sb.ok(['orca-dispatch-task', '3', '--agent', 'claude', '--model', 'm'], {
     extraEnv: { ...orca.env, FAKE_TURN: 'never', FAKE_SCREEN: '> [오케스트레이션] taskery 태스크 TASK-003 「태스크 3」를\n맡는다.' },
   });
-  assert.deepStrictEqual(mine('TASK-003').map((c) => c[1]), ['create', 'wait', 'send', 'read']);
-  assert.match(out, /알림: 턴 시작은 관측되지 않았지만 탭 화면에 첫 지시문이 보인다/);
+  calls = mine('TASK-003');
+  assert.deepStrictEqual(calls.map((c) => c[1]), ['create', 'wait', 'send', 'send', 'read']);
+  assert.deepStrictEqual(calls[3], enterOnly('term_TASK-003'));
+  assert.match(out, /알림: 턴 시작이 관측되지 않아 Enter를 한 번 더 보냈고, 탭 화면에 첫 지시문이 보인다/);
 });
 
 test('orca-dispatch-task 동시 호출 — 태스크 3개를 한꺼번에 띄워도 각자 자기 탭·자기 지시문·자기 메타', async (t) => {
@@ -353,12 +359,12 @@ test('orca-dispatch-task 동시 호출 — 태스크 3개를 한꺼번에 띄워
   const results = await Promise.all([1, 2, 3].map((n) => run(sb, ['orca-dispatch-task', String(n), '--agent', n === 3 ? 'codex' : 'claude', '--model', 'm'], { extraEnv: orca.env })));
   for (const r of results) assert.strictEqual(r.code, 0, r.all);
   const calls = orca.calls();
-  assert.strictEqual(calls.length, 9);
+  assert.strictEqual(calls.length, 12);
   for (const n of [1, 2, 3]) {
     const label = `TASK-00${n}`;
     const handle = `term_${label}`;
     const mine = calls.filter((c) => c.includes(handle) || c.includes(label));
-    assert.deepStrictEqual(mine.map((c) => c[1]), ['create', 'wait', 'send'], label);
+    assert.deepStrictEqual(mine.map((c) => c[1]), ['create', 'wait', 'send', 'send'], label);
     const text = mine[2][mine[2].indexOf('--text') + 1];
     assert.match(text, new RegExp(`^\\[오케스트레이션\\] taskery 태스크 ${label} 「태스크 ${n}」`));
     assert.match(text, new RegExp(`report-task ${label} "<한 줄>"`));

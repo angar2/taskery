@@ -6,7 +6,7 @@ const path = require('path');
 const { spawn } = require('child_process');
 const { installedRepo, fillDoc } = require('./helpers');
 
-// 가짜 orca — worktree create/rm를 git으로 흉내 내고 받은 인자를 기록한다
+// 가짜 orca — worktree create/rm를 git으로 흉내 내고 받은 인자를 기록한다. FAKE_RM_ASYNC면 rm은 답한 뒤 뒤에서 지운다
 function fakeOrca(sb) {
   const bin = path.join(sb.root, 'fakebin');
   fs.mkdirSync(bin);
@@ -25,7 +25,12 @@ elif [ "$1 $2" = "worktree rm" ]; then
   while [ $# -gt 0 ]; do case "$1" in --worktree) WT="\${2#path:}"; shift 2;; *) shift;; esac; done
   MAIN=$(dirname "$(git -C "$WT" rev-parse --path-format=absolute --git-common-dir)")
   BR=$(git -C "$WT" symbolic-ref --short HEAD)
-  git -C "$MAIN" worktree remove "$WT" && git -C "$MAIN" branch -d "$BR" >/dev/null 2>&1
+  if [ -n "$FAKE_RM_ASYNC" ]; then
+    # 실제 Orca처럼 답부터 하고 1초 뒤 뒤에서 지운다
+    ( sleep 1; git -C "$MAIN" worktree remove "$WT" && git -C "$MAIN" branch -d "$BR" ) >/dev/null 2>&1 &
+  else
+    git -C "$MAIN" worktree remove "$WT" && git -C "$MAIN" branch -d "$BR" >/dev/null 2>&1
+  fi
   echo '{"ok":true}'
 fi
 `,
@@ -34,11 +39,11 @@ fi
   return { env: { PATH: `${bin}:${process.env.PATH}`, ORCA_TERMINAL_HANDLE: 'term_test' }, log };
 }
 
-test('Orca 안 — orca worktree create --base-branch <부모> 후 브랜치 이름을 규칙대로 바꾸고, close-task는 orca worktree rm', (t) => {
+test('Orca 안 — orca worktree create --base-branch <부모> 후 브랜치 이름을 규칙대로 바꾸고, close-task는 orca worktree rm(뒤에서 지워도 끝날 때까지 기다린다)', (t) => {
   const sb = installedRepo();
   t.after(() => sb.cleanup());
   const orca = fakeOrca(sb);
-  Object.assign(sb.env, orca.env);
+  Object.assign(sb.env, orca.env, { FAKE_RM_ASYNC: '1' });
   sb.ok(['prepare-task', 'Orca 태스크', '--slug', 'in-orca', '--type', 'feature', '--size', 'small', '--dev', 'claude']);
   const st = sb.state(1);
   assert.strictEqual(st.by, 'orca');
@@ -59,8 +64,10 @@ test('Orca 안 — orca worktree create --base-branch <부모> 후 브랜치 이
   const out = sb.ok(['close-task', '1']);
   assert.match(out, /Orca 워크트리를 지웠다/);
   assert.match(out, /복구: git branch feature\/claude_TASK-001_in-orca/);
+  assert.doesNotMatch(out, /지우지 못해 남겼다/, '지워진 브랜치를 남겼다고 하지 않는다');
   assert.match(fs.readFileSync(orca.log, 'utf8'), /worktree rm --worktree path:/);
   assert.ok(!fs.existsSync(st.worktree));
+  assert.strictEqual(sb.git(['branch', '--list', st.branch]), '');
 });
 
 test('Orca 안 포기 — 병합 안 된 브랜치여도 orca worktree rm으로 워크트리를 지우고, Orca가 남긴 브랜치는 남겼다고 알림', (t) => {
