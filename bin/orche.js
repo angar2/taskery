@@ -10,6 +10,8 @@ const WAIT_MS = Number(process.env.TASKERY_WAIT_REPORTS_MS) || 60 * 60 * 1000;
 const POLL_MS = Math.min(1000, WAIT_MS);
 // 첫 지시문을 보낸 뒤 턴 시작을 지켜보는 시간(orca terminal send --wait-submit)
 const SUBMIT_WAIT_SEC = 30;
+// 턴 시작 미관측 뒤 Enter를 보내고 화면을 읽기 전 기다리는 시간
+const SCREEN_SETTLE_MS = 2000;
 
 function reportsFile(main) {
   return path.join(main, '.taskery', 'reports.log');
@@ -197,13 +199,23 @@ async function orcaDispatchTask(ctx, a) {
     if (r.refused) L.fail(`orca-dispatch-task: ${label} 탭(${handle})이 첫 지시문을 받지 않았다 — ${r.refused}\n${manual}`);
     return r.observed;
   };
-  // 턴 시작이 관측되지 않으면 화면을 보고, 지시문이 보이지 않을 때만 한 번 더 보낸다(준비 전 입력이 사라진 경우)
+  // Orca가 턴 시작을 관측했다고 답해도 지시문이 입력창에 제출되지 않은 채 남은 적이 있다(stash TASK-105).
+  // 그래서 관측 여부와 무관하게 Enter만 한 번 더 보낸다 — 입력창이 비었거나 이미 진행 중이면 영향이 없다
+  const observed = send();
   let sendNote = null;
-  if (!send()) {
+  try {
+    orca(['terminal', 'send', '--terminal', handle, '--enter']);
+  } catch (e) {
+    if (observed) sendNote = `확인용 Enter를 보내지 못했다(${e.message}) — 탭에서 진행을 확인한다.`;
+    else L.fail(`orca-dispatch-task: ${label} 탭(${handle})에서 첫 지시문의 턴 시작이 관측되지 않았고, Enter도 보내지 못했다 — ${e.message}\n'orca terminal read --terminal ${handle}'로 화면을 읽어, 지시문이 입력창에 남아 있으면 Enter를, 없으면 아래 첫 지시문을 보낸다.\n--- 첫 지시문 ---\n${text}`);
+  }
+  // 관측되지 않았으면 화면을 본다 — 지시문이 보이면 Enter로 들어간 것이고, 없으면 준비 전에 사라진 것이라 한 번 더 보낸다
+  if (!observed) {
+    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, SCREEN_SETTLE_MS);
     if (onScreen(handle, text.split('\n')[0].split(' ').slice(0, 4).join(' '))) {
-      sendNote = '턴 시작은 관측되지 않았지만 탭 화면에 첫 지시문이 보인다 — 탭에서 진행을 확인한다.';
+      sendNote = '턴 시작이 관측되지 않아 Enter를 한 번 더 보냈고, 탭 화면에 첫 지시문이 보인다 — 탭에서 진행을 확인한다.';
     } else if (send()) {
-      sendNote = '첫 전송은 턴 시작이 관측되지 않고 화면에도 없어 한 번 더 보냈다.';
+      sendNote = '첫 전송은 턴 시작이 관측되지 않고 Enter 뒤 화면에도 없어 한 번 더 보냈다.';
     } else {
       L.fail(`orca-dispatch-task: ${label} 탭(${handle})에 첫 지시문을 두 번 보냈지만 턴 시작이 관측되지 않았다.\n${manual}`);
     }
